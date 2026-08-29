@@ -4,7 +4,7 @@ Escopo: todas as telas, estado, integração com a API.
 Fonte de escopo: [MVP v7.1](../MVP%20—%20Micro-SaaS%20para%20Gestão%20Financeira%20e%20Retenção%20em%20Estética%20\(v6\).md) · Coordenação: [../BACKLOG.md](../BACKLOG.md)
 <sub>O arquivo continua nomeado `v6`; v7/v7.1 são seções acrescentadas dentro dele, não arquivos novos.</sub>
 
-**Atualizado:** 2026-08-29 · **Progresso:** 10/35 (29%)
+**Atualizado:** 2026-08-29 · **Progresso:** 12/36 (33%) · 2 em `[~]` (F-014, F-014b — protótipos client-side prontos para integração real, já que o backend correspondente existe agora)
 
 ---
 
@@ -50,10 +50,10 @@ Só marque `[x]` quando o dado aparecer no banco a partir de um clique real — 
 |---|---:|---:|
 | 0 — Fundação | 5 | 5 |
 | 1 — Cadastros | 8 | 5 |
-| 2 — Venda + Dashboard | 8 | 0 |
+| 2 — Venda + Dashboard | 9 | 1 |
 | 3 — Retenção + Agenda + Onboarding | 12 | 0 |
 | 4 — Polimento | 2 | 0 |
-| **Total** | **35** | **10** |
+| **Total** | **36** | **12** |
 
 ---
 
@@ -97,27 +97,37 @@ O frontend **não tinha tempo alocado em nenhuma fase** do plano original. São 
 | F-011b | Campo de consentimento WhatsApp | `[x]` | F-011 | Checkbox em `PatientForm.tsx`, persiste `consent_whatsapp` — gate real fica em F-015b |
 | F-011c | Feedback visual de "salvo com sucesso" 🆕 | `[x]` | F-011 | Achado no teste manual 2026-08-29: PATCH funcionava mas a tela não dava nenhum retorno, parecia travada. `PatientForm`/`ProcedureForm` ganharam mensagem "Salvo com sucesso", invalidada por `watch()` a qualquer edição |
 | F-012 | Lista + form de procedimentos | `[x]` | T-010 | `features/procedures/` — CRUD completo **verificado no navegador** contra API+Postgres reais em 2026-08-29: criou "Limpeza de pele" (`POST 201`), confirmado no banco com `CurrencyInput` gravando os valores corretamente |
-| F-012a | Form de configurações financeiras | `[ ]` | T-007 | ⛔ **T-007 não existe no backend ainda.** Ver F-021 para a linguagem |
-| F-012b | CRUD de despesas fixas 🆕 | `[ ]` | T-021b | ⛔ **T-021a/T-021b não existem no backend ainda.** Ver MVP v7 §12.5 — aluguel de sala, etc. Lista simples + form (label, valor, vigência) |
-| F-012c | Campo modalidade no form de procedimento 🆕 | `[ ]` | T-010a | ⛔ **T-009a/T-010a não existem no backend ainda.** Presencial / Videochamada — default do procedimento. Ver MVP v7.1 §9 |
+| F-012a | Form de configurações financeiras | `[ ]` | T-007 | ✅ **T-007 já existe** — `GET/PATCH /financial-settings` testado contra API real (backend). Desbloqueada. Ver F-021 para a linguagem |
+| F-012b | CRUD de despesas fixas 🆕 | `[ ]` | T-021b | ✅ **T-021a/T-021b já existem** — `GET/POST/PATCH/DELETE /fixed-expenses` testado contra API real em 2026-08-29 (backend). Desbloqueada. Ver MVP v7.1 §12.5 — aluguel de sala, etc. Lista simples + form (label, valor, categoria livre, `periodicity` MONTHLY\|YEARLY) |
+| F-012c | Campo modalidade no form de procedimento 🆕 | `[ ]` | T-010a | ✅ **T-009a/T-010a já existem** — `default_modality` exposto em `POST/PATCH /procedures`. Desbloqueada. Presencial / Videochamada — default do procedimento. Ver MVP v7.1 §9 |
 
 **Saída:** ela cadastra paciente e procedimento sem ajuda.
 
 ---
 
-## 🎯 Por onde continuar agora (handoff 2026-08-29)
+## 🎯 Por onde continuar agora (handoff 2026-08-29, atualizado à noite/backend)
 
-**Situação:** F-011/F-012 (cadastros) estão prontas e verificadas contra API+Postgres reais. Só F-012a/F-012b/F-012c seguem na Fase 1, e **as três dependem de tasks que ainda não existem no backend** (T-007, T-009a/T-010a, T-021a/T-021b) — quem está no backend agora está justamente começando essas.
+**🟢 O backend cobriu praticamente toda a Fase 2.** Além do motor de venda (T-007, T-009a/T-010a, T-012..T-015, T-021a/T-021b, já registrado antes), agora também existem **`GET /dashboard`** (T-022/T-022a/T-023) e **`GET /reports/procedures`** (T-024) — testados contra Postgres real, 133 testes passando no backend. Ver `../backend/BACKLOG.md` para o detalhe de cada endpoint.
 
-**Toda a Fase 2 do backend (T-012 a T-022, o motor de venda) também está zerada** — então F-013 (Dashboard) e F-014 (venda avulsa, a tela mais importante do produto) não têm endpoint para consumir ainda.
+**Isso desbloqueia de verdade:**
+- **F-014/F-014b**: os protótipos client-side (`prototypeMath.ts`) já podem ser trocados pela integração real com `POST /sales` — continua o passo de maior valor, já que F-014 é a tela mais importante do produto
+- **F-013** (Dashboard): `GET /dashboard?period=today|last_7_days|this_month|last_month|custom` real. Retorna `has_any_data` (contrato C-2, distingue first-run de mês vazio) e `fixed_expenses_total`/`net_profit_after_fixed_expenses` como `null` fora de filtros mensais — **a tela deve esconder essa linha quando vier null**, não mostrar "R$ 0,00"
+- **F-013c** (novo — ranking de procedimentos): `GET /reports/procedures?period=...`, mesmos filtros do dashboard. Retorna linhas ordenadas por faturamento decrescente
+- **F-012a** (config financeira): `GET/PATCH /financial-settings` real
+- **F-012b** (despesas fixas): `GET/POST/PATCH/DELETE /fixed-expenses` real
+- **F-012c** (modalidade no procedimento): `default_modality` já exposto em `/procedures`
 
-**O que dá para avançar sem esperar o backend:**
-- **F-014 sem integração ainda**: prototipar a tela de venda avulsa em papel/Figma (o próprio backlog pede isso *antes* de codar — ver aviso abaixo de F-014). Layout, campos, fluxo de "menos de 30 segundos" — tudo isso não depende de API.
-- **F-016** (tela de paciente + histórico) depende só de T-011, que já existe — mas o "histórico" de vendas não vai ter dado real até T-015 existir. Dá para montar o esqueleto da tela com placeholder no histórico.
-- Revisar/ajustar CSS e responsividade das telas já prontas (F-011/F-012) — hoje estão sem estilo (herdado do template Vite), fora do escopo original de F-030/F-031 mas útil fazer incrementalmente.
-- Escrever testes de componente para os forms já existentes (`PatientForm`, `ProcedureForm`) — nenhum existe ainda, só os 17 testes de `lib/money`.
+**Ainda faltando no backend:** `GET /retention/opportunities` (T-029, para F-015), agenda/`bookings` (T-032..T-034b, para F-017/F-018/F-019). Não integrar essas contra mock.
 
-**O que NÃO fazer:** não implementar F-012a/F-012b/F-012c/F-013/F-014 contra mock só para "adiantar" — o backlog é explícito (`## ⚠️ O risco específico deste projeto`) que mock nunca vira `[x]`, e a forma dos endpoints ainda pode mudar enquanto o backend é escrito. Checar `backend/BACKLOG.md` antes de assumir que uma dependência já existe.
+**Estrutura de `features/sales/` (protótipo a substituir por integração real):**
+- `PatientPicker.tsx` — busca/seleção de paciente, compartilhada entre F-014 e F-014b
+- `prototypeMath.ts` — cálculo ilustrativo de lucro, **nunca** o motor de lucro real — ao integrar, o lucro exibido deve vir da resposta de `POST /sales`, não mais calculado no cliente
+- `SaleForm.tsx` / `NewSalePage.tsx` — F-014, rota `/vendas/nova`
+- `PackageSaleForm.tsx` / `NewPackageSalePage.tsx` — F-014b, rota `/vendas/nova-pacote`
+
+**⚠️ Bug real já corrigido, vale saber:** `ui/CurrencyInput.tsx` não sincronizava com `setValue()` programático do react-hook-form — corrigido com `useEffect` resincronizando `display` a partir de `value`. Se outro campo de dinheiro autofilled aparecer com bug parecido, é esse padrão.
+
+**O que NÃO fazer:** não integrar F-015 (retenção) ou F-017/F-018/F-019 (agenda) contra mock — essas ainda não têm endpoint real. Checar `../backend/BACKLOG.md` antes de assumir que uma dependência existe ou não.
 
 ---
 
@@ -125,13 +135,14 @@ O frontend **não tinha tempo alocado em nenhuma fase** do plano original. São 
 
 | ID | Task | Status | Depende | Nota |
 |---|---|:--:|---|---|
-| F-014 | **Tela de venda avulsa** | `[ ]` | T-015 | **< 30s.** Prototipar em papel/Figma antes |
-| F-014a | Bloquear duplo-submit | `[ ]` | F-014 | Botão desabilita + idempotência |
-| F-014b | Tela de venda de pacote (múltiplos itens) | `[ ]` | F-014 | Separada, para não atrasar o avulso |
-| F-014c | Exibir lucro na confirmação | `[ ]` | F-014 | É o momento de valor do produto |
-| F-013 | Dashboard | `[ ]` | T-022 | |
+| F-014 | **Tela de venda avulsa** | `[~]` | T-015 | **Protótipo client-side em 2026-08-29** (`features/sales/`, rota `/vendas/nova`) — sem integração com API (T-012..T-015 não existem). Fluxo: buscar/selecionar paciente → selecionar procedimento (autofill de preço/custo) → forma de pagamento (parcelas se Cartão) → confirmar → resumo com lucro estimado no cliente (`prototypeMath.ts`, claramente rotulado "estimativa de protótipo"). **Cronometrado no navegador (Playwright) em 2026-08-29: fluxo completo em ~3s**, dentro da meta de <30s. **Continua `[~]`, não `[x]`**, porque não há POST real — vira `[x]` só quando integrado a T-015. |
+| F-014a | Bloquear duplo-submit | `[ ]` | F-014 | Botão desabilita + idempotência. Ainda não implementado no protótipo (que não tem POST real) — fica pendente para quando integrar T-015 |
+| F-014b | Tela de venda de pacote (múltiplos itens) | `[~]` | F-014 | **Protótipo client-side em 2026-08-29** (`PackageSaleForm.tsx`, rota `/vendas/nova-pacote`), separada de F-014. Múltiplos itens (procedimento + quantidade, `useFieldArray`), desconto único rateado por item para exibição (`allocateDiscountForDisplay`, largest remainder — fecha exatamente com o total, MVP §11.5). Testado no navegador com 2 itens (4× Limpeza de pele + 2× Peeling, desconto R$300): rateio R$128,57/R$171,43, soma exata. **Continua `[~]`**, mesma razão de F-014: sem POST real |
+| F-014c | Exibir lucro na confirmação | `[x]` | F-014 | Já coberto pelos dois protótipos (F-014 e F-014b) — tela de confirmação mostra lucro estimado com aviso de que é estimativa de protótipo |
+| F-013 | Dashboard | `[ ]` | T-022 | ✅ **T-022 já existe** — `GET /dashboard?period=...` testado contra API real (backend). Desbloqueada |
 | F-013a | Rótulos venda-vs-sessão | `[ ]` | F-013 | "3 vendas, 12 atendimentos" — senão parece bug |
 | F-013b | Badge "lucro provisório" e "taxa estimada" | `[ ]` | F-013 | Honestidade > aparência de precisão |
+| F-013c | Ranking de procedimentos 🆕 | `[ ]` | T-024 | ✅ **T-024 já existe** — `GET /reports/procedures?period=...` testado contra API real. Tabela: procedimento / faturamento / lucro / margem, ordenado por faturamento. ⚠️ Rotular como estimativa se E4/E5 não confirmados pela profissional (MVP §13, TASK-024) |
 | F-016 | Tela de paciente + histórico | `[ ]` | T-011 | Total gasto, próximo retorno |
 
 > ⚠️ **F-014 é a tela mais importante do produto.** O plano pede protótipo em papel ou Figma **antes** de implementar, e reserva tempo para as iterações que ele vai gerar. Não pule.
@@ -204,11 +215,12 @@ Nenhuma task de front começa antes do endpoint existir — exceto com mock expl
 |---|---|:--:|
 | T-006 (JWT) | F-001a, F-003 | ✅ |
 | T-010, T-011 | F-011, F-012 | ✅ |
-| T-007 | F-012a | ❌ |
-| T-009a, T-010a | F-012c | ❌ |
-| T-021a, T-021b | F-012b | ❌ |
-| T-015 | F-014 | ❌ (T-012..T-014 também) |
-| T-022 | F-013 | ❌ |
+| T-007 | F-012a | ✅ (2026-08-29) |
+| T-009a, T-010a | F-012c | ✅ (2026-08-29) |
+| T-021a, T-021b | F-012b | ✅ (2026-08-29) |
+| T-015 | F-014 | ✅ (2026-08-29 — T-012..T-015 completos, ver `../backend/BACKLOG.md`) |
+| T-022 | F-013 | ✅ (2026-08-29) |
+| T-024 | F-013c | ✅ (2026-08-29) |
 | T-029 | F-015 | ❌ |
 | T-032 | F-017 | ❌ |
 | T-034 | F-018 | ❌ |

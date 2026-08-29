@@ -4,10 +4,10 @@
 
 | Projeto | Backlog | Tasks | Progresso |
 |---|---|---:|---:|
-| Backend (FastAPI) | [backend/BACKLOG.md](backend/BACKLOG.md) | 85 | 25/85 (29%) |
-| Frontend (React) | [frontend/BACKLOG.md](frontend/BACKLOG.md) | 35 | 10/35 (29%) |
+| Backend (FastAPI) | [backend/BACKLOG.md](backend/BACKLOG.md) | 86 | 54/86 (63%) |
+| Frontend (React) | [frontend/BACKLOG.md](frontend/BACKLOG.md) | 36 | 12/36 (33%) · 2 em `[~]` |
 | Produto / validação | §Produto abaixo | 5 | 1/5 (20%) |
-| | **Total MVP** | **125** | **28%** |
+| | **Total MVP** | **127** | **53%** |
 
 **Guias de engenharia:** [ENGENHARIA.md](ENGENHARIA.md) (invariantes) · [backend](backend/ENGENHARIA.md) · [frontend](frontend/ENGENHARIA.md)
 

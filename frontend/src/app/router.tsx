@@ -7,6 +7,8 @@ import { PatientDetailPage } from "@/features/patients/PatientDetailPage";
 import { ProceduresPage } from "@/features/procedures/ProceduresPage";
 import { NewProcedurePage } from "@/features/procedures/NewProcedurePage";
 import { ProcedureDetailPage } from "@/features/procedures/ProcedureDetailPage";
+import { NewSalePage } from "@/features/sales/NewSalePage";
+import { NewPackageSalePage } from "@/features/sales/NewPackageSalePage";
 import { PlaceholderPage } from "@/ui/PlaceholderPage";
 
 export const router = createBrowserRouter([
@@ -23,6 +25,8 @@ export const router = createBrowserRouter([
       { path: "procedimentos", element: <ProceduresPage /> }, // F-012
       { path: "procedimentos/novo", element: <NewProcedurePage /> }, // F-012
       { path: "procedimentos/:id", element: <ProcedureDetailPage /> }, // F-012
+      { path: "vendas/nova", element: <NewSalePage /> }, // F-014 (protótipo)
+      { path: "vendas/nova-pacote", element: <NewPackageSalePage /> }, // F-014b (protótipo)
       { path: "agenda", element: <PlaceholderPage title="Agenda" /> }, // F-017
       { path: "configuracoes", element: <PlaceholderPage title="Configurações" /> }, // F-012a
     ],

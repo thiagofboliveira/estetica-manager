@@ -21,6 +21,20 @@ class ProcedureType(StrEnum):
     PRODUCT = "PRODUCT"
 
 
+class Modality(StrEnum):
+    """IN_PERSON | REMOTE (MVP v7.1 §9, T-009a).
+
+    Copiada para sessions.modality NA CRIAÇÃO da sessão — nunca resolvida
+    por COALESCE na leitura. Se fosse resolvida na leitura, mudar o
+    default do procedimento reescreveria a modalidade de sessões
+    passadas (mesmo princípio do snapshot financeiro, invariante I3,
+    aplicado a um dado operacional).
+    """
+
+    IN_PERSON = "IN_PERSON"
+    REMOTE = "REMOTE"
+
+
 class Procedure(TenantModel):
     __tablename__ = "procedures"
 
@@ -34,4 +48,9 @@ class Procedure(TenantModel):
     estimated_cost: Mapped[Decimal] = mapped_column(Numeric(12, 2, asdecimal=True))
     # Nulo para PRODUCT — produto revendido não tem janela de retorno.
     return_interval_days: Mapped[int | None] = mapped_column(nullable=True)
+    default_modality: Mapped[Modality] = mapped_column(
+        Enum(Modality, name="modality", native_enum=False),
+        default=Modality.IN_PERSON,
+        nullable=False,
+    )
     is_active: Mapped[bool] = mapped_column(default=True, nullable=False)

@@ -21,6 +21,7 @@ class ProcedureService:
             price=money(dto.price),
             estimated_cost=money(dto.estimated_cost),
             return_interval_days=dto.return_interval_days,
+            default_modality=dto.default_modality,
         )
         return self._repo.add(procedure)
 
