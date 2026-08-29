@@ -4,7 +4,7 @@ Escopo: todas as telas, estado, integração com a API.
 Fonte de escopo: [MVP v7.1](../MVP%20—%20Micro-SaaS%20para%20Gestão%20Financeira%20e%20Retenção%20em%20Estética%20\(v6\).md) · Coordenação: [../BACKLOG.md](../BACKLOG.md)
 <sub>O arquivo continua nomeado `v6`; v7/v7.1 são seções acrescentadas dentro dele, não arquivos novos.</sub>
 
-**Atualizado:** 2026-08-29 · **Progresso:** 12/36 (33%) · 2 em `[~]` (F-014, F-014b — protótipos client-side prontos para integração real, já que o backend correspondente existe agora)
+**Atualizado:** 2026-08-29 · **Progresso:** 17/36 (47%) · F-014/F-014a/F-014b/F-014c/F-013/F-013a integrados com API real hoje
 
 ---
 
@@ -50,10 +50,10 @@ Só marque `[x]` quando o dado aparecer no banco a partir de um clique real — 
 |---|---:|---:|
 | 0 — Fundação | 5 | 5 |
 | 1 — Cadastros | 8 | 5 |
-| 2 — Venda + Dashboard | 9 | 1 |
+| 2 — Venda + Dashboard | 9 | 6 |
 | 3 — Retenção + Agenda + Onboarding | 12 | 0 |
 | 4 — Polimento | 2 | 0 |
-| **Total** | **36** | **12** |
+| **Total** | **36** | **17** |
 
 ---
 
@@ -105,27 +105,48 @@ O frontend **não tinha tempo alocado em nenhuma fase** do plano original. São 
 
 ---
 
-## 🎯 Por onde continuar agora (handoff 2026-08-29, atualizado à noite/backend)
+## 🎯 Por onde continuar agora (handoff 2026-08-29, atualizado após integração real de F-014/F-014b/F-013)
 
-**🟢 O backend cobriu praticamente toda a Fase 2.** Além do motor de venda (T-007, T-009a/T-010a, T-012..T-015, T-021a/T-021b, já registrado antes), agora também existem **`GET /dashboard`** (T-022/T-022a/T-023) e **`GET /reports/procedures`** (T-024) — testados contra Postgres real, 133 testes passando no backend. Ver `../backend/BACKLOG.md` para o detalhe de cada endpoint.
+**🟢 F-014/F-014a/F-014b/F-014c/F-013/F-013a estão integrados de verdade contra a API real e marcados `[x]`.** Venda (avulsa e pacote) contra `POST /sales` (T-015), dashboard contra `GET /dashboard` (T-022). `prototypeMath.ts` foi deletado — nenhum lucro é mais calculado no cliente.
 
-**Isso desbloqueia de verdade:**
-- **F-014/F-014b**: os protótipos client-side (`prototypeMath.ts`) já podem ser trocados pela integração real com `POST /sales` — continua o passo de maior valor, já que F-014 é a tela mais importante do produto
-- **F-013** (Dashboard): `GET /dashboard?period=today|last_7_days|this_month|last_month|custom` real. Retorna `has_any_data` (contrato C-2, distingue first-run de mês vazio) e `fixed_expenses_total`/`net_profit_after_fixed_expenses` como `null` fora de filtros mensais — **a tela deve esconder essa linha quando vier null**, não mostrar "R$ 0,00"
-- **F-013c** (novo — ranking de procedimentos): `GET /reports/procedures?period=...`, mesmos filtros do dashboard. Retorna linhas ordenadas por faturamento decrescente
+**Verificado no navegador contra Postgres real:**
+- Venda avulsa (`SINGLE`, R$150/lucro R$65) e venda de pacote (`PACKAGE`, 2 itens + desconto, R$1.100/lucro R$510), ambas persistidas e conferidas com `SELECT` direto na tabela `sales`
+- Duplo-clique na venda: só 1 requisição sai, idempotency-key única por tentativa
+- Dashboard: todos os 5 filtros de período testados, valores batem exatos com a resposta da API; "Lucro real do mês" some corretamente fora de mês/mês anterior (nunca mostra R$0,00 no lugar de null)
+
+**⚠️ Dois bugs reais encontrados e corrigidos nesta sessão:**
+1. `lib/http/client.ts` só lia `body.message`, mas **todo** endpoint do backend retorna `{"detail": "mensagem"}` (`HTTPException` puro do FastAPI) — toda tela (incl. `PatientForm`/`ProcedureForm` já existentes) mostrava só o fallback genérico em vez do erro real. Corrigido lendo `body.detail` como fallback. Verificado com 404 mockado.
+2. `DashboardPage`: trocar para "Personalizado" antes de escolher as duas datas deixava a tela presa em "Carregando…" para sempre — a query fica `enabled: false` e nunca sai de `isPending`, e `AsyncBoundary` não distingue "desabilitada" de "carregando". Corrigido mostrando um prompt ("Escolha as duas datas") em vez do boundary quando as datas não estão completas. **Padrão a repetir**: qualquer tela com filtro que desabilita a query condicionalmente precisa desse mesmo cuidado, senão o `AsyncBoundary` mente.
+
+**Gaps reais descobertos na API de vendas (não é frontend, é contrato):**
+- Sem override de preço/custo por item no avulso — só `procedure_id`+`quantity`. Desconto pontual no avulso não tem como hoje (só pacote tem `discount_amount` na UI, embora o campo exista no schema para ambos).
+- `PATCH /sales/{id}` (T-017, editar venda) não existe — erro de digitação não tem conserto.
+- Parcelas fora da faixa configurada em `payment_fee_rules` não geram erro — a venda passa com taxa possivelmente zerada/estranha, silenciosamente.
+
+**F-013b (badge "lucro provisório") ficou de fora por razão de contrato, não de UI:** `GET /dashboard` é um agregado do período — não indica se alguma venda por trás tem sessões `PENDING` (pacote com saldo não realizado, MVP §12.1). Precisaria de um campo novo do backend, ou buscar vendas individualmente (foge do escopo de um endpoint agregado). Registrado como pendência.
+
+**Isso ainda desbloqueia (não peguei ainda):**
+- **F-013c** (ranking de procedimentos): `GET /reports/procedures?period=...`, mesmos filtros do dashboard (mesmo hook `qk`/período pode ser reaproveitado). Retorna linhas ordenadas por faturamento decrescente
 - **F-012a** (config financeira): `GET/PATCH /financial-settings` real
 - **F-012b** (despesas fixas): `GET/POST/PATCH/DELETE /fixed-expenses` real
 - **F-012c** (modalidade no procedimento): `default_modality` já exposto em `/procedures`
+- **F-016** (paciente + histórico): depende só de T-011 (existe), histórico de vendas não tem endpoint dedicado ainda mas dá pra buscar por paciente via lista de sales se existir esse filtro — conferir `backend/BACKLOG.md`
 
 **Ainda faltando no backend:** `GET /retention/opportunities` (T-029, para F-015), agenda/`bookings` (T-032..T-034b, para F-017/F-018/F-019). Não integrar essas contra mock.
 
-**Estrutura de `features/sales/` (protótipo a substituir por integração real):**
+**Estrutura de `features/sales/` (integrado, sem prototypeMath):**
+- `api.ts` / `hooks.ts` — `salesApi.create()`, `useCreateSale()` (idempotency-key + invalidação via `invalidateAfterSale`)
 - `PatientPicker.tsx` — busca/seleção de paciente, compartilhada entre F-014 e F-014b
-- `prototypeMath.ts` — cálculo ilustrativo de lucro, **nunca** o motor de lucro real — ao integrar, o lucro exibido deve vir da resposta de `POST /sales`, não mais calculado no cliente
 - `SaleForm.tsx` / `NewSalePage.tsx` — F-014, rota `/vendas/nova`
 - `PackageSaleForm.tsx` / `NewPackageSalePage.tsx` — F-014b, rota `/vendas/nova-pacote`
 
-**⚠️ Bug real já corrigido, vale saber:** `ui/CurrencyInput.tsx` não sincronizava com `setValue()` programático do react-hook-form — corrigido com `useEffect` resincronizando `display` a partir de `value`. Se outro campo de dinheiro autofilled aparecer com bug parecido, é esse padrão.
+**Estrutura de `features/dashboard/` (novo):**
+- `api.ts` / `hooks.ts` — `dashboardApi.get()`, `useDashboard()` (cache `MONEY`, staleTime 0)
+- `DashboardPage.tsx` — F-013, rota `/` (substituiu o `PlaceholderPage`)
+
+**Nota técnica:** adicionei `rate()` em `lib/money/money.ts` (validador de `Rate`, mesmo padrão de `money()`) — não existia ainda, e `formatRate()` exigia o tipo branded sem ter porta de entrada. Também ajustei `qk.dashboard()` em `lib/query/keys.ts` para aceitar `{period, date_from?, date_to?}` em vez do `{from, to}` genérico anterior (nada mais usava essa key ainda).
+
+**⚠️ Outro bug real já corrigido antes, ainda vale saber:** `ui/CurrencyInput.tsx` não sincronizava com `setValue()` programático do react-hook-form — corrigido com `useEffect` resincronizando `display` a partir de `value`. Se outro campo de dinheiro autofilled aparecer com bug parecido, é esse padrão.
 
 **O que NÃO fazer:** não integrar F-015 (retenção) ou F-017/F-018/F-019 (agenda) contra mock — essas ainda não têm endpoint real. Checar `../backend/BACKLOG.md` antes de assumir que uma dependência existe ou não.
 
@@ -135,13 +156,13 @@ O frontend **não tinha tempo alocado em nenhuma fase** do plano original. São 
 
 | ID | Task | Status | Depende | Nota |
 |---|---|:--:|---|---|
-| F-014 | **Tela de venda avulsa** | `[~]` | T-015 | **Protótipo client-side em 2026-08-29** (`features/sales/`, rota `/vendas/nova`) — sem integração com API (T-012..T-015 não existem). Fluxo: buscar/selecionar paciente → selecionar procedimento (autofill de preço/custo) → forma de pagamento (parcelas se Cartão) → confirmar → resumo com lucro estimado no cliente (`prototypeMath.ts`, claramente rotulado "estimativa de protótipo"). **Cronometrado no navegador (Playwright) em 2026-08-29: fluxo completo em ~3s**, dentro da meta de <30s. **Continua `[~]`, não `[x]`**, porque não há POST real — vira `[x]` só quando integrado a T-015. |
-| F-014a | Bloquear duplo-submit | `[ ]` | F-014 | Botão desabilita + idempotência. Ainda não implementado no protótipo (que não tem POST real) — fica pendente para quando integrar T-015 |
-| F-014b | Tela de venda de pacote (múltiplos itens) | `[~]` | F-014 | **Protótipo client-side em 2026-08-29** (`PackageSaleForm.tsx`, rota `/vendas/nova-pacote`), separada de F-014. Múltiplos itens (procedimento + quantidade, `useFieldArray`), desconto único rateado por item para exibição (`allocateDiscountForDisplay`, largest remainder — fecha exatamente com o total, MVP §11.5). Testado no navegador com 2 itens (4× Limpeza de pele + 2× Peeling, desconto R$300): rateio R$128,57/R$171,43, soma exata. **Continua `[~]`**, mesma razão de F-014: sem POST real |
-| F-014c | Exibir lucro na confirmação | `[x]` | F-014 | Já coberto pelos dois protótipos (F-014 e F-014b) — tela de confirmação mostra lucro estimado com aviso de que é estimativa de protótipo |
-| F-013 | Dashboard | `[ ]` | T-022 | ✅ **T-022 já existe** — `GET /dashboard?period=...` testado contra API real (backend). Desbloqueada |
-| F-013a | Rótulos venda-vs-sessão | `[ ]` | F-013 | "3 vendas, 12 atendimentos" — senão parece bug |
-| F-013b | Badge "lucro provisório" e "taxa estimada" | `[ ]` | F-013 | Honestidade > aparência de precisão |
+| F-014 | **Tela de venda avulsa** | `[x]` | T-015 | **Integrada com `POST /sales` real em 2026-08-29** (`features/sales/api.ts`+`hooks.ts`). Fluxo: buscar/selecionar paciente → selecionar procedimento (mostra valor do procedimento, sem override — a API não aceita preço custom) → forma de pagamento (PIX/DEBIT/CREDIT/CASH/TRANSFER, parcelas se CREDIT) → confirmar → resumo com **lucro real** vindo da resposta (`net_profit`, nunca calculado no cliente). **Verificado no navegador contra API+Postgres reais**: `POST /sales` → `201`, venda `SINGLE` R$150,00/lucro R$65,00 confirmada com `SELECT` direto no banco (contagem de `sales` foi de 19→20, id bate exato). Fluxo completo cronometrado em ~5,4s, dentro da meta de <30s. |
+| F-014a | Bloquear duplo-submit | `[x]` | F-014 | Idempotency-Key real, gerada em `useCreateSale` (`useRef`, nasce ao montar o form, troca só após sucesso — mesma receita do ENGENHARIA.md). **Verificado no navegador**: clique duplo na venda de pacote gerou só 1 requisição (`idempotency-key` único) e só 1 linha nova em `sales` — o segundo clique nem chegou a sair porque o botão desabilita (`createSale.isPending`) antes do primeiro round-trip terminar. |
+| F-014b | Tela de venda de pacote (múltiplos itens) | `[x]` | F-014 | **Integrada com `POST /sales` real em 2026-08-29** (`PackageSaleForm.tsx`, rota `/vendas/nova-pacote`), separada de F-014. Múltiplos itens (procedimento + quantidade, `useFieldArray`) + desconto único da venda — rateio por item agora vem de `discount_allocated` na resposta (`SaleItemOut`), não mais calculado no cliente. **Verificado no navegador**: 4× Limpeza de pele + 2× Peeling, desconto R$300 → `POST /sales 201`, gross R$1.100,00, lucro real R$510,00, rateio R$128,57/R$171,43 (server-side, `allocate()` largest-remainder), tudo conferido no Postgres (`sales` 20→21→22 ao longo dos testes). Preview antes de confirmar mostra só total/valor da venda (soma simples), nunca uma alegação de lucro — isso só aparece depois que a API responde. |
+| F-014c | Exibir lucro na confirmação | `[x]` | F-014 | Ambas as telas mostram o `net_profit` real vindo de `POST /sales`. |
+| F-013 | Dashboard | `[x]` | T-022 | **Integrado com `GET /dashboard` real em 2026-08-29** (`features/dashboard/`, rota `/`). Filtro de período (Hoje/Últimos 7 dias/Este mês/Mês anterior/Personalizado), métricas: faturamento, lucro real, lucro real do mês (só quando não-null), a receber, margem média, ticket médio, vendas+atendimentos. **Verificado no navegador contra API+Postgres reais**: valores batem exatos com a resposta da API em todos os períodos testados. Bug encontrado e corrigido durante o teste: trocar para "Personalizado" antes de escolher as datas deixava a tela presa em "Carregando…" para sempre (query `enabled: false` nunca resolve `isPending`) — agora mostra "Escolha as duas datas" em vez do boundary. |
+| F-013a | Rótulos venda-vs-sessão | `[x]` | F-013 | "X vendas, Y atendimentos" implementado com singular/plural corretos, ver `DashboardMetrics` |
+| F-013b | Badge "lucro provisório" e "taxa estimada" | `[ ]` | F-013 | **Ainda não dá para implementar direito**: `GET /dashboard` retorna só o agregado do período, sem indicar se alguma venda por trás tem sessões pendentes (pacote ainda não totalmente realizado, MVP §12.1) — precisaria de um campo novo do backend (ex: `has_provisional_profit`) ou de buscar vendas individualmente, o que foge do escopo de um endpoint agregado. Registrar como pendência de contrato de API, não de UI |
 | F-013c | Ranking de procedimentos 🆕 | `[ ]` | T-024 | ✅ **T-024 já existe** — `GET /reports/procedures?period=...` testado contra API real. Tabela: procedimento / faturamento / lucro / margem, ordenado por faturamento. ⚠️ Rotular como estimativa se E4/E5 não confirmados pela profissional (MVP §13, TASK-024) |
 | F-016 | Tela de paciente + histórico | `[ ]` | T-011 | Total gasto, próximo retorno |
 

@@ -1,42 +1,42 @@
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { Link } from "react-router-dom";
-import { Controller, useForm } from "react-hook-form";
+import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { CurrencyInput } from "@/ui/CurrencyInput";
 import { AsyncBoundary } from "@/ui/AsyncBoundary";
 import { useProcedures } from "@/features/procedures/hooks";
 import { formatBRL } from "@/lib/money/format";
-import { ZERO, money, type Money } from "@/lib/money/money";
-import { estimateProfit, type PaymentMethod } from "./prototypeMath";
+import { money } from "@/lib/money/money";
+import { ApiError } from "@/lib/http/client";
 import { PatientPicker } from "./PatientPicker";
+import { useCreateSale } from "./hooks";
 import type { Patient } from "@/features/patients/api";
-import type { Procedure } from "@/features/procedures/api";
+import type { Sale } from "./api";
 
 const schema = z.object({
   patientId: z.string().min(1, "Selecione a paciente"),
   procedureId: z.string().min(1, "Selecione o procedimento"),
-  price: z.string().refine((v) => Number(v) > 0, "Valor deve ser maior que zero"),
-  cost: z.string(),
-  paymentMethod: z.enum(["PIX", "CARD"]),
+  paymentMethod: z.enum(["PIX", "DEBIT", "CREDIT", "CASH", "TRANSFER"]),
   installments: z.string(),
 });
 
 type FormValues = z.infer<typeof schema>;
 
 /**
- * PROTÓTIPO — F-014. Sem chamada de API: `onConfirm` só simula o
- * submit para testar a sensação do fluxo. Ver frontend/BACKLOG.md F-014.
+ * F-014, venda avulsa. Integrado com POST /sales real (T-015) — o
+ * lucro exibido na confirmação vem da resposta da API, nunca é
+ * recalculado no cliente (ENGENHARIA.md invariante). Idempotency-Key
+ * nasce ao montar o form (useCreateSale) e cobre F-014a.
  */
-export function SaleForm({ onConfirm }: { onConfirm: () => Promise<void> }) {
+export function SaleForm() {
   const proceduresQuery = useProcedures();
+  const createSale = useCreateSale();
   const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null);
-  const [confirmed, setConfirmed] = useState(false);
-  const [confirming, setConfirming] = useState(false);
+  const [confirmedSale, setConfirmedSale] = useState<Sale | null>(null);
+  const [serverError, setServerError] = useState<string | null>(null);
 
   const {
     register,
-    control,
     watch,
     setValue,
     handleSubmit,
@@ -46,63 +46,40 @@ export function SaleForm({ onConfirm }: { onConfirm: () => Promise<void> }) {
     defaultValues: {
       patientId: "",
       procedureId: "",
-      price: ZERO,
-      cost: ZERO,
       paymentMethod: "PIX",
       installments: "1",
     },
   });
 
   const procedureId = watch("procedureId");
-  const price = watch("price");
-  const cost = watch("cost");
   const paymentMethod = watch("paymentMethod");
 
-  function handlePickProcedure(procedure: Procedure) {
-    setValue("procedureId", procedure.id);
-    setValue("price", procedure.price as Money);
-    setValue("cost", procedure.estimated_cost as Money);
-  }
-
-  const preview = useMemo(() => {
+  const submit = handleSubmit(async (values) => {
+    setServerError(null);
     try {
-      return estimateProfit({
-        unitPrice: money(price || ZERO),
-        unitCost: money(cost || ZERO),
-        paymentMethod: paymentMethod as PaymentMethod,
+      const sale = await createSale.mutateAsync({
+        patient_id: values.patientId,
+        type: "SINGLE",
+        items: [{ procedure_id: values.procedureId, quantity: 1 }],
+        discount_amount: "0.00",
+        payment_method: values.paymentMethod,
+        installments: values.paymentMethod === "CREDIT" ? Number(values.installments) : 1,
       });
-    } catch {
-      return null;
-    }
-  }, [price, cost, paymentMethod]);
-
-  const submit = handleSubmit(async () => {
-    setConfirming(true);
-    try {
-      await onConfirm();
-      setConfirmed(true);
-    } finally {
-      setConfirming(false);
+      setConfirmedSale(sale);
+    } catch (e) {
+      setServerError(e instanceof ApiError ? e.message : "Não consegui registrar a venda. Tenta de novo?");
     }
   });
 
-  if (confirmed) {
+  if (confirmedSale) {
     return (
       <div className="sale-confirm" role="status">
         <h2>Venda registrada</h2>
         {selectedPatient && <p>{selectedPatient.name}</p>}
-        {preview && (
-          <>
-            <p>Valor: {formatBRL(preview.total)}</p>
-            <p>
-              Lucro estimado: <strong>{formatBRL(preview.profit)}</strong>
-            </p>
-            <p className="sale-confirm__disclaimer">
-              Estimativa de protótipo — o lucro real vem do backend quando a venda estiver
-              integrada (T-015/T-018).
-            </p>
-          </>
-        )}
+        <p>Valor: {formatBRL(money(confirmedSale.gross_amount))}</p>
+        <p>
+          Lucro: <strong>{formatBRL(money(confirmedSale.net_profit))}</strong>
+        </p>
       </div>
     );
   }
@@ -132,55 +109,28 @@ export function SaleForm({ onConfirm }: { onConfirm: () => Promise<void> }) {
           skeleton={<p>Carregando…</p>}
           empty={<p>Nenhum procedimento cadastrado.</p>}
         >
-          {(procedures) => (
-            <select
-              value={procedureId}
-              onChange={(e) => {
-                const proc = procedures.find((p) => p.id === e.target.value);
-                if (proc) handlePickProcedure(proc);
-              }}
-            >
-              <option value="">Selecione…</option>
-              {procedures.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.name}
-                </option>
-              ))}
-            </select>
-          )}
+          {(procedures) => {
+            const selectedProcedure = procedures.find((p) => p.id === procedureId);
+            return (
+              <>
+                <select value={procedureId} onChange={(e) => setValue("procedureId", e.target.value)}>
+                  <option value="">Selecione…</option>
+                  {procedures.map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.name}
+                    </option>
+                  ))}
+                </select>
+                {selectedProcedure && (
+                  <p className="sale-form__procedure-price">
+                    Valor: {formatBRL(money(selectedProcedure.price))}
+                  </p>
+                )}
+              </>
+            );
+          }}
         </AsyncBoundary>
         {errors.procedureId && <span role="alert">{errors.procedureId.message}</span>}
-      </label>
-
-      <label className="form__field">
-        <span>Valor *</span>
-        <Controller
-          control={control}
-          name="price"
-          render={({ field }) => (
-            <CurrencyInput
-              value={field.value as Money}
-              onChange={field.onChange}
-              aria-label="Valor"
-            />
-          )}
-        />
-        {errors.price && <span role="alert">{errors.price.message}</span>}
-      </label>
-
-      <label className="form__field">
-        <span>Custo estimado</span>
-        <Controller
-          control={control}
-          name="cost"
-          render={({ field }) => (
-            <CurrencyInput
-              value={field.value as Money}
-              onChange={field.onChange}
-              aria-label="Custo estimado"
-            />
-          )}
-        />
       </label>
 
       <fieldset className="form__field">
@@ -189,25 +139,34 @@ export function SaleForm({ onConfirm }: { onConfirm: () => Promise<void> }) {
           <input type="radio" value="PIX" {...register("paymentMethod")} /> Pix
         </label>
         <label>
-          <input type="radio" value="CARD" {...register("paymentMethod")} /> Cartão
+          <input type="radio" value="DEBIT" {...register("paymentMethod")} /> Débito
+        </label>
+        <label>
+          <input type="radio" value="CREDIT" {...register("paymentMethod")} /> Crédito
+        </label>
+        <label>
+          <input type="radio" value="CASH" {...register("paymentMethod")} /> Dinheiro
+        </label>
+        <label>
+          <input type="radio" value="TRANSFER" {...register("paymentMethod")} /> Transferência
         </label>
       </fieldset>
 
-      {paymentMethod === "CARD" && (
+      {paymentMethod === "CREDIT" && (
         <label className="form__field">
           <span>Parcelas</span>
           <input {...register("installments")} type="number" min={1} max={12} />
         </label>
       )}
 
-      {preview && (
-        <p className="sale-form__preview">
-          Lucro estimado: <strong>{formatBRL(preview.profit)}</strong>
+      {serverError && (
+        <p role="alert" className="form__error">
+          {serverError}
         </p>
       )}
 
-      <button type="submit" disabled={isSubmitting || confirming} className="tap-target">
-        {confirming ? "Confirmando…" : "Confirmar venda"}
+      <button type="submit" disabled={isSubmitting || createSale.isPending} className="tap-target">
+        {createSale.isPending ? "Confirmando…" : "Confirmar venda"}
       </button>
 
       <p className="sale-form__package-link">

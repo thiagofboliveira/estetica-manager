@@ -19,6 +19,15 @@ declare const RateBrand: unique symbol;
 export type Rate = string & { readonly [RateBrand]: true };
 
 const MONEY_RE = /^-?\d+(\.\d{1,2})?$/;
+const RATE_RE = /^-?\d+(\.\d{1,4})?$/;
+
+/** Única porta de entrada para Rate — o backend manda taxa/margem com 4 casas. */
+export function rate(raw: string): Rate {
+  if (!RATE_RE.test(raw)) {
+    throw new TypeError(`Rate inválida vinda da API: ${JSON.stringify(raw)}`);
+  }
+  return raw as Rate;
+}
 
 /** Única porta de entrada — valida o formato que o backend promete. */
 export function money(raw: string): Money {

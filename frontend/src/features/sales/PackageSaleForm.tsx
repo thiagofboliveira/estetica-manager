@@ -6,17 +6,18 @@ import { CurrencyInput } from "@/ui/CurrencyInput";
 import { AsyncBoundary } from "@/ui/AsyncBoundary";
 import { useProcedures } from "@/features/procedures/hooks";
 import { formatBRL } from "@/lib/money/format";
-import { ZERO, money, type Money } from "@/lib/money/money";
-import { allocateDiscountForDisplay, estimatePackageProfit, type PaymentMethod } from "./prototypeMath";
+import { ApiError } from "@/lib/http/client";
+import { ZERO, money, mulQty, sub, sum, type Money } from "@/lib/money/money";
 import { PatientPicker } from "./PatientPicker";
+import { useCreateSale } from "./hooks";
 import type { Patient } from "@/features/patients/api";
 import type { Procedure } from "@/features/procedures/api";
+import type { Sale } from "./api";
 
 const lineSchema = z.object({
   procedureId: z.string().min(1, "Selecione o procedimento"),
   procedureName: z.string(),
   unitPrice: z.string(),
-  unitCost: z.string(),
   quantity: z.string().refine((v) => Number(v) > 0, "Quantidade deve ser maior que zero"),
 });
 
@@ -24,25 +25,28 @@ const schema = z.object({
   patientId: z.string().min(1, "Selecione a paciente"),
   lines: z.array(lineSchema).min(1, "Adicione pelo menos um item"),
   discount: z.string(),
-  paymentMethod: z.enum(["PIX", "CARD"]),
+  paymentMethod: z.enum(["PIX", "DEBIT", "CREDIT", "CASH", "TRANSFER"]),
   installments: z.string(),
 });
 
 type FormValues = z.infer<typeof schema>;
 
-const emptyLine = { procedureId: "", procedureName: "", unitPrice: ZERO, unitCost: ZERO, quantity: "1" };
+const emptyLine = { procedureId: "", procedureName: "", unitPrice: ZERO, quantity: "1" };
 
 /**
- * PROTÓTIPO — F-014b. Venda de pacote: múltiplos itens (procedimento +
- * quantidade), desconto único rateado por item para exibição (MVP v6
- * §11.5). Separada da venda avulsa (F-014) para não atrasá-la — ver
- * frontend/BACKLOG.md F-014b. Sem chamada de API.
+ * F-014b, venda de pacote: múltiplos itens (procedimento + quantidade),
+ * desconto único para a venda toda. Integrado com POST /sales real
+ * (T-015) — o rateio do desconto por item e o lucro vêm da resposta da
+ * API (discount_allocated, net_profit), nunca recalculados no cliente.
+ * O preview antes de confirmar mostra só total/desconto/valor da venda
+ * (soma simples, sem rateio) — não é uma alegação de lucro.
  */
-export function PackageSaleForm({ onConfirm }: { onConfirm: () => Promise<void> }) {
+export function PackageSaleForm() {
   const proceduresQuery = useProcedures();
+  const createSale = useCreateSale();
   const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null);
-  const [confirmed, setConfirmed] = useState(false);
-  const [confirming, setConfirming] = useState(false);
+  const [confirmedSale, setConfirmedSale] = useState<Sale | null>(null);
+  const [serverError, setServerError] = useState<string | null>(null);
 
   const {
     register,
@@ -72,61 +76,59 @@ export function PackageSaleForm({ onConfirm }: { onConfirm: () => Promise<void> 
     setValue(`lines.${index}.procedureId`, procedure.id);
     setValue(`lines.${index}.procedureName`, procedure.name);
     setValue(`lines.${index}.unitPrice`, procedure.price as Money);
-    setValue(`lines.${index}.unitCost`, procedure.estimated_cost as Money);
   }
 
   const preview = useMemo(() => {
     try {
-      const parsedLines = lines
-        .filter((l) => l.procedureId)
-        .map((l) => ({
-          unitPrice: money(l.unitPrice || ZERO),
-          unitCost: money(l.unitCost || ZERO),
-          quantity: Number(l.quantity) || 0,
-        }));
-      if (!parsedLines.length) return null;
-      const result = estimatePackageProfit({
-        lines: parsedLines,
-        discount: money(discount || ZERO),
-        paymentMethod: paymentMethod as PaymentMethod,
-      });
-      const lineTotals = parsedLines.map((l) => money((Number(l.unitPrice) * l.quantity).toFixed(2)));
-      const perLineDiscount = allocateDiscountForDisplay(lineTotals, result.discount);
-      return { ...result, perLineDiscount };
+      const validLines = lines.filter((l) => l.procedureId);
+      if (!validLines.length) return null;
+      const lineTotals = validLines.map((l) => mulQty(money(l.unitPrice || ZERO), Number(l.quantity) || 0));
+      const itemsTotal = sum(lineTotals);
+      const grossAmount = sub(itemsTotal, money(discount || ZERO));
+      return { itemsTotal, grossAmount };
     } catch {
       return null;
     }
-  }, [lines, discount, paymentMethod]);
+  }, [lines, discount]);
 
-  const submit = handleSubmit(async () => {
-    setConfirming(true);
+  const submit = handleSubmit(async (values) => {
+    setServerError(null);
     try {
-      await onConfirm();
-      setConfirmed(true);
-    } finally {
-      setConfirming(false);
+      const sale = await createSale.mutateAsync({
+        patient_id: values.patientId,
+        type: "PACKAGE",
+        items: values.lines.map((l) => ({ procedure_id: l.procedureId, quantity: Number(l.quantity) })),
+        discount_amount: values.discount || ZERO,
+        payment_method: values.paymentMethod,
+        installments: values.paymentMethod === "CREDIT" ? Number(values.installments) : 1,
+      });
+      setConfirmedSale(sale);
+    } catch (e) {
+      setServerError(e instanceof ApiError ? e.message : "Não consegui registrar a venda. Tenta de novo?");
     }
   });
 
-  if (confirmed) {
+  if (confirmedSale) {
     return (
       <div className="sale-confirm" role="status">
         <h2>Venda de pacote registrada</h2>
         {selectedPatient && <p>{selectedPatient.name}</p>}
-        {preview && (
-          <>
-            <p>Total dos itens: {formatBRL(preview.itemsTotal)}</p>
-            <p>Desconto: {formatBRL(preview.discount)}</p>
-            <p>Valor da venda: {formatBRL(preview.grossAmount)}</p>
-            <p>
-              Lucro estimado: <strong>{formatBRL(preview.profit)}</strong>
-            </p>
-            <p className="sale-confirm__disclaimer">
-              Estimativa de protótipo — o lucro real vem do backend quando a venda estiver
-              integrada (T-015/T-018).
-            </p>
-          </>
+        {confirmedSale.items.length > 1 && (
+          <ul className="sale-form__line-discounts">
+            {confirmedSale.items.map((item) => (
+              <li key={item.id}>
+                {lines.find((l) => l.procedureId === item.procedure_id)?.procedureName ?? item.procedure_id}
+                : desconto rateado {formatBRL(money(item.discount_allocated))}
+              </li>
+            ))}
+          </ul>
         )}
+        <p>Total dos itens: {formatBRL(money(confirmedSale.items_total))}</p>
+        <p>Desconto: {formatBRL(money(confirmedSale.discount_amount))}</p>
+        <p>Valor da venda: {formatBRL(money(confirmedSale.gross_amount))}</p>
+        <p>
+          Lucro: <strong>{formatBRL(money(confirmedSale.net_profit))}</strong>
+        </p>
       </div>
     );
   }
@@ -230,11 +232,20 @@ export function PackageSaleForm({ onConfirm }: { onConfirm: () => Promise<void> 
           <input type="radio" value="PIX" {...register("paymentMethod")} /> Pix
         </label>
         <label>
-          <input type="radio" value="CARD" {...register("paymentMethod")} /> Cartão
+          <input type="radio" value="DEBIT" {...register("paymentMethod")} /> Débito
+        </label>
+        <label>
+          <input type="radio" value="CREDIT" {...register("paymentMethod")} /> Crédito
+        </label>
+        <label>
+          <input type="radio" value="CASH" {...register("paymentMethod")} /> Dinheiro
+        </label>
+        <label>
+          <input type="radio" value="TRANSFER" {...register("paymentMethod")} /> Transferência
         </label>
       </fieldset>
 
-      {paymentMethod === "CARD" && (
+      {paymentMethod === "CREDIT" && (
         <label className="form__field">
           <span>Parcelas</span>
           <input {...register("installments")} type="number" min={1} max={12} />
@@ -243,26 +254,19 @@ export function PackageSaleForm({ onConfirm }: { onConfirm: () => Promise<void> 
 
       {preview && (
         <div className="sale-form__preview">
-          {preview.perLineDiscount.length > 1 && (
-            <ul className="sale-form__line-discounts">
-              {preview.perLineDiscount.map((d, i) => (
-                <li key={i}>
-                  {lines[i]?.procedureName || `Item ${i + 1}`}: desconto rateado {formatBRL(d)}
-                </li>
-              ))}
-            </ul>
-          )}
           <p>Total dos itens: {formatBRL(preview.itemsTotal)}</p>
-          <p>Desconto: {formatBRL(preview.discount)}</p>
           <p>Valor da venda: {formatBRL(preview.grossAmount)}</p>
-          <p>
-            Lucro estimado: <strong>{formatBRL(preview.profit)}</strong>
-          </p>
         </div>
       )}
 
-      <button type="submit" disabled={isSubmitting || confirming} className="tap-target">
-        {confirming ? "Confirmando…" : "Confirmar venda"}
+      {serverError && (
+        <p role="alert" className="form__error">
+          {serverError}
+        </p>
+      )}
+
+      <button type="submit" disabled={isSubmitting || createSale.isPending} className="tap-target">
+        {createSale.isPending ? "Confirmando…" : "Confirmar venda"}
       </button>
     </form>
   );
