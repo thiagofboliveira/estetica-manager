@@ -7,8 +7,8 @@ export const qk = {
   all: ["app"] as const,
 
   financial: () => [...qk.all, "financial"] as const,
-  dashboard: (range: { from: string; to: string }) =>
-    [...qk.financial(), "dashboard", range] as const,
+  dashboard: (params: { period: string; date_from?: string; date_to?: string }) =>
+    [...qk.financial(), "dashboard", params] as const,
   retention: () => [...qk.financial(), "retention"] as const,
   retentionList: (filters?: { minValue?: string }) =>
     [...qk.retention(), "list", filters ?? {}] as const,

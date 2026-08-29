@@ -4,7 +4,16 @@ import jwt
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api.v1 import patients, procedures
+from app.api.v1 import (
+    dashboard,
+    financial_settings,
+    fixed_expenses,
+    patients,
+    payment_fee_rules,
+    procedures,
+    reports,
+    sales,
+)
 from app.core.config import settings
 
 app = FastAPI(title="Estetica API", version="0.1.0")
@@ -53,3 +62,9 @@ if settings.ENV == "development" and settings.DEV_AUTH_SECRET:
 
 app.include_router(patients.router, prefix="/api/v1")
 app.include_router(procedures.router, prefix="/api/v1")
+app.include_router(financial_settings.router, prefix="/api/v1")
+app.include_router(payment_fee_rules.router, prefix="/api/v1")
+app.include_router(sales.router, prefix="/api/v1")
+app.include_router(fixed_expenses.router, prefix="/api/v1")
+app.include_router(dashboard.router, prefix="/api/v1")
+app.include_router(reports.router, prefix="/api/v1")

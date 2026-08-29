@@ -38,3 +38,32 @@ def test_core_money_nao_usa_float():
     # Permite o TypeError que rejeita float explicitamente.
     proibido = re.findall(r"(?<!isinstance\(value, )float\(", texto)
     assert not proibido, f"app/core/money.py usa float(): {proibido}"
+
+
+def test_dominio_nao_importa_infraestrutura():
+    """app/domain/ é o motor de lucro: puro, sem SQLAlchemy, sem
+    FastAPI, sem app.models/app.repositories (backend/ENGENHARIA.md §5).
+    Um `from app.models` aqui destrói a testabilidade sem banco —
+    silenciosamente, só se percebe quando o suite fica lento.
+
+    Checa só linhas de IMPORT de verdade (import/from), não menções em
+    docstring/comentário — senão o próprio texto explicando a regra
+    dispara o teste."""
+    proibidos = ("sqlalchemy", "fastapi", "app.models", "app.repositories")
+    ofensores = []
+    for py in (APP_ROOT / "domain").rglob("*.py"):
+        for n, linha in enumerate(py.read_text().splitlines(), 1):
+            stripped = linha.strip()
+            if not (stripped.startswith("import ") or stripped.startswith("from ")):
+                continue
+            for termo in proibidos:
+                if re.search(rf"\b{re.escape(termo)}\b", stripped):
+                    ofensores.append(
+                        f"{py.relative_to(APP_ROOT)}:{n}: {stripped}"
+                    )
+    assert not ofensores, "domain/ importa infraestrutura:\n" + "\n".join(ofensores)
+
+
+def test_dominio_nao_usa_float():
+    for py in (APP_ROOT / "domain").rglob("*.py"):
+        assert "float(" not in py.read_text(), f"{py} usa float()"

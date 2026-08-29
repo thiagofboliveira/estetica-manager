@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { centsToDisplay, centsToMoney, digitsToCents, moneyToCents } from "@/lib/money/parse";
 import type { Money } from "@/lib/money/money";
 
@@ -16,6 +16,14 @@ type Props = {
  */
 export function CurrencyInput({ id, value, onChange, autoFocus, ...aria }: Props) {
   const [display, setDisplay] = useState(() => centsToDisplay(moneyToCents(value)));
+
+  // Sincroniza com mudanças externas de `value` (ex: setValue() ao
+  // selecionar um procedimento) — sem isto o display fica preso no
+  // valor com que o input montou. Ver F-014 (autofill de preço/custo).
+  useEffect(() => {
+    setDisplay(centsToDisplay(moneyToCents(value)));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [value]);
 
   function handleChange(e: React.ChangeEvent<HTMLInputElement>) {
     const cents = digitsToCents(e.target.value);

@@ -722,6 +722,8 @@ gross_amount            NUMERIC(12,2)   -- items_total − discount
 
 -- snapshot congelado no ato da venda
 split_applied           NUMERIC(5,2)
+split_amount_applied    NUMERIC(12,2)    -- 🆕 v7.1: valor em R$ do split — split_applied é só o %
+fee_amount_charged_applied NUMERIC(12,2) -- 🆕 v7.1: taxa que ELA efetivamente pagou (após fee_payer)
 split_base_applied      enum
 fee_payer_applied       enum
 fee_applied             NUMERIC(5,2)
@@ -738,6 +740,8 @@ notes
 created_at
 updated_at
 ```
+
+> 🆕 **v7.1 — `split_amount_applied`/`fee_amount_charged_applied` adicionadas.** Faltavam para o ranking de procedimentos (TASK-024) funcionar: sem elas só existia o **percentual** de split (`split_applied`) e a taxa **total** da transação (`fee_amount_applied`, que ignora `fee_payer` — pode ser maior do que ela de fato pagou se `fee_payer=CLINIC`/`SPLIT_PRO_RATA`). Ratear por item exige o valor em R$ efetivamente aplicado, não o percentual nem o bruto. Mesmo princípio de congelamento (I3) dos demais campos do snapshot — `SaleCalculationResult` já calculava os dois (`split_amount`, `fee_amount_charged_to_professional`), só não persistia.
 
 ### TASK-013 — Criar tabela `sale_items` 🆕
 
@@ -1148,6 +1152,8 @@ Peeling            R$ 2.500      R$ 1.500   60%
 > Descobrir quais procedimentos realmente geram dinheiro.
 
 > ⚠️ **Este ranking só é confiável se E4 e E5 estiverem resolvidos.** Com taxa de parcelamento e custo variável ignorados, ele fica sistematicamente enviesado a favor de procedimentos caros e parcelados — podendo induzir a profissional a aumentar o mix dos procedimentos que ela *acha* lucrativos e que na verdade são os piores. Isso é dano ativo, pior que não ter o produto.
+
+> 🆕 **v7.1 — Fórmula de "lucro por item" (não especificada explicitamente antes).** `split_amount` e `fee_charged` da venda (§12, calculados sobre o total) são rateados entre os itens na MESMA proporção usada para `discount_allocated` (`unit_price × quantity`, via `allocate()` — largest remainder, soma fecha exatamente com o total da venda, mesmo método já usado em todo o rateio do sistema, §11.5). `lucro_item = net_of_discount − split_rateado − taxa_rateada − custo_do_item` (custo já é conhecido por item: `unit_cost_estimated`/`cost_override`). Isso é uma decisão de implementação, não uma regra contábil do negócio dela — outro rateio (ex: só por custo) seria igualmente defensável; o critério foi consistência com o resto do sistema, que já usa esse peso em todo lugar.
 
 ---
 

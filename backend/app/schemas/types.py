@@ -31,3 +31,17 @@ MoneyOut = Annotated[
         when_used="json",  # em Python continua Decimal para cálculo/teste
     ),
 ]
+
+# RateOut: mesma lógica do MoneyOut (Decimal -> string no JSON), mas com
+# 4 casas — para taxas/margens (Numeric(5,4) ou Numeric(9,4)), nunca para
+# dinheiro. Duas casas arredondariam a taxa antes de qualquer uso
+# (backend/ENGENHARIA.md §3).
+RateOut = Annotated[
+    Decimal,
+    BeforeValidator(_to_decimal),
+    PlainSerializer(
+        lambda d: str(d.quantize(Decimal("0.0001"), rounding=ROUND_HALF_UP)),
+        return_type=str,
+        when_used="json",
+    ),
+]
