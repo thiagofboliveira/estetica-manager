@@ -2,6 +2,11 @@ import { api } from "@/lib/http/client";
 
 export type ProcedureType = "SERVICE" | "PRODUCT";
 
+// IN_PERSON | REMOTE — MVP v7.1 §9, T-009a/T-010a. Default do procedimento,
+// copiado para sessions.modality NA CRIAÇÃO da sessão (nunca resolvido na
+// leitura — ver app/models/procedure.py::Modality no backend).
+export type Modality = "IN_PERSON" | "REMOTE";
+
 export type Procedure = {
   id: string;
   name: string;
@@ -9,6 +14,7 @@ export type Procedure = {
   price: string;
   estimated_cost: string;
   return_interval_days: number | null;
+  default_modality: Modality;
   is_active: boolean;
   created_at: string;
   updated_at: string;
@@ -20,10 +26,14 @@ export type ProcedureCreateInput = {
   price: string;
   estimated_cost: string;
   return_interval_days?: number | null;
+  default_modality?: Modality;
 };
 
 export type ProcedureUpdateInput = Partial<
-  Pick<ProcedureCreateInput, "name" | "price" | "estimated_cost" | "return_interval_days">
+  Pick<
+    ProcedureCreateInput,
+    "name" | "price" | "estimated_cost" | "return_interval_days" | "default_modality"
+  >
 > & {
   is_active?: boolean;
 };
