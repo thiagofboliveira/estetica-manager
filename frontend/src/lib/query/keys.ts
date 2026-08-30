@@ -21,6 +21,7 @@ export const qk = {
   // no GET /dashboard — fica sob financial() para a mesma invalidação em cascata
   // (ver ENGENHARIA.md: "financial-settings parece cacheável mas é input do lucro").
   expenses: () => [...qk.financial(), "expenses"] as const,
+  expenseDetail: (id: string) => [...qk.expenses(), "detail", id] as const,
 
   // Cadastros ficam FORA de financial: venda não invalida catálogo.
   patients: () => [...qk.all, "patients"] as const,

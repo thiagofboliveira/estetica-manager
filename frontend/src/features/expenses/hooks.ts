@@ -1,6 +1,7 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { qk } from "@/lib/query/keys";
 import { CACHE } from "@/lib/query/client";
+import { invalidateAfterFixedExpenseChange } from "@/lib/query/invalidation";
 import {
   fixedExpensesApi,
   type FixedExpenseCreateInput,
@@ -17,41 +18,39 @@ export function useFixedExpenses() {
 
 export function useFixedExpense(id: string) {
   return useQuery({
-    queryKey: [...qk.expenses(), "detail", id] as const,
+    queryKey: qk.expenseDetail(id),
     queryFn: () => fixedExpensesApi.get(id),
+    enabled: !!id,
     ...CACHE.SETTINGS,
   });
 }
 
-// Toda mutação invalida qk.financial() inteiro, não só qk.expenses(): uma
-// despesa nova muda fixed_expenses_total e net_profit_after_fixed_expenses
-// no dashboard, e ele não teria motivo pra saber disso sozinho.
+// Despesa fixa só afeta a lista/detalhe dela e o dashboard
+// (fixed_expenses_total/net_profit_after_fixed_expenses) — não o resto
+// de qk.financial() (retenção, pacotes, sessões, vendas).
 export function useCreateFixedExpense() {
-  const qc = useQueryClient();
   return useMutation({
     mutationFn: (payload: FixedExpenseCreateInput) => fixedExpensesApi.create(payload),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: qk.financial() });
+      void invalidateAfterFixedExpenseChange();
     },
   });
 }
 
 export function useUpdateFixedExpense(id: string) {
-  const qc = useQueryClient();
   return useMutation({
     mutationFn: (payload: FixedExpenseUpdateInput) => fixedExpensesApi.update(id, payload),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: qk.financial() });
+      void invalidateAfterFixedExpenseChange();
     },
   });
 }
 
 export function useArchiveFixedExpense() {
-  const qc = useQueryClient();
   return useMutation({
     mutationFn: (id: string) => fixedExpensesApi.archive(id),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: qk.financial() });
+      void invalidateAfterFixedExpenseChange();
     },
   });
 }

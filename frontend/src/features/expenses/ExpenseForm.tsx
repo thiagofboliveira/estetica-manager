@@ -29,6 +29,7 @@ export function ExpenseForm({ initial, onSubmit, submitLabel }: Props) {
     register,
     control,
     watch,
+    reset,
     handleSubmit,
     formState: { errors, isSubmitting },
   } = useForm<ExpenseFormValues>({
@@ -40,6 +41,18 @@ export function ExpenseForm({ initial, onSubmit, submitLabel }: Props) {
       periodicity: initial?.periodicity ?? "MONTHLY",
     },
   });
+
+  // Se o id trocar sem remontar o componente (ex: navegação entre
+  // despesas), o form precisa refletir a despesa nova, não a antiga.
+  useEffect(() => {
+    reset({
+      label: initial?.label ?? "",
+      category: initial?.category ?? "",
+      amount: initial?.amount ?? ZERO,
+      periodicity: initial?.periodicity ?? "MONTHLY",
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initial?.id]);
 
   // Mesmo padrão de ProcedureForm: qualquer edição depois de salvar
   // invalida o "Salvo com sucesso" preso na tela.

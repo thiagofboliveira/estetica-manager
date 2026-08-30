@@ -33,19 +33,26 @@ export function ExpensesPage() {
       >
         {(expenses) => (
           <ul className="list">
-            {expenses.map((e) => (
-              <li key={e.id} className="list__item">
-                <button className="list__item-btn tap-target" onClick={() => navigate(e.id)}>
-                  <span className="list__item-title">
-                    {e.label}
-                    {e.category && <span className="list__item-tag">{e.category}</span>}
-                  </span>
-                  <span className="list__item-sub">
-                    {formatBRL(money(e.amount))} {PERIODICITY_LABEL[e.periodicity]}
-                  </span>
-                </button>
-              </li>
-            ))}
+            {expenses.map((e) => {
+              let amountLabel = "Valor inválido";
+              try {
+                amountLabel = `${formatBRL(money(e.amount))} ${PERIODICITY_LABEL[e.periodicity]}`;
+              } catch {
+                // amount fora do formato esperado (ex: dado legado) — não
+                // deixa uma linha ruim derrubar a lista inteira.
+              }
+              return (
+                <li key={e.id} className="list__item">
+                  <button className="list__item-btn tap-target" onClick={() => navigate(e.id)}>
+                    <span className="list__item-title">
+                      {e.label}
+                      {e.category && <span className="list__item-tag">{e.category}</span>}
+                    </span>
+                    <span className="list__item-sub">{amountLabel}</span>
+                  </button>
+                </li>
+              );
+            })}
           </ul>
         )}
       </AsyncBoundary>

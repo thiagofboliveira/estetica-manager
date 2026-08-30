@@ -31,6 +31,7 @@ export function ProcedureForm({ initial, onSubmit, submitLabel }: Props) {
     register,
     control,
     watch,
+    reset,
     handleSubmit,
     formState: { errors, isSubmitting },
   } = useForm<ProcedureFormValues>({
@@ -46,6 +47,20 @@ export function ProcedureForm({ initial, onSubmit, submitLabel }: Props) {
   });
 
   const type = watch("type");
+
+  // Se o id trocar sem remontar o componente, o form precisa refletir o
+  // procedimento novo, não o antigo.
+  useEffect(() => {
+    reset({
+      name: initial?.name ?? "",
+      type: (initial?.type ?? "SERVICE") as ProcedureType,
+      price: initial?.price ?? ZERO,
+      estimated_cost: initial?.estimated_cost ?? ZERO,
+      return_interval_days: initial?.return_interval_days?.toString() ?? "",
+      default_modality: initial?.default_modality ?? "IN_PERSON",
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initial?.id]);
 
   // Qualquer edição após salvar invalida o "Salvo com sucesso" —
   // senão a mensagem fica presa mesmo depois de mudar campos sem reenviar.
