@@ -4,7 +4,7 @@ Escopo: todas as telas, estado, integração com a API.
 Fonte de escopo: [MVP v7.1](../MVP%20—%20Micro-SaaS%20para%20Gestão%20Financeira%20e%20Retenção%20em%20Estética%20\(v6\).md) · Coordenação: [../BACKLOG.md](../BACKLOG.md)
 <sub>O arquivo continua nomeado `v6`; v7/v7.1 são seções acrescentadas dentro dele, não arquivos novos.</sub>
 
-**Atualizado:** 2026-08-29 · **Progresso:** 17/36 (47%) · F-014/F-014a/F-014b/F-014c/F-013/F-013a integrados com API real hoje
+**Atualizado:** 2026-08-29 · **Progresso:** 17/36 (47%, +2 em `[~]` não contam ainda) · F-012b/F-012c com código pronto, aguardando verificação em navegador
 
 ---
 
@@ -41,6 +41,20 @@ Só marque `[x]` quando o dado aparecer no banco a partir de um clique real — 
 `[ ]` TODO · `[~]` WIP · `[x]` DONE · `[!]` BLOCKED · `[-]` adiado (P1)
 
 **DONE exige evidência:** tela funcionando contra a API real, não contra mock.
+
+---
+
+## 🧪 Ambiente deixado no ar (handoff 2026-08-29) — só falta clicar
+
+Postgres, backend e frontend estão **rodando agora mesmo** neste sandbox, com F-012b e F-012c já implementados esperando o teste manual:
+
+- Postgres 16 local, banco `estetica`, migrations `0001`→`0004` aplicadas, seed do profissional dev (`00000000-0000-0000-0000-000000000001`) inserido
+- Backend: `http://localhost:8010` (`.venv` já com todas as deps + `email-validator`, que faltava no `pyproject.toml` — considerar adicionar lá)
+- Frontend: `http://localhost:5173`, `.env.local` com `VITE_DEV_AUTH=true` apontando pro backend acima
+
+**Falta só:** abrir `http://localhost:5173`, entrar como "Cliente Zero (dev)", ir em Procedimentos → criar um com modalidade Videochamada (F-012c), e em Configurações → Despesas fixas → criar/editar/encerrar uma despesa (F-012b). Se bater o esperado, marcar `[x]` nas duas linhas do painel abaixo.
+
+**Por que não fiz esse clique eu mesma:** este ambiente de execução não tem navegador; tentei instalar o Chromium do Playwright para simular, mas o download é bloqueado pela allowlist de rede daqui (`cdn.playwright.dev`). Tudo que dava pra validar sem navegador — API real, Postgres real, `tsc -b`, `vite build` — está feito (ver notas de F-012b/F-012c na Fase 1).
 
 ---
 
@@ -98,8 +112,8 @@ O frontend **não tinha tempo alocado em nenhuma fase** do plano original. São 
 | F-011c | Feedback visual de "salvo com sucesso" 🆕 | `[x]` | F-011 | Achado no teste manual 2026-08-29: PATCH funcionava mas a tela não dava nenhum retorno, parecia travada. `PatientForm`/`ProcedureForm` ganharam mensagem "Salvo com sucesso", invalidada por `watch()` a qualquer edição |
 | F-012 | Lista + form de procedimentos | `[x]` | T-010 | `features/procedures/` — CRUD completo **verificado no navegador** contra API+Postgres reais em 2026-08-29: criou "Limpeza de pele" (`POST 201`), confirmado no banco com `CurrencyInput` gravando os valores corretamente |
 | F-012a | Form de configurações financeiras | `[ ]` | T-007 | ✅ **T-007 já existe** — `GET/PATCH /financial-settings` testado contra API real (backend). Desbloqueada. Ver F-021 para a linguagem |
-| F-012b | CRUD de despesas fixas 🆕 | `[ ]` | T-021b | ✅ **T-021a/T-021b já existem** — `GET/POST/PATCH/DELETE /fixed-expenses` testado contra API real em 2026-08-29 (backend). Desbloqueada. Ver MVP v7.1 §12.5 — aluguel de sala, etc. Lista simples + form (label, valor, categoria livre, `periodicity` MONTHLY\|YEARLY) |
-| F-012c | Campo modalidade no form de procedimento 🆕 | `[ ]` | T-010a | ✅ **T-009a/T-010a já existem** — `default_modality` exposto em `POST/PATCH /procedures`. Desbloqueada. Presencial / Videochamada — default do procedimento. Ver MVP v7.1 §9 |
+| F-012b | CRUD de despesas fixas 🆕 | `[~]` | T-021b | **Código completo, verificado contra API+Postgres reais via curl (2026-08-29), falta clique no navegador.** `features/expenses/` (api/hooks/form/mapper + 3 páginas), rotas em `/configuracoes/despesas`. `POST`/`PATCH`/`DELETE` testados um a um contra o backend real na porta 8010 com Postgres local: criar, editar valor, arquivar (`active_to`, não hard-delete) — todos confirmados com `SELECT` direto em `fixed_expenses`. Confirmei também que arquivar reflete em `GET /dashboard` (`fixed_expenses_total` foi a zero), o que valida a invalidação de `qk.financial()` inteiro nas mutations. **Não marcar `[x]`:** não houve teste de clique real no formulário (máscara do `CurrencyInput`, mensagem "Salvo com sucesso", refetch automático da lista) — sandbox sem navegador disponível, Playwright não pôde baixar o Chromium (rede bloqueada). `tsc -b`/`vite build` passam limpos |
+| F-012c | Campo modalidade no form de procedimento 🆕 | `[~]` | T-010a | **Código completo, verificado contra API real via curl, falta clique no navegador.** `default_modality` (Presencial/Videochamada) adicionado a `Procedure`, `ProcedureForm` (radio) e `ProceduresPage` (ícone 📹 na lista quando remoto). `POST /procedures` com `default_modality: REMOTE` testado contra Postgres real, persistiu certo. Mesma ressalva do F-012b: falta clicar no radio de verdade e ver o form salvar |
 
 **Saída:** ela cadastra paciente e procedimento sem ajuda.
 

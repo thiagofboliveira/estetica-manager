@@ -13,6 +13,7 @@ const schema = z.object({
   price: z.string().refine((v) => Number(v) > 0, "Preço deve ser maior que zero"),
   estimated_cost: z.string(),
   return_interval_days: z.string().optional(),
+  default_modality: z.enum(["IN_PERSON", "REMOTE"]),
 });
 
 export type ProcedureFormValues = z.infer<typeof schema>;
@@ -30,6 +31,7 @@ export function ProcedureForm({ initial, onSubmit, submitLabel }: Props) {
     register,
     control,
     watch,
+    reset,
     handleSubmit,
     formState: { errors, isSubmitting },
   } = useForm<ProcedureFormValues>({
@@ -40,10 +42,25 @@ export function ProcedureForm({ initial, onSubmit, submitLabel }: Props) {
       price: initial?.price ?? ZERO,
       estimated_cost: initial?.estimated_cost ?? ZERO,
       return_interval_days: initial?.return_interval_days?.toString() ?? "",
+      default_modality: initial?.default_modality ?? "IN_PERSON",
     },
   });
 
   const type = watch("type");
+
+  // Se o id trocar sem remontar o componente, o form precisa refletir o
+  // procedimento novo, não o antigo.
+  useEffect(() => {
+    reset({
+      name: initial?.name ?? "",
+      type: (initial?.type ?? "SERVICE") as ProcedureType,
+      price: initial?.price ?? ZERO,
+      estimated_cost: initial?.estimated_cost ?? ZERO,
+      return_interval_days: initial?.return_interval_days?.toString() ?? "",
+      default_modality: initial?.default_modality ?? "IN_PERSON",
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initial?.id]);
 
   // Qualquer edição após salvar invalida o "Salvo com sucesso" —
   // senão a mensagem fica presa mesmo depois de mudar campos sem reenviar.
@@ -123,6 +140,18 @@ export function ProcedureForm({ initial, onSubmit, submitLabel }: Props) {
           />
         </label>
       )}
+
+      <fieldset className="form__field">
+        <legend>Modalidade padrão</legend>
+        {/* Default do procedimento — copiado para a sessão na criação (F-017a
+            lê isto para o ícone presencial/remoto na agenda). */}
+        <label>
+          <input type="radio" value="IN_PERSON" {...register("default_modality")} /> Presencial
+        </label>
+        <label>
+          <input type="radio" value="REMOTE" {...register("default_modality")} /> Videochamada
+        </label>
+      </fieldset>
 
       {serverError && (
         <p role="alert" className="form__error">

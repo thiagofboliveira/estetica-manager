@@ -34,7 +34,14 @@ export function ProceduresPage() {
             {procedures.map((p) => (
               <li key={p.id} className="list__item">
                 <button className="list__item-btn tap-target" onClick={() => navigate(p.id)}>
-                  <span className="list__item-title">{p.name}</span>
+                  <span className="list__item-title">
+                    {p.name}
+                    {p.default_modality === "REMOTE" && (
+                      <span className="chip chip--modality" aria-label="Videochamada">
+                        📹 Vídeo
+                      </span>
+                    )}
+                  </span>
                   <span className="list__item-sub">{formatBRL(money(p.price))}</span>
                 </button>
               </li>

@@ -10,6 +10,10 @@ import { ProcedureDetailPage } from "@/features/procedures/ProcedureDetailPage";
 import { NewSalePage } from "@/features/sales/NewSalePage";
 import { NewPackageSalePage } from "@/features/sales/NewPackageSalePage";
 import { DashboardPage } from "@/features/dashboard/DashboardPage";
+import { ExpensesPage } from "@/features/expenses/ExpensesPage";
+import { NewExpensePage } from "@/features/expenses/NewExpensePage";
+import { ExpenseDetailPage } from "@/features/expenses/ExpenseDetailPage";
+import { SettingsPage } from "@/features/settings/SettingsPage";
 import { PlaceholderPage } from "@/ui/PlaceholderPage";
 
 export const router = createBrowserRouter([
@@ -29,7 +33,10 @@ export const router = createBrowserRouter([
       { path: "vendas/nova", element: <NewSalePage /> }, // F-014
       { path: "vendas/nova-pacote", element: <NewPackageSalePage /> }, // F-014b
       { path: "agenda", element: <PlaceholderPage title="Agenda" /> }, // F-017
-      { path: "configuracoes", element: <PlaceholderPage title="Configurações" /> }, // F-012a
+      { path: "configuracoes", element: <SettingsPage /> }, // hub mínimo p/ F-012b; F-012a segue placeholder
+      { path: "configuracoes/despesas", element: <ExpensesPage /> }, // F-012b
+      { path: "configuracoes/despesas/nova", element: <NewExpensePage /> }, // F-012b
+      { path: "configuracoes/despesas/:id", element: <ExpenseDetailPage /> }, // F-012b
     ],
   },
 ]);

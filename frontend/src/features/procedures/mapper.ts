@@ -11,5 +11,6 @@ export function toProcedurePayload(values: ProcedureFormValues) {
       values.type === "PRODUCT" || !values.return_interval_days
         ? null
         : Number(values.return_interval_days),
+    default_modality: values.default_modality,
   };
 }
