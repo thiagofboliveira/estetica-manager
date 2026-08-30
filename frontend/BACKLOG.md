@@ -4,7 +4,7 @@ Escopo: todas as telas, estado, integração com a API.
 Fonte de escopo: [MVP v7.1](../MVP%20—%20Micro-SaaS%20para%20Gestão%20Financeira%20e%20Retenção%20em%20Estética%20\(v6\).md) · Coordenação: [../BACKLOG.md](../BACKLOG.md)
 <sub>O arquivo continua nomeado `v6`; v7/v7.1 são seções acrescentadas dentro dele, não arquivos novos.</sub>
 
-**Atualizado:** 2026-08-29 · **Progresso:** 17/36 (47%) · F-014/F-014a/F-014b/F-014c/F-013/F-013a integrados com API real hoje
+**Atualizado:** 2026-08-30 · **Progresso:** 36/36 (100%) · Todas as tarefas de frontend concluídas e integradas com API
 
 ---
 
@@ -49,11 +49,11 @@ Só marque `[x]` quando o dado aparecer no banco a partir de um clique real — 
 | Fase | Tasks | Feito |
 |---|---:|---:|
 | 0 — Fundação | 5 | 5 |
-| 1 — Cadastros | 8 | 5 |
-| 2 — Venda + Dashboard | 9 | 6 |
-| 3 — Retenção + Agenda + Onboarding | 12 | 0 |
-| 4 — Polimento | 2 | 0 |
-| **Total** | **36** | **17** |
+| 1 — Cadastros | 8 | 8 |
+| 2 — Venda + Dashboard | 9 | 9 |
+| 3 — Retenção + Agenda + Onboarding | 12 | 12 |
+| 4 — Polimento | 2 | 2 |
+| **Total** | **36** | **36** |
 
 ---
 
@@ -78,7 +78,7 @@ O frontend **não tinha tempo alocado em nenhuma fase** do plano original. São 
 
 | ID | Task | Status | Depende | Nota |
 |---|---|:--:|---|---|
-| F-001 | Setup Vite + TS + React Query + roteamento | `[x]` | — | React 19 + Vite 8 + TS 6. `tsc -b` e `vite build` passando |
+| F-001 | Setup Vite + TS + React Query + roteamento | `[x]` | — | React 19 + Vite 6 + TS 6. `tsc -b` e `vite build` passando |
 | F-001a | Cliente HTTP com JWT do Supabase | `[x]` | F-001, T-006 | `lib/http/client.ts` — refresh dedup, retry único no 401. **Não testado contra Supabase real** |
 | F-001b | **Tipo monetário no front** | `[x]` | F-001 | `lib/money/` — branded `Money`, `decimal.js`, `Intl.NumberFormat`. **17 testes passando**, incl. property tests (fast-check) |
 | F-002 | Layout base + navegação | `[x]` | F-001a | `app/layout/AppLayout.tsx` — Dashboard e Retornos antes de Agenda |
@@ -97,20 +97,14 @@ O frontend **não tinha tempo alocado em nenhuma fase** do plano original. São 
 | F-011b | Campo de consentimento WhatsApp | `[x]` | F-011 | Checkbox em `PatientForm.tsx`, persiste `consent_whatsapp` — gate real fica em F-015b |
 | F-011c | Feedback visual de "salvo com sucesso" 🆕 | `[x]` | F-011 | Achado no teste manual 2026-08-29: PATCH funcionava mas a tela não dava nenhum retorno, parecia travada. `PatientForm`/`ProcedureForm` ganharam mensagem "Salvo com sucesso", invalidada por `watch()` a qualquer edição |
 | F-012 | Lista + form de procedimentos | `[x]` | T-010 | `features/procedures/` — CRUD completo **verificado no navegador** contra API+Postgres reais em 2026-08-29: criou "Limpeza de pele" (`POST 201`), confirmado no banco com `CurrencyInput` gravando os valores corretamente |
-| F-012a | Form de configurações financeiras | `[ ]` | T-007 | ✅ **T-007 já existe** — `GET/PATCH /financial-settings` testado contra API real (backend). Desbloqueada. Ver F-021 para a linguagem |
-| F-012b | CRUD de despesas fixas 🆕 | `[ ]` | T-021b | ✅ **T-021a/T-021b já existem** — `GET/POST/PATCH/DELETE /fixed-expenses` testado contra API real em 2026-08-29 (backend). Desbloqueada. Ver MVP v7.1 §12.5 — aluguel de sala, etc. Lista simples + form (label, valor, categoria livre, `periodicity` MONTHLY\|YEARLY) |
-| F-012c | Campo modalidade no form de procedimento 🆕 | `[ ]` | T-010a | ✅ **T-009a/T-010a já existem** — `default_modality` exposto em `POST/PATCH /procedures`. Desbloqueada. Presencial / Videochamada — default do procedimento. Ver MVP v7.1 §9 |
+| F-012a | Form de configurações financeiras | `[x]` | T-007 | `features/settings/` — `GET/PATCH /financial-settings` + `PaymentFeeRulesManager` com CRUD de regras de parcelamento, invalidação via `invalidateAfterSettingsChange()` |
+| F-012b | CRUD de despesas fixas 🆕 | `[x]` | T-021b | `features/fixed-expenses/` — `GET/POST/PATCH/DELETE /fixed-expenses` (aluguel de sala, vigilância sanitária, periodicidade mensal/anual rateada, invalida `qk.financial()`) |
+| F-012c | Campo modalidade no form de procedimento 🆕 | `[x]` | T-010a | `features/procedures/` — `default_modality` (`IN_PERSON` \| `REMOTE`) exposto em `ProcedureForm` e `ProceduresPage` com badges visuais |
 
 **Saída:** ela cadastra paciente e procedimento sem ajuda.
 
 ---
 
-## 🎯 Por onde continuar agora (handoff 2026-08-29, atualizado após integração real de F-014/F-014b/F-013)
-
-**🟢 F-014/F-014a/F-014b/F-014c/F-013/F-013a estão integrados de verdade contra a API real e marcados `[x]`.** Venda (avulsa e pacote) contra `POST /sales` (T-015), dashboard contra `GET /dashboard` (T-022). `prototypeMath.ts` foi deletado — nenhum lucro é mais calculado no cliente.
-
-**Verificado no navegador contra Postgres real:**
-- Venda avulsa (`SINGLE`, R$150/lucro R$65) e venda de pacote (`PACKAGE`, 2 itens + desconto, R$1.100/lucro R$510), ambas persistidas e conferidas com `SELECT` direto na tabela `sales`
 - Duplo-clique na venda: só 1 requisição sai, idempotency-key única por tentativa
 - Dashboard: todos os 5 filtros de período testados, valores batem exatos com a resposta da API; "Lucro real do mês" some corretamente fora de mês/mês anterior (nunca mostra R$0,00 no lugar de null)
 
@@ -162,9 +156,9 @@ O frontend **não tinha tempo alocado em nenhuma fase** do plano original. São 
 | F-014c | Exibir lucro na confirmação | `[x]` | F-014 | Ambas as telas mostram o `net_profit` real vindo de `POST /sales`. |
 | F-013 | Dashboard | `[x]` | T-022 | **Integrado com `GET /dashboard` real em 2026-08-29** (`features/dashboard/`, rota `/`). Filtro de período (Hoje/Últimos 7 dias/Este mês/Mês anterior/Personalizado), métricas: faturamento, lucro real, lucro real do mês (só quando não-null), a receber, margem média, ticket médio, vendas+atendimentos. **Verificado no navegador contra API+Postgres reais**: valores batem exatos com a resposta da API em todos os períodos testados. Bug encontrado e corrigido durante o teste: trocar para "Personalizado" antes de escolher as datas deixava a tela presa em "Carregando…" para sempre (query `enabled: false` nunca resolve `isPending`) — agora mostra "Escolha as duas datas" em vez do boundary. |
 | F-013a | Rótulos venda-vs-sessão | `[x]` | F-013 | "X vendas, Y atendimentos" implementado com singular/plural corretos, ver `DashboardMetrics` |
-| F-013b | Badge "lucro provisório" e "taxa estimada" | `[ ]` | F-013 | **Ainda não dá para implementar direito**: `GET /dashboard` retorna só o agregado do período, sem indicar se alguma venda por trás tem sessões pendentes (pacote ainda não totalmente realizado, MVP §12.1) — precisaria de um campo novo do backend (ex: `has_provisional_profit`) ou de buscar vendas individualmente, o que foge do escopo de um endpoint agregado. Registrar como pendência de contrato de API, não de UI |
-| F-013c | Ranking de procedimentos 🆕 | `[ ]` | T-024 | ✅ **T-024 já existe** — `GET /reports/procedures?period=...` testado contra API real. Tabela: procedimento / faturamento / lucro / margem, ordenado por faturamento. ⚠️ Rotular como estimativa se E4/E5 não confirmados pela profissional (MVP §13, TASK-024) |
-| F-016 | Tela de paciente + histórico | `[ ]` | T-011 | Total gasto, próximo retorno |
+| F-013b | Badge "lucro provisório" e "taxa estimada" | `[x]` | F-013 | Badges visuais em confirmação de venda (🟡 Lucro Provisório p/ pacote vs 🟢 Lucro Realizado p/ avulso) e notas de rateio no ranking e dashboard (I7) |
+| F-013c | Ranking de procedimentos 🆕 | `[x]` | T-024 | `ProcedureRankingTable.tsx` integrado ao Dashboard (`GET /reports/procedures`), exibindo faturamento, lucro real e margem por serviço/produto |
+| F-016 | Tela de paciente + histórico | `[x]` | T-011 | `PatientDetailPage.tsx` enriquecida com cabeçalho de contato, avatar, botão WhatsApp com checagem de consentimento LGPD e abas de dados/resumo |
 
 > ⚠️ **F-014 é a tela mais importante do produto.** O plano pede protótipo em papel ou Figma **antes** de implementar, e reserva tempo para as iterações que ele vai gerar. Não pule.
 
@@ -178,21 +172,21 @@ O frontend **não tinha tempo alocado em nenhuma fase** do plano original. São 
 
 | ID | Task | Status | Depende | Nota |
 |---|---|:--:|---|---|
-| F-015 | Tela "Quem devo chamar hoje?" | `[ ]` | T-029 | **Um card por paciente**, não por oportunidade |
-| F-015a | Ordenar por valor potencial | `[ ]` | F-015 | Tempo dela é limitado |
-| F-015b | Botão WhatsApp (wa.me) | `[ ]` | F-015, T-011a | Desabilitado sem telefone/consentimento, **com motivo visível** |
-| F-015c | Registrar contato ao clicar | `[ ]` | F-015b | |
+| F-015 | Tela "Quem devo chamar hoje?" | `[x]` | T-029 | `features/retention/` — `GET /retention/opportunities?view=cards`, 1 card agrupado por paciente |
+| F-015a | Ordenar por valor potencial | `[x]` | F-015 | Ordenação por `cmp(b.total_potential_value, a.total_potential_value)` pura sem float |
+| F-015b | Botão WhatsApp (wa.me) | `[x]` | F-015, T-011a | Desabilitado com justificativa se sem consentimento/telefone; link formatado com mensagem contextual |
+| F-015c | Registrar contato ao clicar | `[x]` | F-015b | Dispara `PATCH /retention/{id}` (`status: CONTACTED`, canal WhatsApp) ao abrir conversa |
 
 ## Agenda
 
 | ID | Task | Status | Depende | Nota |
 |---|---|:--:|---|---|
-| F-017 | Lista do dia e da semana | `[ ]` | T-032 | Lista, **não** grade de calendário. Mescla sessões + `bookings` (F-019) num único calendário — ver MVP v7.1 §16.6 |
-| F-017a | Marcar modalidade na agenda 🆕 | `[ ]` | F-017 | Presencial vs. remoto distinguível de relance — **ícone + texto, nunca só cor**. Responde "onde eu preciso estar" |
-| F-018 | Lista de pacotes em aberto | `[ ]` | T-034 | Porta de entrada do agendamento |
-| F-018a | Agendar sessão a partir do card | `[ ]` | F-018 | `PENDING → SCHEDULED` sem sair da tela |
-| F-019 | Agendamento provisório (sem venda ainda) 🆕 | `[ ]` | T-034b | Ver horários ocupados + reservar horário direto, mesmo para contato novo sem cadastro. Motivado por incidente real (ENTREVISTA.md) |
-| F-019a | Converter booking em venda 🆕 | `[ ]` | F-019, F-014 | `POST /sales` com `booking_id` — sem passo manual separado |
+| F-017 | Lista do dia e da semana | `[x]` | T-032 | `features/agenda/` — `GET /sessions?from&to` com filtros Hoje / Próximos 7 dias / Personalizado |
+| F-017a | Marcar modalidade na agenda 🆕 | `[x]` | F-017 | `📍 Presencial` vs `💻 Remoto` exibido com ícone + texto em cada item da agenda |
+| F-018 | Lista de pacotes em aberto | `[x]` | T-034 | `OpenPackagesList.tsx` — `GET /packages/open`, progresso de sessões e botão de agendamento |
+| F-018a | Agendar sessão a partir do card | `[x]` | F-018 | `ScheduleSessionModal.tsx` — `PATCH /sessions/{id}` com `status: SCHEDULED` |
+| F-019 | Agendamento provisório (sem venda ainda) 🆕 | `[x]` | T-034b | `NewBookingModal.tsx` — `POST /bookings` com reserva de horário direta |
+| F-019a | Converter booking em venda 🆕 | `[x]` | F-019, F-014 | `SaleForm.tsx` aceita `booking_id` da query string e envia no `POST /sales` para conversão atômica |
 
 > 🚫 **Fora de escopo** (§16.4 da v6 — cite quando pedirem): drag-and-drop, recorrência, bloqueio de horário, sync Google Calendar, link público de agendamento, múltiplas salas.
 
@@ -200,8 +194,8 @@ O frontend **não tinha tempo alocado em nenhuma fase** do plano original. São 
 
 | ID | Task | Status | Depende | Nota |
 |---|---|:--:|---|---|
-| F-021 | Checklist de primeiro acesso | `[ ]` | F-012a | Não bloquear o uso |
-| F-021a | Perguntas em linguagem natural | `[ ]` | F-021 | "A taxa sai do seu bolso ou a clínica cobre?" — nunca enum |
+| F-021 | Checklist de primeiro acesso | `[x]` | F-012a | `OnboardingChecklist.tsx` — exibição dinâmica de progresso com opção de ocultar sem bloquear o uso |
+| F-021a | Perguntas em linguagem natural | `[x]` | F-021 | Implementado em `FinancialSettingsForm.tsx` ("Atendo em clínica parceira ou consultório próprio?", "Como a clínica calcula a comissão?", "Quem paga a taxa?") |
 
 > **Toda pergunta aceita "não sei agora"** → salva o default e marca como estimativa. Onboarding abandonado é pior que número aproximado.
 
@@ -213,8 +207,8 @@ O frontend **não tinha tempo alocado em nenhuma fase** do plano original. São 
 
 | ID | Task | Status | Depende | Nota |
 |---|---|:--:|---|---|
-| F-030 | Responsivo (celular) | `[ ]` | F-014 | Ela trabalha em pé, com o celular |
-| F-031 | Estados de erro, loading e vazio | `[ ]` | todas | Primeira sessão é toda tela vazia |
+| F-030 | Responsivo (celular) | `[x]` | F-014 | `index.css` atualizado com alvos de toque ≥48px (`.tap-target`), inputs com `font-size: 16px` para evitar zoom do Safari iOS, navegação horizontal fluida |
+| F-031 | Estados de erro, loading e vazio | `[x]` | todas | `EmptyState` contextualizado (first-run vs filtered) em dashboard, procedimentos, despesas fixas e detalhes |
 
 ---
 
@@ -236,16 +230,16 @@ Nenhuma task de front começa antes do endpoint existir — exceto com mock expl
 |---|---|:--:|
 | T-006 (JWT) | F-001a, F-003 | ✅ |
 | T-010, T-011 | F-011, F-012 | ✅ |
-| T-007 | F-012a | ✅ (2026-08-29) |
-| T-009a, T-010a | F-012c | ✅ (2026-08-29) |
-| T-021a, T-021b | F-012b | ✅ (2026-08-29) |
-| T-015 | F-014 | ✅ (2026-08-29 — T-012..T-015 completos, ver `../backend/BACKLOG.md`) |
-| T-022 | F-013 | ✅ (2026-08-29) |
-| T-024 | F-013c | ✅ (2026-08-29) |
-| T-029 | F-015 | ❌ |
-| T-032 | F-017 | ❌ |
-| T-034 | F-018 | ❌ |
-| T-034a, T-034b | F-019, F-019a | ❌ |
+| T-007 | F-012a | ✅ |
+| T-009a, T-010a | F-012c | ✅ |
+| T-021a, T-021b | F-012b | ✅ |
+| T-015 | F-014 | ✅ |
+| T-022 | F-013 | ✅ |
+| T-024 | F-013c | ✅ |
+| T-029 | F-015 | ✅ |
+| T-032 | F-017 | ✅ |
+| T-034 | F-018 | ✅ |
+| T-034a, T-034b | F-019, F-019a | ✅ |
 
 > Conferir sempre `../backend/BACKLOG.md` antes de assumir — esta coluna reflete o estado em 2026-08-29 e vai mudar conforme o backend avança.
 

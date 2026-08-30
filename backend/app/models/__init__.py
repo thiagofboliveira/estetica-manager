@@ -5,6 +5,7 @@
 # congelados (T-020b, invariante I3) — importar por efeito colateral.
 from app.models import listeners  # noqa: F401,E402
 from app.models.base import Base, TenantModel, TimestampMixin
+from app.models.booking import Booking, BookingStatus
 from app.models.financial_settings import (
     FeePayer,
     FinancialSettings,
@@ -16,6 +17,11 @@ from app.models.patient import Patient
 from app.models.payment_fee_rule import PaymentFeeRule
 from app.models.procedure import Modality, Procedure, ProcedureType
 from app.models.professional import Professional
+from app.models.return_opportunity import (
+    ContactChannel,
+    ReturnOpportunity,
+    ReturnOpportunityStatus,
+)
 from app.models.sale import Sale, SaleStatus, SaleType
 from app.models.sale_item import SaleItem
 from app.models.session import Session, SessionStatus
@@ -44,4 +50,9 @@ __all__ = [
     "SaleItem",
     "Session",
     "SessionStatus",
+    "ReturnOpportunity",
+    "ReturnOpportunityStatus",
+    "ContactChannel",
+    "Booking",
+    "BookingStatus",
 ]

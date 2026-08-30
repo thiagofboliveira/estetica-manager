@@ -19,6 +19,7 @@ export type SaleCreateInput = {
   payment_method: PaymentMethod;
   installments: number;
   notes?: string | null;
+  booking_id?: string | null;
 };
 
 export type SaleItemOut = {

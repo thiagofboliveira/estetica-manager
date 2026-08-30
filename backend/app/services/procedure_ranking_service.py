@@ -42,8 +42,10 @@ class ProcedureRankingService:
         professional = self._professionals.get_current()
         today = today_in_timezone(professional.timezone)
         period = resolve_period(
-            filter_name=filter_name, today=today,
-            custom_from=custom_from, custom_to=custom_to,
+            filter_name=filter_name,
+            today=today,
+            custom_from=custom_from,
+            custom_to=custom_to,
         )
 
         pairs = self._sale_items.list_with_sale_totals_in_period(

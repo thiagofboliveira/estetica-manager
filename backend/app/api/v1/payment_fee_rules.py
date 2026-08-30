@@ -15,9 +15,7 @@ router = APIRouter(prefix="/payment-fee-rules", tags=["payment-fee-rules"])
 
 @router.get("", response_model=list[PaymentFeeRuleOut])
 def list_payment_fee_rules(svc: PaymentFeeRuleSvc) -> list[PaymentFeeRuleOut]:
-    return [
-        PaymentFeeRuleOut.model_validate(r) for r in svc.list_or_seed_defaults()
-    ]
+    return [PaymentFeeRuleOut.model_validate(r) for r in svc.list_or_seed_defaults()]
 
 
 @router.post("", response_model=PaymentFeeRuleOut, status_code=status.HTTP_201_CREATED)

@@ -104,6 +104,4 @@ def get_current_professional_id(
     try:
         return UUID(claims["sub"])
     except (KeyError, ValueError) as exc:
-        raise HTTPException(
-            status.HTTP_401_UNAUTHORIZED, "Claim sub inválido"
-        ) from exc
+        raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Claim sub inválido") from exc

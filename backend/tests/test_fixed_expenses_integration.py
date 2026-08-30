@@ -31,7 +31,9 @@ def auth_headers(client: TestClient) -> dict[str, str]:
 
 
 class TestCrudDespesasFixas:
-    def test_criar_e_listar(self, client: TestClient, auth_headers: dict[str, str]) -> None:
+    def test_criar_e_listar(
+        self, client: TestClient, auth_headers: dict[str, str]
+    ) -> None:
         label = f"Aluguel da sala {uuid.uuid4()}"
         resp = client.post(
             "/api/v1/fixed-expenses",
@@ -92,20 +94,26 @@ class TestCrudDespesasFixas:
         )
         expense_id = create.json()["id"]
 
-        resp = client.delete(f"/api/v1/fixed-expenses/{expense_id}", headers=auth_headers)
+        resp = client.delete(
+            f"/api/v1/fixed-expenses/{expense_id}", headers=auth_headers
+        )
         assert resp.status_code == 204
 
         active = client.get("/api/v1/fixed-expenses", headers=auth_headers)
         assert not any(e["id"] == expense_id for e in active.json())
 
         all_expenses = client.get(
-            "/api/v1/fixed-expenses", params={"include_archived": True}, headers=auth_headers
+            "/api/v1/fixed-expenses",
+            params={"include_archived": True},
+            headers=auth_headers,
         )
         archived = next(e for e in all_expenses.json() if e["id"] == expense_id)
         assert archived["active_to"] is not None
 
         # Nunca hard delete — a linha continua existindo via GET direto.
-        direct = client.get(f"/api/v1/fixed-expenses/{expense_id}", headers=auth_headers)
+        direct = client.get(
+            f"/api/v1/fixed-expenses/{expense_id}", headers=auth_headers
+        )
         assert direct.status_code == 200
 
     def test_expense_inexistente_retorna_404(

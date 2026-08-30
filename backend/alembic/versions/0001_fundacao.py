@@ -92,9 +92,7 @@ def upgrade() -> None:
     # ------------------------------------------------------------------
     op.create_table(
         "professionals",
-        sa.Column(
-            "id", postgresql.UUID(as_uuid=True), primary_key=True
-        ),
+        sa.Column("id", postgresql.UUID(as_uuid=True), primary_key=True),
         sa.Column(
             "user_id",
             postgresql.UUID(as_uuid=True),
@@ -133,9 +131,7 @@ def upgrade() -> None:
         professional_id (a policy vira predicado em toda query)."""
         op.create_table(
             name,
-            sa.Column(
-                "id", postgresql.UUID(as_uuid=True), primary_key=True
-            ),
+            sa.Column("id", postgresql.UUID(as_uuid=True), primary_key=True),
             sa.Column(
                 "professional_id",
                 postgresql.UUID(as_uuid=True),
@@ -186,16 +182,10 @@ def upgrade() -> None:
                 nullable=False,
                 server_default="false",
             ),
-            sa.Column(
-                "consent_at", sa.TIMESTAMP(timezone=True), nullable=True
-            ),
-            sa.Column(
-                "opted_out_at", sa.TIMESTAMP(timezone=True), nullable=True
-            ),
+            sa.Column("consent_at", sa.TIMESTAMP(timezone=True), nullable=True),
+            sa.Column("opted_out_at", sa.TIMESTAMP(timezone=True), nullable=True),
             sa.Column("is_active", sa.Boolean(), nullable=False, server_default="true"),
-            sa.Column(
-                "anonymized_at", sa.TIMESTAMP(timezone=True), nullable=True
-            ),
+            sa.Column("anonymized_at", sa.TIMESTAMP(timezone=True), nullable=True),
         ],
     )
     op.create_index("ix_patients_phone", "patients", ["phone"])

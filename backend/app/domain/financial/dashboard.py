@@ -84,7 +84,11 @@ def build_dashboard(
     net_profit = money(sum((s.net_profit for s in sales), ZERO))
     receivable = money(
         sum(
-            (s.gross_amount for s in sales if s.expected_receipt_date and s.expected_receipt_date > today),
+            (
+                s.gross_amount
+                for s in sales
+                if s.expected_receipt_date and s.expected_receipt_date > today
+            ),
             ZERO,
         )
     )

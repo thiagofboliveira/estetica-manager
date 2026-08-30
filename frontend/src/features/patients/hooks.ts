@@ -15,6 +15,10 @@ export function usePatientsSearch(search: string) {
   });
 }
 
+export function usePatients(search = "") {
+  return usePatientsSearch(search);
+}
+
 export function usePatient(id: string) {
   return useQuery({
     queryKey: qk.patientDetail(id),

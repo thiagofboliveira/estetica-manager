@@ -13,9 +13,16 @@ _VALID_FILTERS = {"today", "last_7_days", "this_month", "last_month", "custom"}
 @router.get("", response_model=DashboardOut)
 def get_dashboard(
     svc: DashboardSvc,
-    period: str = Query(default="this_month", description="today|last_7_days|this_month|last_month|custom"),
-    date_from: date | None = Query(default=None, description="Obrigatório se period=custom"),
-    date_to: date | None = Query(default=None, description="Obrigatório se period=custom"),
+    period: str = Query(
+        default="this_month",
+        description="today|last_7_days|this_month|last_month|custom",
+    ),
+    date_from: date | None = Query(
+        default=None, description="Obrigatório se period=custom"
+    ),
+    date_to: date | None = Query(
+        default=None, description="Obrigatório se period=custom"
+    ),
 ) -> DashboardOut:
     if period not in _VALID_FILTERS:
         raise HTTPException(

@@ -20,7 +20,9 @@ def list_procedures(
     limit: int = Query(default=50, le=200),
     offset: int = Query(default=0, ge=0),
 ) -> list[ProcedureOut]:
-    return [ProcedureOut.model_validate(p) for p in svc.list(limit=limit, offset=offset)]
+    return [
+        ProcedureOut.model_validate(p) for p in svc.list(limit=limit, offset=offset)
+    ]
 
 
 @router.get("/{procedure_id}", response_model=ProcedureOut)

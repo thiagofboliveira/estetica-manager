@@ -194,7 +194,9 @@ def test_arredondamento_com_dizima_333_33_vezes_33_porcento() -> None:
     109,9989, que precisa arredondar (ROUND_HALF_UP) para 110,00, nunca
     109,99 (banker's rounding) nem propagar erro de ponto flutuante."""
     item = LineItem(
-        unit_price=D("333.33"), quantity=1, unit_cost_estimated=D("0.00"),
+        unit_price=D("333.33"),
+        quantity=1,
+        unit_cost_estimated=D("0.00"),
         session_costs=[D("0.00")],
     )
     params = SaleParams(

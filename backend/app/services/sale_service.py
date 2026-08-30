@@ -21,6 +21,7 @@ from uuid import UUID
 
 from app.core.money import money
 from app.core.tz import today_in_timezone
+from app.domain.bookings.enums import BookingStatus
 from app.domain.financial.calculator import (
     FeePayer as CalcFeePayer,
 )
@@ -46,11 +47,13 @@ from app.models.sale import Sale, SaleStatus
 from app.models.sale_item import SaleItem
 from app.models.session import Session as SessionModel
 from app.models.session import SessionStatus
+from app.repositories.booking import BookingRepository
 from app.repositories.financial_settings import FinancialSettingsRepository
 from app.repositories.patient import PatientRepository
 from app.repositories.payment_fee_rule import PaymentFeeRuleRepository
 from app.repositories.procedure import ProcedureRepository
 from app.repositories.professional import ProfessionalRepository
+from app.repositories.return_opportunity import ReturnOpportunityRepository
 from app.repositories.sale import SaleRepository
 from app.repositories.sale_item import SaleItemRepository
 from app.repositories.session import SessionRepository
@@ -96,6 +99,8 @@ class SaleService:
         financial_settings_repo: FinancialSettingsRepository,
         payment_fee_rule_repo: PaymentFeeRuleRepository,
         professional_repo: ProfessionalRepository,
+        booking_repo: BookingRepository | None = None,
+        return_opportunity_repo: ReturnOpportunityRepository | None = None,
     ) -> None:
         self._sales = sale_repo
         self._sale_items = sale_item_repo
@@ -105,6 +110,8 @@ class SaleService:
         self._financial_settings = financial_settings_repo
         self._payment_fee_rules = payment_fee_rule_repo
         self._professionals = professional_repo
+        self._bookings = booking_repo
+        self._return_opportunities = return_opportunity_repo
 
     def find_existing_by_idempotency_key(self, idempotency_key: str) -> Sale | None:
         """Usado pela rota só para decidir 200 vs 201 na resposta — a
@@ -129,74 +136,70 @@ class SaleService:
         if self._patients.get(dto.patient_id) is None:
             raise PatientNotFoundForSaleError()
 
-        procedures = {}
-        for item in dto.items:
-            proc = self._procedures.get(item.procedure_id)
+        procedures = {
+            item.procedure_id: self._procedures.get(item.procedure_id)
+            for item in dto.items
+        }
+        for pid, proc in procedures.items():
             if proc is None:
-                raise ProcedureNotFoundForSaleError(item.procedure_id)
-            procedures[item.procedure_id] = proc
+                raise ProcedureNotFoundForSaleError(pid)
 
         settings = self._financial_settings_or_default()
-        fee_rules = [
-            CalcFeeRule(
-                installments_min=r.installments_min,
-                installments_max=r.installments_max,
-                fee_percentage=r.fee_percentage,
-                fixed_fee=r.fixed_fee,
-            )
-            for r in self._payment_fee_rules.list_all()
-            if r.payment_method == dto.payment_method
-        ]
-
-        calc_items = [
+        fee_rules = self._payment_fee_rules.list_for_method(dto.payment_method.value)
+        line_items = [
             CalcLineItem(
-                unit_price=procedures[item.procedure_id].price,
+                unit_price=proc.price,
                 quantity=item.quantity,
-                unit_cost_estimated=procedures[item.procedure_id].estimated_cost,
-                # Dia 1: nenhuma sessão aconteceu ainda -> custo realizado
-                # = custo provisionado (uma "sessão virtual" por
-                # unidade, todas com o custo estimado do procedimento).
-                session_costs=[procedures[item.procedure_id].estimated_cost]
-                * item.quantity,
+                unit_cost=proc.estimated_cost,
             )
-            for item in dto.items
+            for item, proc in ((i, procedures[i.procedure_id]) for i in dto.items)
         ]
 
+        # Converte enum do modelo para o enum puro do domínio (backend/ENGENHARIA.md §5:
+        # domain/ não importa models nem schemas).
         params = SaleParams(
+            items=line_items,
+            discount_amount=money(dto.discount_amount),
+            payment_method=CalcPaymentMethod(dto.payment_method.value),
+            installments=dto.installments,
             split_clinic_percentage=settings.split_clinic_percentage,
             split_base=CalcSplitBase(settings.split_base.value),
             fee_payer=CalcFeePayer(settings.fee_payer.value),
-            payment_method=CalcPaymentMethod(dto.payment_method.value),
-            installments=dto.installments,
-            discount_amount=money(dto.discount_amount),
-            fee_rules=fee_rules,
+            fee_rules=[
+                CalcFeeRule(
+                    installments_min=r.installments_min,
+                    installments_max=r.installments_max,
+                    fee_percentage=r.fee_percentage,
+                )
+                for r in fee_rules
+            ],
         )
 
-        result = calculate_sale(calc_items, params)
+        result: SaleCalculationResult = calculate_sale(params)
 
-        # Invariante I4 (MVP v6 §3): trunca no fuso da profissional, NUNCA
-        # em UTC — uma venda às 22h em São Paulo (01h UTC do dia seguinte)
-        # tem que valer para "hoje" dela, senão o erro aparece exatamente
-        # no fechamento do dia, quando ela mais confere o número.
-        professional = self._professionals.get_current()
-        sold_at = today_in_timezone(professional.timezone)
+        prof = self._professionals.get_by_id(self._sales._professional_id)
+        tz_name = prof.timezone if prof and prof.timezone else "America/Sao_Paulo"
+        today = today_in_timezone(tz_name)
+
         expected_receipt = expected_receipt_date(
-            CalcPaymentMethod(dto.payment_method.value), sold_at, dto.installments
+            today,
+            CalcPaymentMethod(dto.payment_method.value),
+            dto.installments,
         )
 
         sale = Sale(
             patient_id=dto.patient_id,
             type=dto.type,
-            sold_at=sold_at,
+            sold_at=today,
             status=SaleStatus.ACTIVE,
             payment_method=dto.payment_method,
             installments=dto.installments,
             items_total=result.items_total,
             discount_amount=result.discount_amount,
             gross_amount=result.gross_amount,
-            split_applied=result.split_rate,
-            split_amount_applied=result.split_amount,
+            split_applied=result.split_applied,
             split_base_applied=settings.split_base,
+            split_amount_applied=result.split_amount_paid_to_clinic,
             fee_payer_applied=settings.fee_payer,
             fee_applied=result.fee_rate,
             fee_amount_applied=result.fee_amount,
@@ -212,6 +215,13 @@ class SaleService:
             idempotency_body_hash=body_hash if idempotency_key else None,
         )
         sale = self._sales.add(sale)
+
+        # Se a venda veio de um booking, converte na mesma transação (TASK-034b, v7.1 §16.6)
+        if dto.booking_id and self._bookings:
+            booking = self._bookings.get_by_id(dto.booking_id)
+            if booking:
+                booking.status = BookingStatus.CONVERTED
+                booking.sale_id = sale.id
 
         for item_dto, item_result in zip(dto.items, result.items, strict=True):
             proc = procedures[item_dto.procedure_id]
@@ -244,6 +254,13 @@ class SaleService:
                 )
                 self._sessions.add(session)
 
+        # Fecha oportunidades de retorno abertas para os procedimentos comprados (TASK-028)
+        if self._return_opportunities:
+            procedure_ids = [it.procedure_id for it in dto.items]
+            self._return_opportunities.close_for_patient_and_procedures(
+                dto.patient_id, procedure_ids, sale.id
+            )
+
         self._sales.flush()
         return sale
 
@@ -251,6 +268,46 @@ class SaleService:
         sale = self._sales.get(sale_id)
         if sale is None:
             raise SaleNotFoundError()
+        return sale
+
+    def cancel(self, sale_id: UUID, reason: str | None = None) -> Sale:
+        """Cancela venda ativa e cancela sessões não concluídas (TASK-017)."""
+        sale = self.get(sale_id)
+        if sale.status != SaleStatus.ACTIVE:
+            raise ValueError(f"Venda com status {sale.status} não pode ser cancelada.")
+        sale.status = SaleStatus.CANCELLED
+        if reason:
+            sale.notes = f"{sale.notes or ''} [Cancelada: {reason}]".strip()
+        for item in self.get_items(sale_id):
+            sessions = self._sessions.list_for_sale_item(item.id)
+            for s in sessions:
+                if s.status in (
+                    SessionStatus.PENDING,
+                    SessionStatus.SCHEDULED,
+                    SessionStatus.CONFIRMED,
+                ):
+                    s.status = SessionStatus.CANCELLED
+        self._sales.flush()
+        return sale
+
+    def refund(self, sale_id: UUID, reason: str | None = None) -> Sale:
+        """Estorna venda ativa e cancela sessões pendentes/agendadas (TASK-017)."""
+        sale = self.get(sale_id)
+        if sale.status != SaleStatus.ACTIVE:
+            raise ValueError(f"Venda com status {sale.status} não pode ser estornada.")
+        sale.status = SaleStatus.REFUNDED
+        if reason:
+            sale.notes = f"{sale.notes or ''} [Estornada: {reason}]".strip()
+        for item in self.get_items(sale_id):
+            sessions = self._sessions.list_for_sale_item(item.id)
+            for s in sessions:
+                if s.status in (
+                    SessionStatus.PENDING,
+                    SessionStatus.SCHEDULED,
+                    SessionStatus.CONFIRMED,
+                ):
+                    s.status = SessionStatus.CANCELLED
+        self._sales.flush()
         return sale
 
     def get_items(self, sale_id: UUID) -> list[SaleItem]:
@@ -268,9 +325,7 @@ class SaleService:
         ).get_or_create_default()
 
 
-def _snapshot_payload(
-    result: SaleCalculationResult, settings
-) -> dict:
+def _snapshot_payload(result: SaleCalculationResult, settings) -> dict:
     """Auditoria — payload bruto do cálculo, para reconstituir 'por que
     esse número' sem depender da config atual (invariante I3)."""
     return {

@@ -10,7 +10,8 @@ export default defineConfig({
     alias: { '@': path.resolve(import.meta.dirname, './src') },
   },
   test: {
-    environment: 'jsdom',
+    environment: 'happy-dom',
     globals: false,
+    pool: 'vmThreads',
   },
 })

@@ -39,7 +39,9 @@ class FixedExpense(TenantModel):
     # Texto livre de propósito — só um caso real (aluguel) existia na
     # entrevista; inventar um enum fechado seria projetar para hipótese.
     category: Mapped[str | None] = mapped_column(String, nullable=True)
-    amount: Mapped[Decimal] = mapped_column(Numeric(12, 2, asdecimal=True), nullable=False)
+    amount: Mapped[Decimal] = mapped_column(
+        Numeric(12, 2, asdecimal=True), nullable=False
+    )
     periodicity: Mapped[ExpensePeriodicity] = mapped_column(
         Enum(ExpensePeriodicity, name="expense_periodicity", native_enum=False),
         nullable=False,

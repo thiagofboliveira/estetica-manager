@@ -30,14 +30,18 @@ def upgrade() -> None:
     op.add_column(
         "sales",
         sa.Column(
-            "split_amount_applied", sa.Numeric(12, 2), nullable=False,
+            "split_amount_applied",
+            sa.Numeric(12, 2),
+            nullable=False,
             server_default="0.00",
         ),
     )
     op.add_column(
         "sales",
         sa.Column(
-            "fee_amount_charged_applied", sa.Numeric(12, 2), nullable=False,
+            "fee_amount_charged_applied",
+            sa.Numeric(12, 2),
+            nullable=False,
             server_default="0.00",
         ),
     )

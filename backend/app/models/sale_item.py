@@ -45,9 +45,7 @@ class SaleItem(TenantModel):
         ),
         # Necessário para sessions referenciar (sale_item_id,
         # professional_id) via FK composta — mesmo padrão de sales.
-        UniqueConstraint(
-            "id", "professional_id", name="uq_sale_items_id_professional"
-        ),
+        UniqueConstraint("id", "professional_id", name="uq_sale_items_id_professional"),
     )
 
     sale_id: Mapped[PGUUID] = mapped_column(
@@ -63,9 +61,7 @@ class SaleItem(TenantModel):
     # Congelados do Procedure no ato da venda.
     unit_price: Mapped[Decimal] = mapped_column(Numeric(12, 2, asdecimal=True))
     unit_cost_estimated: Mapped[Decimal] = mapped_column(Numeric(12, 2, asdecimal=True))
-    return_interval_applied: Mapped[int | None] = mapped_column(
-        Integer, nullable=True
-    )
+    return_interval_applied: Mapped[int | None] = mapped_column(Integer, nullable=True)
 
     # Rateio do desconto da venda (§11.5) — soma dos itens fecha
     # exatamente com sales.discount_amount.

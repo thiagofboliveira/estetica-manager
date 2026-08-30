@@ -63,3 +63,58 @@ class PatientService:
         patient = self.get(patient_id)
         patient.is_active = False
         self._repo.flush()
+
+    def anonymize(self, patient_id: UUID) -> Patient:
+        """Anonimização do paciente (LGPD Art. 18 VI + Art. 16 II, TASK-061).
+        Preserva a integridade de vendas e sessões contábeis, mascarando
+        todos os dados de identificação pessoal."""
+        patient = self.get(patient_id)
+        patient.name = f"Anonimizado_{str(patient_id)[:8]}"
+        patient.phone = None
+        patient.email = None
+        patient.notes = None
+        patient.birth_date = None
+        patient.consent_whatsapp = False
+        patient.anonymized_at = datetime.now(UTC)
+        patient.is_active = False
+        self._repo.flush()
+        return patient
+
+    def opt_out(self, patient_id: UUID) -> Patient:
+        """Registra opt-out de mensagens/WhatsApp (TASK-060, LGPD Art. 11)."""
+        patient = self.get(patient_id)
+        patient.opted_out_at = datetime.now(UTC)
+        patient.consent_whatsapp = False
+        self._repo.flush()
+        return patient
+
+    def export_data(self, patient_id: UUID) -> dict:
+        """Exportação estruturada de dados do titular para portabilidade (LGPD Art. 18, V, TASK-062)."""
+        patient = self.get(patient_id)
+        return {
+            "id": str(patient.id),
+            "name": patient.name,
+            "phone": patient.phone,
+            "email": patient.email,
+            "birth_date": patient.birth_date.isoformat()
+            if patient.birth_date
+            else None,
+            "notes": patient.notes,
+            "consent_whatsapp": patient.consent_whatsapp,
+            "consent_at": patient.consent_at.isoformat()
+            if patient.consent_at
+            else None,
+            "opted_out_at": patient.opted_out_at.isoformat()
+            if patient.opted_out_at
+            else None,
+            "anonymized_at": patient.anonymized_at.isoformat()
+            if patient.anonymized_at
+            else None,
+            "is_active": patient.is_active,
+            "created_at": patient.created_at.isoformat()
+            if patient.created_at
+            else None,
+            "updated_at": patient.updated_at.isoformat()
+            if patient.updated_at
+            else None,
+        }

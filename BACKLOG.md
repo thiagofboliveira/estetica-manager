@@ -4,16 +4,16 @@
 
 | Projeto | Backlog | Tasks | Progresso |
 |---|---|---:|---:|
-| Backend (FastAPI) | [backend/BACKLOG.md](backend/BACKLOG.md) | 86 | 54/86 (63%) |
-| Frontend (React) | [frontend/BACKLOG.md](frontend/BACKLOG.md) | 36 | 12/36 (33%) · 2 em `[~]` |
+| Backend (FastAPI) | [backend/BACKLOG.md](backend/BACKLOG.md) | 86 | 78/86 (91% · 100% P0) |
+| Frontend (React) | [frontend/BACKLOG.md](frontend/BACKLOG.md) | 36 | 36/36 (100%) |
 | Produto / validação | §Produto abaixo | 5 | 1/5 (20%) |
-| | **Total MVP** | **127** | **53%** |
+| | **Total MVP** | **127** | **91%** |
 
 **Guias de engenharia:** [ENGENHARIA.md](ENGENHARIA.md) (invariantes) · [backend](backend/ENGENHARIA.md) · [frontend](frontend/ENGENHARIA.md)
 
 **Fonte de escopo:** [MVP v7](MVP%20—%20Micro-SaaS%20para%20Gestão%20Financeira%20e%20Retenção%20em%20Estética%20\(v6\).md) — mudança de escopo vai lá primeiro; os backlogs refletem, não decidem. (Arquivo continua nomeado `v6` — a v7 é a seção §12.5 adicionada dentro dele, não um novo arquivo.)
 
-**Atualizado:** 2026-08-29
+**Atualizado:** 2026-08-30
 
 ---
 

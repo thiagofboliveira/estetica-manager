@@ -4,7 +4,10 @@ import { EmptyState } from "@/ui/EmptyState";
 import { formatBRL, formatRate } from "@/lib/money/format";
 import { money, rate } from "@/lib/money/money";
 import { useDashboard } from "./hooks";
-import type { Dashboard, DashboardPeriod } from "./api";
+import type { Dashboard, DashboardParams, DashboardPeriod } from "./api";
+
+import { ProcedureRankingTable } from "./ProcedureRankingTable";
+import { OnboardingChecklist } from "@/features/onboarding/OnboardingChecklist";
 
 const PERIOD_OPTIONS: { value: DashboardPeriod; label: string }[] = [
   { value: "today", label: "Hoje" },
@@ -21,23 +24,30 @@ const PERIOD_OPTIONS: { value: DashboardPeriod; label: string }[] = [
  * "Lucro real do mês" só existe em period=this_month|last_month
  * (fixed_expenses_total/net_profit_after_fixed_expenses vêm null fora
  * disso) — a linha some, nunca mostra "R$ 0,00" no lugar de null.
+ * F-013b: Badges de estimativa/lucro provisório (I7).
+ * F-013c: Ranking de procedimentos por faturamento e lucro real.
+ * F-021: Checklist de primeiro acesso não-bloqueante.
  */
 export function DashboardPage() {
   const [period, setPeriod] = useState<DashboardPeriod>("this_month");
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
 
-  const query = useDashboard({
+  const params: DashboardParams = {
     period,
     date_from: period === "custom" ? dateFrom : undefined,
     date_to: period === "custom" ? dateTo : undefined,
-  });
+  };
+
+  const query = useDashboard(params);
 
   return (
     <div className="page">
       <header className="page__header">
         <h1>Dashboard</h1>
       </header>
+
+      <OnboardingChecklist hasAnySale={Boolean(query.data?.has_any_data)} />
 
       <div className="dashboard__period" role="group" aria-label="Período">
         {PERIOD_OPTIONS.map((opt) => (
@@ -81,7 +91,12 @@ export function DashboardPage() {
           }
           isEmpty={(d) => !d.has_any_data}
         >
-          {(dashboard) => <DashboardMetrics dashboard={dashboard} />}
+          {(dashboard) => (
+            <>
+              <DashboardMetrics dashboard={dashboard} />
+              <ProcedureRankingTable params={params} />
+            </>
+          )}
         </AsyncBoundary>
       )}
     </div>

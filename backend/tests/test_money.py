@@ -81,9 +81,7 @@ class TestAllocate:
         r2 = allocate(D("100.00"), weights)
         assert r1 == r2
 
-    @pytest.mark.parametrize(
-        "desconto", ["0.01", "0.02", "0.10", "33.33", "99.99"]
-    )
+    @pytest.mark.parametrize("desconto", ["0.01", "0.02", "0.10", "33.33", "99.99"])
     def test_descontos_indivisiveis_sempre_fecham(self, desconto):
         result = allocate(D(desconto), [D("100.00")] * 3)
         assert sum(result) == D(desconto)
@@ -92,15 +90,11 @@ class TestAllocate:
 class TestAllocateProperty:
     @given(
         valores=st.lists(
-            st.decimals(
-                min_value=D("0.01"), max_value=D("10000"), places=2
-            ),
+            st.decimals(min_value=D("0.01"), max_value=D("10000"), places=2),
             min_size=1,
             max_size=12,
         ),
-        frac_desconto=st.decimals(
-            min_value=D("0"), max_value=D("1"), places=4
-        ),
+        frac_desconto=st.decimals(min_value=D("0"), max_value=D("1"), places=4),
     )
     def test_rateio_sempre_fecha_para_qualquer_entrada(
         self, valores: list[D], frac_desconto: D

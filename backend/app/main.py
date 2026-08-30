@@ -5,6 +5,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.v1 import (
+    bookings,
     dashboard,
     financial_settings,
     fixed_expenses,
@@ -12,7 +13,9 @@ from app.api.v1 import (
     payment_fee_rules,
     procedures,
     reports,
+    retention,
     sales,
+    sessions,
 )
 from app.core.config import settings
 
@@ -65,6 +68,9 @@ app.include_router(procedures.router, prefix="/api/v1")
 app.include_router(financial_settings.router, prefix="/api/v1")
 app.include_router(payment_fee_rules.router, prefix="/api/v1")
 app.include_router(sales.router, prefix="/api/v1")
+app.include_router(sessions.router, prefix="/api/v1")
+app.include_router(bookings.router, prefix="/api/v1")
+app.include_router(retention.router, prefix="/api/v1")
 app.include_router(fixed_expenses.router, prefix="/api/v1")
 app.include_router(dashboard.router, prefix="/api/v1")
 app.include_router(reports.router, prefix="/api/v1")

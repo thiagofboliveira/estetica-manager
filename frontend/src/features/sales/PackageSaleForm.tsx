@@ -111,7 +111,12 @@ export function PackageSaleForm() {
   if (confirmedSale) {
     return (
       <div className="sale-confirm" role="status">
-        <h2>Venda de pacote registrada</h2>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <h2>Venda de pacote registrada</h2>
+          <span className="badge badge--accent" title="Sessões futuras ainda a serem realizadas">
+            🟡 Lucro Provisório
+          </span>
+        </div>
         {selectedPatient && <p>{selectedPatient.name}</p>}
         {confirmedSale.items.length > 1 && (
           <ul className="sale-form__line-discounts">

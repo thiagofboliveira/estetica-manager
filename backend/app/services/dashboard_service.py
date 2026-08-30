@@ -47,8 +47,10 @@ class DashboardService:
         today = today_in_timezone(professional.timezone)
 
         period = resolve_period(
-            filter_name=filter_name, today=today,
-            custom_from=custom_from, custom_to=custom_to,
+            filter_name=filter_name,
+            today=today,
+            custom_from=custom_from,
+            custom_to=custom_to,
         )
 
         sales = [

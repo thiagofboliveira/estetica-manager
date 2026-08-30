@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -27,8 +27,11 @@ type FormValues = z.infer<typeof schema>;
  * lucro exibido na confirmação vem da resposta da API, nunca é
  * recalculado no cliente (ENGENHARIA.md invariante). Idempotency-Key
  * nasce ao montar o form (useCreateSale) e cobre F-014a.
+ * F-019a: suporte à conversão de booking via booking_id.
  */
 export function SaleForm() {
+  const [searchParams] = useSearchParams();
+  const bookingId = searchParams.get("booking_id");
   const proceduresQuery = useProcedures();
   const createSale = useCreateSale();
   const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null);
@@ -64,6 +67,7 @@ export function SaleForm() {
         discount_amount: "0.00",
         payment_method: values.paymentMethod,
         installments: values.paymentMethod === "CREDIT" ? Number(values.installments) : 1,
+        booking_id: bookingId || null,
       });
       setConfirmedSale(sale);
     } catch (e) {
@@ -74,7 +78,10 @@ export function SaleForm() {
   if (confirmedSale) {
     return (
       <div className="sale-confirm" role="status">
-        <h2>Venda registrada</h2>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <h2>Venda registrada</h2>
+          <span className="badge badge--success">🟢 Lucro Realizado</span>
+        </div>
         {selectedPatient && <p>{selectedPatient.name}</p>}
         <p>Valor: {formatBRL(money(confirmedSale.gross_amount))}</p>
         <p>

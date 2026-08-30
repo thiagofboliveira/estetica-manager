@@ -13,15 +13,18 @@ from sqlalchemy.orm import Session
 
 from app.core.security import get_current_professional_id
 from app.db.session import get_tenant_session
+from app.repositories.booking import BookingRepository
 from app.repositories.financial_settings import FinancialSettingsRepository
 from app.repositories.fixed_expense import FixedExpenseRepository
 from app.repositories.patient import PatientRepository
 from app.repositories.payment_fee_rule import PaymentFeeRuleRepository
 from app.repositories.procedure import ProcedureRepository
 from app.repositories.professional import ProfessionalRepository
+from app.repositories.return_opportunity import ReturnOpportunityRepository
 from app.repositories.sale import SaleRepository
 from app.repositories.sale_item import SaleItemRepository
 from app.repositories.session import SessionRepository
+from app.services.booking_service import BookingService
 from app.services.dashboard_service import DashboardService
 from app.services.financial_settings_service import FinancialSettingsService
 from app.services.fixed_expense_service import FixedExpenseService
@@ -29,7 +32,9 @@ from app.services.patient_service import PatientService
 from app.services.payment_fee_rule_service import PaymentFeeRuleService
 from app.services.procedure_ranking_service import ProcedureRankingService
 from app.services.procedure_service import ProcedureService
+from app.services.retention_service import RetentionService
 from app.services.sale_service import SaleService
+from app.services.session_service import SessionService
 
 CurrentProfessional = Annotated[UUID, Depends(get_current_professional_id)]
 
@@ -106,6 +111,45 @@ def get_sale_service(
         financial_settings_repo=FinancialSettingsRepository(session, professional_id),
         payment_fee_rule_repo=PaymentFeeRuleRepository(session, professional_id),
         professional_repo=ProfessionalRepository(session, professional_id),
+        booking_repo=BookingRepository(session, professional_id),
+        return_opportunity_repo=ReturnOpportunityRepository(session, professional_id),
+    )
+
+
+def get_session_service(
+    session: DbSession, professional_id: CurrentProfessional
+) -> SessionService:
+    return SessionService(
+        session_repo=SessionRepository(session, professional_id),
+        sale_item_repo=SaleItemRepository(session, professional_id),
+        sale_repo=SaleRepository(session, professional_id),
+        procedure_repo=ProcedureRepository(session, professional_id),
+        patient_repo=PatientRepository(session, professional_id),
+        booking_repo=BookingRepository(session, professional_id),
+        return_opportunity_repo=ReturnOpportunityRepository(session, professional_id),
+        professional_repo=ProfessionalRepository(session, professional_id),
+    )
+
+
+def get_retention_service(
+    session: DbSession, professional_id: CurrentProfessional
+) -> RetentionService:
+    return RetentionService(
+        return_opportunity_repo=ReturnOpportunityRepository(session, professional_id),
+        patient_repo=PatientRepository(session, professional_id),
+        procedure_repo=ProcedureRepository(session, professional_id),
+        professional_repo=ProfessionalRepository(session, professional_id),
+    )
+
+
+def get_booking_service(
+    session: DbSession, professional_id: CurrentProfessional
+) -> BookingService:
+    return BookingService(
+        booking_repo=BookingRepository(session, professional_id),
+        session_repo=SessionRepository(session, professional_id),
+        patient_repo=PatientRepository(session, professional_id),
+        professional_repo=ProfessionalRepository(session, professional_id),
     )
 
 
@@ -123,3 +167,6 @@ DashboardSvc = Annotated[DashboardService, Depends(get_dashboard_service)]
 ProcedureRankingSvc = Annotated[
     ProcedureRankingService, Depends(get_procedure_ranking_service)
 ]
+SessionSvc = Annotated[SessionService, Depends(get_session_service)]
+RetentionSvc = Annotated[RetentionService, Depends(get_retention_service)]
+BookingSvc = Annotated[BookingService, Depends(get_booking_service)]

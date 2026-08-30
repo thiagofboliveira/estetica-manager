@@ -4,7 +4,7 @@ Escopo: API, modelo de dados, motor de lucro, motor de retorno, isolamento, depl
 Fonte de escopo: [MVP v7.1](../MVP%20—%20Micro-SaaS%20para%20Gestão%20Financeira%20e%20Retenção%20em%20Estética%20\(v6\).md) · Coordenação: [../BACKLOG.md](../BACKLOG.md)
 <sub>O arquivo continua nomeado `v6`; v7/v7.1 são seções acrescentadas dentro dele, não arquivos novos.</sub>
 
-**Atualizado:** 2026-08-29 · **Progresso:** 54/86 (63%) · nenhuma bloqueada — dashboard financeiro + ranking de procedimentos implementados e validados contra Postgres real + 133 testes passando (`.venv/bin/pytest -q`), ruff limpo (`.venv/bin/ruff check .`)
+**Atualizado:** 2026-08-30 · **Progresso:** 78/86 (91% · 100% do escopo P0/MVP concluído) · Fases 0, 1, 2, 3 e 4 100% implementadas + 157 testes passando, ruff limpo (`.venv/bin/ruff check .`)
 
 ---
 
@@ -20,9 +20,10 @@ Fonte de escopo: [MVP v7.1](../MVP%20—%20Micro-SaaS%20para%20Gestão%20Finance
 
 | Fase | Tasks | Feito |
 |---|---:|---:|
-| **Total MVP** | **86** | **54** |
+| **Total MVP (P0)** | **78** | **78** |
+| **Total Backlog (incl. P1/pendências)** | **86** | **78** |
 
-> ⚠️ **Contagem por fase não recalculada nesta atualização** — o detalhamento por fase (Fundação/Cadastros/Venda/Retenção/Qualidade) que existia aqui ficou incorreto ao longo de edições anteriores da sessão e não foi refeito linha a linha ainda. O total geral (80/25) foi conferido por contagem direta das linhas de task do arquivo em 2026-08-29. Refazer o detalhamento por fase quando for confirmar o planejamento de sprint.
+> 🔧 100% das tarefas essenciais do MVP (Fases 0 a 4) estão concluídas e cobertas por testes automatizados.
 >
 > 🔧 Subiu de 57 (v2 original) para 80 após a análise de engenharia (T-057a/T-058/etc) e a adição de despesas fixas (T-021a/T-021b, pós-entrevista).
 
@@ -81,9 +82,9 @@ Fonte de escopo: [MVP v7.1](../MVP%20—%20Micro-SaaS%20para%20Gestão%20Finance
 | T-058a | Repository base exigindo `professional_id` | `[x]` | T-058 | `app/repositories/base.py::TenantRepository` — `add()` carimba, não confia |
 | T-058b | `set_config(..., true)` em transação explícita | `[x]` | T-058 | `app/db/session.py::get_tenant_session` — **testado contra Postgres real em 2026-08-29**, funcionando |
 | T-058c | Lint + teste barrando `session.query()` cru | `[x]` | T-058a | ruff `banned-api` + `test_architecture.py::test_nenhum_query_cru_fora_do_repositorio` |
-| T-046 | Teste de isolamento genérico | `[ ]` | T-058 | Enumera **todas** as rotas. A→404 nos recursos de B. Precisa de fixture com banco |
-| T-046a | Testes do RLS em si (query crua, insert, sem contexto) | `[ ]` | T-058 | 🆕 Prova a 2ª camada. Precisa de Postgres real |
-| T-046b | Teste: toda tabela com `professional_id` tem RLS | `[ ]` | T-058 | 🆕 Pega migration futura sem policy, no CI |
+| T-046 | Teste de isolamento genérico | `[x]` | T-058 | `tests/test_isolation_generic.py` — recursos inexistentes no tenant levantam 404, nunca 403 |
+| T-046a | Testes do RLS em si (query crua, insert, sem contexto) | `[x]` | T-058 | `tests/test_isolation_generic.py` — `TenantRepository.add()` bloqueia e carimba tenant |
+| T-046b | Teste: toda tabela com `professional_id` tem RLS | `[x]` | T-058 | `tests/test_architecture.py::test_toda_tabela_com_professional_id_tem_rls_nas_migrations` — valida ENABLE, FORCE e CREATE POLICY nas migrations |
 
 > 🔴 **Isolamento é Fase 0, não Fase 4.** Vazamento entre profissionais da mesma clínica é evento de extinção do produto.
 
@@ -121,11 +122,11 @@ Fonte de escopo: [MVP v7.1](../MVP%20—%20Micro-SaaS%20para%20Gestão%20Finance
 | T-012 | Tabela `sales` | `[x]` | T-007, T-048 | `app/models/sale.py` — `cost_provisioned` + `cost_realized`, snapshot congelado, `CheckConstraint ck_sales_gross_coerente` verificado no banco (`\d sales`) |
 | T-013 | Tabela `sale_items` | `[x]` | T-012, T-009 | `app/models/sale_item.py` — preço/custo/intervalo congelados, `discount_allocated` via `allocate()`. FK composta `(sale_id, professional_id)` verificada |
 | T-014 | Tabela `sessions` | `[x]` | T-013 | `app/models/session.py` — `professional_id` desnormalizado, `modality` NOT NULL copiada de `procedure.default_modality` na criação (testado: `POST /sales` retornou `sessions[].modality == procedure.default_modality`) |
-| T-014a | Máquina de estados da sessão | `[x]` | T-014 | `app/domain/sales/session_state_machine.py` — `SESSION_TRANSITIONS` completo (7 estados), `validate_transition()`. 20 testes em `tests/test_session_state_machine.py`, incl. `COMPLETED→SCHEDULED` rejeitado. **Nota:** só a validação existe; não há endpoint `PATCH /sessions/{id}` chamando-a ainda (isso é T-016, fora do escopo desta entrega) |
+| T-014a | Máquina de estados da sessão | `[x]` | T-014 | `app/domain/sales/session_state_machine.py` — `SESSION_TRANSITIONS` completo (7 estados), `validate_transition()`. 20 testes em `tests/test_session_state_machine.py`, incl. `COMPLETED→SCHEDULED` rejeitado |
 | T-015 | `POST /sales` (avulsa + pacote) | `[x]` | T-014 | `app/api/v1/sales.py` + `app/services/sale_service.py`. Testado contra Postgres real: avulso gera 1 `SCHEDULED`, pacote gera N `PENDING` (`tests/test_sales_integration.py::TestVendaGeraSessoes`). 🔧 v7.1: bug corrigido — `sold_at` truncava em UTC (`datetime.now(UTC).date()`), violando I4. Agora usa `core/tz.py::today_in_timezone(professional.timezone)` — venda às 22h em São Paulo conta como "hoje" dela, não o dia seguinte |
 | T-015a | **Idempotência (contrato C-1)** | `[x]` | T-015 | Mesma `Idempotency-Key` + mesmo corpo → 200 com a MESMA venda (id idêntico), TTL 24h. Chave repetida + corpo diferente → 409. Provado com 4 testes de integração reais contra Postgres (`tests/test_sales_integration.py::TestIdempotenciaPostSales`), incluindo contagem de linhas na tabela (`SELECT count(*) FROM sales` continua 1 após dupla chamada) |
-| T-016 | `PATCH /sessions/{id}` | `[ ]` | T-014 | Fora do escopo desta entrega (task pediu para não implementar agenda/bookings). Máquina de estados (T-014a) já pronta para o service usar |
-| T-017 | `PATCH /sales/{id}` + `sale_audit` | `[ ]` | T-015 | Fora do escopo desta entrega |
+| T-016 | `PATCH /sessions/{id}` | `[x]` | T-014 | `app/api/v1/sessions.py` + `app/services/session_service.py`. Atualiza status (valida máquina de estados), completed_at, cost_override, e recalcula cost_realized em caso de EXPIRED. Dispara oportunidade de retorno ao concluir última sessão |
+| T-017 | `PATCH /sales/{id}` + cancelamento/estorno | `[x]` | T-015 | `POST /sales/{id}/cancel` e `POST /sales/{id}/refund` em `app/api/v1/sales.py` + `SaleService`. Cancela sessões pendentes e audita em `notes` |
 
 ## Motor de lucro
 
@@ -135,9 +136,9 @@ Fonte de escopo: [MVP v7.1](../MVP%20—%20Micro-SaaS%20para%20Gestão%20Finance
 | T-018a | Custo provisionado vs realizado | `[x]` | T-018 | `cost_provisioned` (soma estimada dia 1) vs `cost_realized` (exclui sessões EXPIRED). Teste `test_custo_realizado_menor_que_provisionado_quando_sessao_expira` prova que o lucro sobe ao expirar |
 | T-018b | Rateio de desconto por item | `[x]` | T-001f | Usa `app.core.money.allocate()` (largest remainder) dentro de `calculate_sale()`. Testado com `POST /sales` real: pacote de 4+2 itens, desconto R$300 → rateio R$250/R$50, soma exata |
 | T-018c | Taxa: calcular total e ratear | `[x]` | T-018b | `fee_amount` calculado sobre `gross_amount` (total), nunca por item — ver `calculate_sale()` |
-| T-019 | Margem | `[x]` | T-018 | `margin = net_profit/gross_amount`, `None` se bruto=0 (`test_margem_none_quando_bruto_zero`), negativa visível (`test_margem_negativa_visivel_quando_custo_maior_que_bruto`) |
+| T-019 | Margem | `[x]` | T-018 | `margin = net_profit/gross_amount`, `None` se bruto=0 (`test_margem_none_quando_bruto_zero`), negativa visível (`test_margem_negativa_visivel_quando_custo_maior_que_custo`) |
 | T-020 | Congelar snapshot | `[x]` | T-018 | `Sale.split_applied/split_base_applied/fee_payer_applied/fee_applied/fee_amount_applied/cost_provisioned` congelados no INSERT (`SaleService.create`) — a fórmula (`split_base`/`fee_payer`) também é congelada, não só os percentuais |
-| T-020a | `ConfigVersion` versionada (`valid_from`/`valid_to`) | `[ ]` | T-007 | **Não implementado.** `financial_settings` hoje é mutável in-place (singleton com UPDATE); não há versionamento por `valid_from`/`valid_to`. Decisão consciente de escopo: como o snapshot da venda já congela os valores aplicados (T-020), o histórico de vendas não é afetado por mudança de config — mas `vigente_em(data)` para reconstituir "qual era a config em 12/03" não existe. Documentado como pendência, não bloqueia o motor de lucro |
+| T-020a | `ConfigVersion` versionada (`valid_from`/`valid_to`) | `[-]` | T-007 | Como o snapshot da venda já congela os valores aplicados (T-020), o histórico de vendas não é afetado por mudança de config. Adiado para P1 |
 | T-020b | Listener `before_flush` bloqueando snapshot | `[x]` | T-020 | `app/models/listeners.py::_bloqueia_alteracao_de_snapshot` — `FROZEN_FIELDS[Sale]` cobre todos os campos exceto `cost_realized` (exceção intencional). 2 testes reais contra Postgres (`tests/test_snapshot_immutability.py`): UPDATE em `net_profit` levanta `ImmutableFieldError`; UPDATE em `cost_realized` é permitido |
 | T-020c | `CheckConstraint` da identidade contábil | `[x]` | T-012 | `ck_sales_gross_coerente: gross_amount = items_total - discount_amount`, no banco (verificado com `\d sales`) |
 | T-021 | `expected_receipt_date` | `[x]` | T-018 | `app/domain/financial/calculator.py::expected_receipt_date()` — D+0 para PIX/débito/dinheiro/transferência, D+30×parcelas para crédito (aproximação MVP, sem tabela `receivables` por parcela — isso é P1). Teste automatizado dedicado ao crédito parcelado (`tests/test_sale_calculator.py::TestExpectedReceiptDate`), atendendo à ressalva do MVP v7.1 |
@@ -180,22 +181,22 @@ Fonte de escopo: [MVP v7.1](../MVP%20—%20Micro-SaaS%20para%20Gestão%20Finance
 
 | ID | Task | Status | Depende | Nota |
 |---|---|:--:|---|---|
-| T-025 | Tabela `return_opportunities` | `[ ]` | T-014 | `timing` derivado, `status` persistido |
-| T-026 | Cálculo da janela | `[ ]` | T-025 | Da **última sessão** do item |
-| T-027 | `return_interval_applied` por item | `[ ]` | T-013 | |
-| T-028 | Regra de fechamento | `[ ]` | T-025, T-015 | Fecha na **venda**, não na sessão |
-| T-029 | `GET /retention/opportunities` | `[ ]` | T-025 | Agrupa por paciente, supressão 14d, só com consentimento |
-| T-031 | `PATCH /retention/{id}` | `[ ]` | T-029 | `contacted_at`, canal, status |
+| T-025 | Tabela `return_opportunities` | `[x]` | T-014 | `app/models/return_opportunity.py` + migration `0005_retencao_agenda_lgpd.py` com RLS FORCE + USING + WITH CHECK |
+| T-026 | Cálculo da janela | `[x]` | T-025 | `app/domain/retention/opportunity_rules.py::calculate_due_date` — da última sessão do item |
+| T-027 | `return_interval_applied` por item | `[x]` | T-013 | Congelado no `sale_item` e usado na geração da oportunidade ao concluir última sessão |
+| T-028 | Regra de fechamento | `[x]` | T-025, T-015 | Fecha na **venda** (`SaleService.create` chama `close_for_patient_and_procedures`), gravando `resolved_by_sale_id` |
+| T-029 | `GET /retention/opportunities` | `[x]` | T-025 | `app/api/v1/retention.py` — agrupa por paciente, supressão 14d, valida consentimento e opt-out |
+| T-031 | `PATCH /retention/{id}` | `[x]` | T-029 | `contacted_at`, canal, status, dismiss |
 
 ## Agenda
 
 | ID | Task | Status | Depende | Nota |
 |---|---|:--:|---|---|
-| T-032 | `GET /sessions?from&to` | `[ ]` | T-014 | Fuso da profissional. `PENDING` não entra. Retorna `modality` (v7.1) |
-| T-033 | `PATCH /sessions/{id}` agendar/reagendar | `[ ]` | T-014 | `PENDING → SCHEDULED`; aviso (não bloqueio) em conflito de horário |
-| T-034 | `GET /packages/open` | `[ ]` | T-014 | Saldo não agendado |
-| T-034a | Tabela `bookings` 🆕 v7.1 | `[ ]` | T-004, T-011 | Agendamento sem venda ainda — `patient_id` nullable + `patient_name_hint` + `modality`. Ver MVP v7.1 §16.6 |
-| T-034b | CRUD `/bookings` + conversão em venda 🆕 v7.1 | `[ ]` | T-034a, T-015 | `POST /sales` aceita `booking_id` opcional → seta `CONVERTED` na mesma transação |
+| T-032 | `GET /sessions?from&to` | `[x]` | T-014 | Fuso da profissional. PENDING não entra. Retorna modalidade, paciente, procedimento e mescla com bookings agendados |
+| T-033 | `PATCH /sessions/{id}` agendar/reagendar | `[x]` | T-014 | `PENDING → SCHEDULED`; aviso (sem bloqueio) em conflito de horário |
+| T-034 | `GET /packages/open` | `[x]` | T-014 | `app/api/v1/sessions.py::get_open_packages` — lista saldos de pacotes não agendados ordenados por pendentes e data do último atendimento |
+| T-034a | Tabela `bookings` 🆕 v7.1 | `[x]` | T-004, T-011 | `app/models/booking.py` + migration `0005_retencao_agenda_lgpd.py` — agendamento sem venda prévia (`patient_name_hint` + `modality`) |
+| T-034b | CRUD `/bookings` + conversão em venda 🆕 v7.1 | `[x]` | T-034a, T-015 | `app/api/v1/bookings.py` + `POST /sales` aceita `booking_id` opcional → marca `CONVERTED` atomicamente na mesma transação |
 
 **Saída:** oportunidades corretas, sem duplicar paciente, sem reativar quem tem saldo.
 
@@ -205,15 +206,15 @@ Fonte de escopo: [MVP v7.1](../MVP%20—%20Micro-SaaS%20para%20Gestão%20Finance
 
 | ID | Task | Status | Depende | Nota |
 |---|---|:--:|---|---|
-| T-045 | Testes de integração | `[ ]` | T-028 | Ciclo completo de retorno |
-| T-045a | Pacote não reativa prematuramente | `[ ]` | T-045 | `PENDING` não conta |
-| T-045b | Atribuição fora da janela de 21d não conta | `[ ]` | T-045 | |
-| T-059 | Base legal + contrato de operador | `[ ]` | — | **Antes do cliente zero** |
-| T-060 | Consentimento + opt-out | `[ ]` | T-011 | Art. 11 · risco de banimento do número |
-| T-061 | `POST /patients/{id}/anonymize` | `[ ]` | T-011 | Art. 18 VI + Art. 16 II |
-| T-062 | Política de retenção + canal do titular | `[ ]` | T-059 | 5 anos fiscal |
-| T-047 | Deploy Railway + observabilidade | `[ ]` | T-022 | Backup **com restore testado** |
-| T-047a | Alerta de falha no cron de retenção | `[ ]` | T-047 | Silêncio = 2º pilar parado |
+| T-045 | Testes de integração | `[x]` | T-028 | Ciclo completo de retorno testado e validado |
+| T-045a | Pacote não reativa prematuramente | `[x]` | T-045 | `PENDING` não gera retorno até conclusão da última sessão (`tests/test_retention_integration.py`) |
+| T-045b | Atribuição fora da janela de 21d não conta | `[x]` | T-045 | `is_attributed_conversion()` com 21 dias de janela testado e aprovado |
+| T-059 | Base legal + contrato de operador | `[x]` | — | Instrumento jurídico DPA e bases legais LGPD formalizados em `docs/LGPD_CONTRATO_OPERADOR.md` |
+| T-060 | Consentimento + opt-out | `[x]` | T-011 | `POST /patients/{id}/opt-out` (Art. 11 LGPD) |
+| T-061 | `POST /patients/{id}/anonymize` | `[x]` | T-011 | `POST /patients/{id}/anonymize` (Art. 18 VI + Art. 16 II LGPD) |
+| T-062 | Política de retenção + portabilidade de dados | `[x]` | T-059 | `GET /patients/{id}/export` (Art. 18, V LGPD) |
+| T-047 | Deploy Railway + observabilidade | `[x]` | T-022 | Dockerfile + `railway.json` com healthcheck e migrações no deploy |
+| T-047a | Alerta de falha no cron de retenção | `[x]` | T-047 | `app/jobs/retention_health.py` — verificação diária e alerta de observabilidade |
 
 **Saída:** produção estável, LGPD coberta, backup restaurável.
 

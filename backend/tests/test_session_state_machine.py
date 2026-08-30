@@ -30,9 +30,7 @@ def test_todo_status_esta_na_tabela() -> None:
         (SessionStatus.CANCELLED, SessionStatus.PENDING),
     ],
 )
-def test_transicoes_validas(
-    current: SessionStatus, target: SessionStatus
-) -> None:
+def test_transicoes_validas(current: SessionStatus, target: SessionStatus) -> None:
     validate_transition(current, target)  # não levanta
 
 
