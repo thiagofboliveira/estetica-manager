@@ -35,6 +35,7 @@ class ProcedureService:
             estimated_cost=money(dto.estimated_cost),
             return_interval_days=dto.return_interval_days,
             default_modality=dto.default_modality,
+            split_override=money(dto.split_override) if dto.split_override is not None else None,
         )
         return self._repo.add(procedure)
 
@@ -85,6 +86,7 @@ class ProcedureService:
             estimated_cost=estimated_cost,
             return_interval_days=return_interval_days,
             default_modality=dto.default_modality,
+            split_override=dto.split_override,
         )
         return self.create(create_dto)
 
@@ -105,6 +107,8 @@ class ProcedureService:
             data["price"] = money(data["price"])
         if "estimated_cost" in data and data["estimated_cost"] is not None:
             data["estimated_cost"] = money(data["estimated_cost"])
+        if "split_override" in data and data["split_override"] is not None:
+            data["split_override"] = money(data["split_override"])
 
         for field, value in data.items():
             setattr(procedure, field, value)

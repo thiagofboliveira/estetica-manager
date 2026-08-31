@@ -15,6 +15,9 @@ class ProcedureCreate(InputSchema):
     estimated_cost: str = Field(description="Valor decimal, ex: '40.00'")
     return_interval_days: int | None = Field(default=None, ge=0)
     default_modality: Modality = Modality.IN_PERSON
+    split_override: str | None = Field(
+        default=None, description="Percentual de comissão customizado, ex: '30.00' (E6 / P1)"
+    )
 
     @model_validator(mode="after")
     def _produto_sem_intervalo_de_retorno(self) -> "ProcedureCreate":
@@ -31,6 +34,7 @@ class ProcedureUpdate(InputSchema):
     estimated_cost: str | None = None
     return_interval_days: int | None = Field(default=None, ge=0)
     default_modality: Modality | None = None
+    split_override: str | None = None
     is_active: bool | None = None
 
 
@@ -42,6 +46,7 @@ class ProcedureOut(OutputSchema):
     estimated_cost: MoneyOut
     return_interval_days: int | None
     default_modality: Modality
+    split_override: MoneyOut | None = None
     is_active: bool
     created_at: datetime
     updated_at: datetime
@@ -67,3 +72,6 @@ class ProcedureFromTemplateCreate(InputSchema):
         default=None, ge=0, description="Intervalo de retorno customizado (opcional)"
     )
     default_modality: Modality = Modality.IN_PERSON
+    split_override: str | None = Field(
+        default=None, description="Percentual de comissão customizado (opcional)"
+    )

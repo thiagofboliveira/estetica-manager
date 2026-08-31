@@ -9,10 +9,10 @@ Fórmula parametrizada exata (§12, TASK-018):
 
     items_total  = Σ (item.unit_price × item.quantity)
     bruto        = items_total − discount_amount
-    taxa         = f(payment_method, installments, payment_fee_rules)
+    taxa         = f(payment_method, installments, payment_fee_rules, antecipação)
     base_split   = bruto              se split_base = GROSS
                  = bruto − taxa       se split_base = NET_OF_FEE
-    split        = base_split × split_clinic_percentage
+    split        = base_split × split_clinic_percentage (ou split_override por item)
     taxa_dela    = taxa                  se fee_payer = PROFESSIONAL
                  = 0                     se fee_payer = CLINIC
                  = taxa × (1 − split%)   se fee_payer = SPLIT_PRO_RATA
@@ -72,6 +72,8 @@ class LineItem:
     # Custo por sessão já resolvido (COALESCE cost_override, se houver) e
     # já excluindo sessões EXPIRED — ver `provisioned_cost`/`realized_cost`.
     session_costs: list[Decimal]
+    # E6 — split_override por procedimento (P1)
+    split_override: Decimal | None = None
 
 
 @dataclass(frozen=True)
@@ -91,6 +93,9 @@ class SaleParams:
     installments: int
     discount_amount: Decimal
     fee_rules: list[FeeRule]
+    # E7 — Antecipação de Recebíveis (P1)
+    anticipates_all: bool = False
+    anticipation_rate_per_installment: Decimal | None = None
 
 
 @dataclass(frozen=True)
@@ -100,6 +105,8 @@ class ItemCalculationResult:
     line_total: Decimal  # unit_price * quantity, antes do desconto
     discount_allocated: Decimal
     net_of_discount: Decimal  # line_total - discount_allocated
+    split_applied: Decimal | None = None
+    split_amount: Decimal = ZERO
 
 
 @dataclass(frozen=True)
@@ -175,48 +182,85 @@ def calculate_sale(items: list[LineItem], params: SaleParams) -> SaleCalculation
         allocate(discount, line_totals) if discount > ZERO else [ZERO] * len(items)
     )
 
-    item_results = [
-        ItemCalculationResult(
-            unit_price=item.unit_price,
-            quantity=item.quantity,
-            line_total=line_total,
-            discount_allocated=alloc,
-            net_of_discount=money(line_total - alloc),
-        )
-        for item, line_total, alloc in zip(
-            items, line_totals, discount_allocations, strict=True
-        )
+    nets_of_discount = [
+        money(lt - alloc) for lt, alloc in zip(line_totals, discount_allocations, strict=True)
     ]
 
     # Taxa: calcula sobre o TOTAL, não por item (backend/ENGENHARIA.md §5).
     rule = _find_fee_rule(params.fee_rules, params.installments)
     fee_rate = rule.fee_percentage if rule else ZERO
     fixed_fee = rule.fixed_fee if rule else ZERO
+
+    # E7: Se antecipa crédito parcelado, adiciona taxa de antecipação
+    if (
+        params.payment_method == PaymentMethod.CREDIT
+        and params.anticipates_all
+        and params.anticipation_rate_per_installment is not None
+        and params.installments > 0
+    ):
+        anticipation_fee = params.anticipation_rate_per_installment * Decimal(params.installments)
+        fee_rate = fee_rate + anticipation_fee
+
     fee_amount = money(apply_rate(gross_amount, fee_rate / Decimal(100)) + fixed_fee)
 
-    split_rate = params.split_clinic_percentage
+    has_split_override = any(item.split_override is not None for item in items)
 
-    # base_split: GROSS usa o bruto; NET_OF_FEE desconta a taxa ANTES do
-    # split (E2). fee_payer (E1) é ortogonal e se aplica SEMPRE, nos dois
-    # casos — são dois eixos independentes de configuração, não um caso
-    # especial do outro.
-    #
-    # ⚠️ Verificado contra a matriz oficial de 5 cenários (MVP TASK-044,
-    # não o texto narrativo de §12 que usa uma fórmula de exemplo
-    # ligeiramente diferente para "Modelo D"): com split 30%, taxa 5%,
-    # custo R$300 sobre venda de R$1000 —
-    #   A (GROSS+PROFESSIONAL)   = R$350
-    #   B (NET_OF_FEE+PROFESSIONAL) = R$365
-    #   C (GROSS+SPLIT_PRO_RATA) = R$365
-    #   D (GROSS+CLINIC)         = R$400  ← TASK-044, não R$365
-    #   E (GROSS+PROFESSIONAL, split 0%) = R$650
-    # A fórmula abaixo, sem ramificação por split_base, reproduz os 5
-    # valores exatamente. tests/test_sale_calculator.py::MATRIX cobre isto.
-    if params.split_base is SplitBase.NET_OF_FEE:
-        base_split = money(gross_amount - fee_amount)
+    if has_split_override:
+        # Rateio item a item com split customizado
+        if params.split_base is SplitBase.NET_OF_FEE:
+            fee_allocations = (
+                allocate(fee_amount, nets_of_discount) if fee_amount > ZERO else [ZERO] * len(items)
+            )
+        else:
+            fee_allocations = [ZERO] * len(items)
+
+        item_results = []
+        item_splits = []
+        for item, line_total, disc_alloc, net_disc, fee_alloc in zip(
+            items, line_totals, discount_allocations, nets_of_discount, fee_allocations, strict=True
+        ):
+            base_split_item = money(net_disc - fee_alloc)
+            item_split_rate = (
+                item.split_override
+                if item.split_override is not None
+                else params.split_clinic_percentage
+            )
+            item_split_amt = apply_rate(base_split_item, item_split_rate / Decimal(100))
+            item_splits.append(item_split_amt)
+            item_results.append(
+                ItemCalculationResult(
+                    unit_price=item.unit_price,
+                    quantity=item.quantity,
+                    line_total=line_total,
+                    discount_allocated=disc_alloc,
+                    net_of_discount=net_disc,
+                    split_applied=item_split_rate,
+                    split_amount=item_split_amt,
+                )
+            )
+        split_amount = money(sum(item_splits, ZERO))
+        split_rate = params.split_clinic_percentage
     else:
-        base_split = gross_amount
-    split_amount = apply_rate(base_split, split_rate / Decimal(100))
+        item_results = [
+            ItemCalculationResult(
+                unit_price=item.unit_price,
+                quantity=item.quantity,
+                line_total=line_total,
+                discount_allocated=alloc,
+                net_of_discount=net_disc,
+                split_applied=params.split_clinic_percentage,
+                split_amount=ZERO,
+            )
+            for item, line_total, alloc, net_disc in zip(
+                items, line_totals, discount_allocations, nets_of_discount, strict=True
+            )
+        ]
+        split_rate = params.split_clinic_percentage
+        if params.split_base is SplitBase.NET_OF_FEE:
+            base_split = money(gross_amount - fee_amount)
+        else:
+            base_split = gross_amount
+        split_amount = apply_rate(base_split, split_rate / Decimal(100))
 
     if params.fee_payer is FeePayer.CLINIC:
         fee_charged = ZERO
@@ -256,19 +300,17 @@ def calculate_sale(items: list[LineItem], params: SaleParams) -> SaleCalculation
 
 
 def expected_receipt_date(
-    payment_method: PaymentMethod, sold_at: date, installments: int
+    payment_method: PaymentMethod,
+    sold_at: date,
+    installments: int,
+    anticipates: bool = False,
 ) -> date | None:
     """Lucro não é caixa (MVP v6 TASK-021, invariante I7). PIX/débito/
-    dinheiro/transferência: D+0 (mesmo dia). Crédito: D+30 por parcela —
-    aproximação MVP que usa a ÚLTIMA parcela como data de recebimento
-    total completo (tabela `receivables` por parcela individual é P1).
-
-    ⚠️ A entrevista da cliente zero mostrou que ela recebe Pix por
-    sessão — este caminho (CREDIT parcelado) não é exercitado por ela,
-    por isso o MVP v7.1 pede teste automatizado dedicado aqui (não há
-    uso real para pegar o bug). Ver testes em
-    tests/test_sale_calculator.py::test_expected_receipt_date_*.
+    dinheiro/transferência: D+0 (mesmo dia). Crédito: D+30 por parcela ou
+    D+2 quando antecipação automática estiver ativa (E7).
     """
     if payment_method == PaymentMethod.CREDIT:
+        if anticipates:
+            return sold_at + timedelta(days=2)
         return sold_at + timedelta(days=30 * installments)
     return sold_at

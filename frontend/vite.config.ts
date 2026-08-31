@@ -1,11 +1,12 @@
 /// <reference types="vitest/config" />
 import path from 'node:path'
 import diagnostics_channel from 'node:diagnostics_channel'
+import nodeCrypto from 'node:crypto'
 import react from '@vitejs/plugin-react'
 import { VitePWA } from 'vite-plugin-pwa'
 import { defineConfig } from 'vite'
 
-// Polyfill para tracingChannel em Node 18
+// Polyfill para Node 18 (tracingChannel e crypto)
 if (!(diagnostics_channel as any).tracingChannel) {
   (diagnostics_channel as any).tracingChannel = () => ({
     start: { publish: () => {} },
@@ -15,6 +16,18 @@ if (!(diagnostics_channel as any).tracingChannel) {
     error: { publish: () => {} },
     trace: (fn: any) => fn(),
   })
+}
+
+if (typeof (globalThis as any).crypto === 'undefined' || !(globalThis as any).crypto.randomBytes) {
+  try {
+    Object.defineProperty(globalThis, 'crypto', {
+      value: nodeCrypto,
+      writable: true,
+      configurable: true,
+    })
+  } catch {
+    (globalThis as any).crypto = nodeCrypto
+  }
 }
 
 // https://vite.dev/config/

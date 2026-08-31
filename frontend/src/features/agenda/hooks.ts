@@ -1,5 +1,5 @@
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { CACHE } from "@/lib/query/client";
+import { CACHE, queryClient } from "@/lib/query/client";
 import { invalidateAfterScheduling } from "@/lib/query/invalidation";
 import { qk } from "@/lib/query/keys";
 import {
@@ -68,7 +68,26 @@ export function useUnconfirmedSessions() {
 export function useConfirmSession() {
   return useMutation({
     mutationFn: (id: string) => sessionsApi.confirmSession(id),
-    onSuccess: async () => {
+    onMutate: async (id) => {
+      await queryClient.cancelQueries({ queryKey: [...qk.sessions(), "unconfirmed"] });
+      const previousData = queryClient.getQueryData([...qk.sessions(), "unconfirmed"]);
+      queryClient.setQueryData(
+        [...qk.sessions(), "unconfirmed"],
+        (old: any[] | undefined) =>
+          old?.map(s =>
+            s.session_id === id
+              ? { ...s, confirmed_at: new Date().toISOString() }
+              : s
+          )
+      );
+      return { previousData };
+    },
+    onError: (_err, _id, context) => {
+      if (context?.previousData) {
+        queryClient.setQueryData([...qk.sessions(), "unconfirmed"], context.previousData);
+      }
+    },
+    onSettled: async () => {
       await invalidateAfterScheduling();
     },
   });

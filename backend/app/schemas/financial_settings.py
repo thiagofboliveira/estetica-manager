@@ -13,6 +13,8 @@ class FinancialSettingsUpdate(InputSchema):
     pix_fee_percentage: str | None = None
     debit_card_fee_percentage: str | None = None
     default_payment_method: PaymentMethod | None = None
+    anticipates_all: bool | None = None
+    anticipation_rate_per_installment: str | None = None
 
 
 class FinancialSettingsOut(OutputSchema):
@@ -23,5 +25,7 @@ class FinancialSettingsOut(OutputSchema):
     pix_fee_percentage: MoneyOut
     debit_card_fee_percentage: MoneyOut
     default_payment_method: PaymentMethod
+    anticipates_all: bool = False
+    anticipation_rate_per_installment: MoneyOut | None = None
     created_at: datetime
     updated_at: datetime

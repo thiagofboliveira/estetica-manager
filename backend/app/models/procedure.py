@@ -53,4 +53,8 @@ class Procedure(TenantModel):
         default=Modality.IN_PERSON,
         nullable=False,
     )
+    # Override de comissão/split específico deste procedimento (E6 / P1)
+    split_override: Mapped[Decimal | None] = mapped_column(
+        Numeric(5, 2, asdecimal=True), nullable=True
+    )
     is_active: Mapped[bool] = mapped_column(default=True, nullable=False)

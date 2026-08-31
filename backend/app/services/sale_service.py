@@ -150,7 +150,9 @@ class SaleService:
             CalcLineItem(
                 unit_price=proc.price,
                 quantity=item.quantity,
-                unit_cost=proc.estimated_cost,
+                unit_cost_estimated=proc.estimated_cost,
+                session_costs=[proc.estimated_cost] * item.quantity,
+                split_override=proc.split_override,
             )
             for item, proc in ((i, procedures[i.procedure_id]) for i in dto.items)
         ]
@@ -158,7 +160,6 @@ class SaleService:
         # Converte enum do modelo para o enum puro do domínio (backend/ENGENHARIA.md §5:
         # domain/ não importa models nem schemas).
         params = SaleParams(
-            items=line_items,
             discount_amount=money(dto.discount_amount),
             payment_method=CalcPaymentMethod(dto.payment_method.value),
             installments=dto.installments,
@@ -173,18 +174,21 @@ class SaleService:
                 )
                 for r in fee_rules
             ],
+            anticipates_all=settings.anticipates_all,
+            anticipation_rate_per_installment=settings.anticipation_rate_per_installment,
         )
 
-        result: SaleCalculationResult = calculate_sale(params)
+        result: SaleCalculationResult = calculate_sale(line_items, params)
 
         prof = self._professionals.get_by_id(self._sales._professional_id)
         tz_name = prof.timezone if prof and prof.timezone else "America/Sao_Paulo"
         today = today_in_timezone(tz_name)
 
         expected_receipt = expected_receipt_date(
-            today,
             CalcPaymentMethod(dto.payment_method.value),
+            today,
             dto.installments,
+            anticipates=settings.anticipates_all,
         )
 
         sale = Sale(
@@ -197,9 +201,9 @@ class SaleService:
             items_total=result.items_total,
             discount_amount=result.discount_amount,
             gross_amount=result.gross_amount,
-            split_applied=result.split_applied,
+            split_applied=result.split_rate,
             split_base_applied=settings.split_base,
-            split_amount_applied=result.split_amount_paid_to_clinic,
+            split_amount_applied=result.split_amount,
             fee_payer_applied=settings.fee_payer,
             fee_applied=result.fee_rate,
             fee_amount_applied=result.fee_amount,
