@@ -1,4 +1,4 @@
-﻿import { useState } from "react";
+import { useState } from "react";
 import { Link } from "react-router-dom";
 import { usePatients } from "@/features/patients/hooks";
 import { useProcedures } from "@/features/procedures/hooks";
@@ -39,6 +39,13 @@ export function OnboardingChecklist({ hasAnySale }: Props) {
       done: hasPatients,
       link: "/pacientes/novo",
       actionText: "Cadastrar paciente",
+    },
+    {
+      id: "import",
+      label: "Importar suas pacientes existentes (opcional)",
+      done: hasPatients,
+      link: "/pacientes/importar",
+      actionText: "Importar lista",
     },
     {
       id: "sales",

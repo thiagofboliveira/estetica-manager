@@ -8,6 +8,7 @@ import type { Dashboard, DashboardParams, DashboardPeriod } from "./api";
 
 import { ProcedureRankingTable } from "./ProcedureRankingTable";
 import { OnboardingChecklist } from "@/features/onboarding/OnboardingChecklist";
+import { ROICard } from "./ROICard";
 
 const PERIOD_OPTIONS: { value: DashboardPeriod; label: string }[] = [
   { value: "today", label: "Hoje" },
@@ -33,10 +34,12 @@ export function DashboardPage() {
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
 
+  const isInvalidRange = period === "custom" && Boolean(dateFrom && dateTo && dateFrom > dateTo);
+
   const params: DashboardParams = {
     period,
-    date_from: period === "custom" ? dateFrom : undefined,
-    date_to: period === "custom" ? dateTo : undefined,
+    date_from: period === "custom" && !isInvalidRange ? dateFrom : undefined,
+    date_to: period === "custom" && !isInvalidRange ? dateTo : undefined,
   };
 
   const query = useDashboard(params);
@@ -76,7 +79,11 @@ export function DashboardPage() {
         </div>
       )}
 
-      {period === "custom" && !(dateFrom && dateTo) ? (
+      {period === "custom" && isInvalidRange ? (
+        <p className="form__error" style={{ marginTop: "12px", color: "#ef4444" }}>
+          A data final deve ser maior ou igual à data inicial.
+        </p>
+      ) : period === "custom" && !(dateFrom && dateTo) ? (
         <p>Escolha as duas datas para ver o período.</p>
       ) : (
         <AsyncBoundary
@@ -93,6 +100,7 @@ export function DashboardPage() {
         >
           {(dashboard) => (
             <>
+              <ROICard params={params} />
               <DashboardMetrics dashboard={dashboard} />
               <ProcedureRankingTable params={params} />
             </>

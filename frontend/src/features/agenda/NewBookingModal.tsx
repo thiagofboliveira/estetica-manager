@@ -1,9 +1,10 @@
-﻿import { useState } from "react";
+import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { ApiError } from "@/lib/http/client";
 import type { Modality } from "./api";
+import { formatDateToLocalInput } from "@/lib/format/date";
 import { useCreateBooking } from "./hooks";
 
 const schema = z.object({
@@ -23,10 +24,11 @@ export function NewBookingModal({ onClose }: Props) {
   const createBooking = useCreateBooking();
   const [serverError, setServerError] = useState<string | null>(null);
 
-  // Data padrão: hoje na próxima hora cheia
+  // Data padrão: hoje na próxima hora cheia (hora local)
   const now = new Date();
   now.setHours(now.getHours() + 1, 0, 0, 0);
-  const defaultIso = now.toISOString().slice(0, 16);
+  
+  const localISOTime = formatDateToLocalInput(now);
 
   const {
     register,
@@ -36,7 +38,7 @@ export function NewBookingModal({ onClose }: Props) {
     resolver: zodResolver(schema),
     defaultValues: {
       patient_name_hint: "",
-      scheduled_at: defaultIso,
+      scheduled_at: localISOTime,
       modality: "IN_PERSON",
       note: "",
     },

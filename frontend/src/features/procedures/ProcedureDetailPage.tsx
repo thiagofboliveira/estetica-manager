@@ -10,7 +10,7 @@ export function ProcedureDetailPage() {
   const update = useUpdateProcedure(id);
 
   async function handleSubmit(values: ProcedureFormValues) {
-    const { type: _type, ...payload } = toProcedurePayload(values);
+    const payload = toProcedurePayload(values);
     await update.mutateAsync(payload);
   }
 

@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { formatBRL } from "@/lib/money/format";
 import { money } from "@/lib/money/money";
 import { Logger } from "@/lib/telemetry/logger";
@@ -12,6 +13,7 @@ type Props = {
 
 export function RetentionCard({ card }: Props) {
   const updateOpportunity = useUpdateRetentionOpportunity();
+  const [feedback, setFeedback] = useState<string | null>(null);
 
   const cleanPhone = card.patient_phone ? card.patient_phone.replace(/\D/g, "") : null;
   const primaryOpp = card.primary_opportunity;
@@ -36,8 +38,10 @@ export function RetentionCard({ card }: Props) {
           contacted_at: new Date().toISOString(),
         },
       });
+      setFeedback("Contato registrado!");
     } catch (error) {
-      Logger.captureException(error, { context: "WhatsApp Tracking Silent Fail", opportunityId: primaryOpp.id });
+      Logger.captureException(error, { context: "WhatsApp Tracking Fail", opportunityId: primaryOpp.id });
+      setFeedback("Mensagem aberta, mas não foi possível sincronizar o status no servidor.");
     }
   }
 
@@ -131,6 +135,11 @@ export function RetentionCard({ card }: Props) {
             >
               💬 WhatsApp desabilitado ({card.disabled_reason || "Sem consentimento"})
             </button>
+          )}
+          {feedback && (
+            <span style={{ fontSize: "12px", color: feedback.includes("não") ? "#ef4444" : "#10b981", marginTop: "4px", display: "block" }}>
+              {feedback}
+            </span>
           )}
         </div>
       </div>

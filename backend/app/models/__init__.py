@@ -6,6 +6,7 @@
 from app.models import listeners  # noqa: F401,E402
 from app.models.base import Base, TenantModel, TimestampMixin
 from app.models.booking import Booking, BookingStatus
+from app.models.clinic import Clinic
 from app.models.financial_settings import (
     FeePayer,
     FinancialSettings,
@@ -31,6 +32,7 @@ __all__ = [
     "Base",
     "TenantModel",
     "TimestampMixin",
+    "Clinic",
     "User",
     "Professional",
     "Patient",

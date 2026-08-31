@@ -33,8 +33,9 @@ async function freshToken(force = false): Promise<string | null> {
 
 async function request<T>(path: string, opts: Opts = {}, isRetry = false): Promise<T> {
   const token = await freshToken();
+  const cleanPath = path.startsWith("/api/v1") ? path.replace(/^\/api\/v1/, "") : path;
 
-  const res = await fetch(`${BASE}${path}`, {
+  const res = await fetch(`${BASE}${cleanPath}`, {
     ...opts,
     headers: {
       "Content-Type": "application/json",
@@ -79,6 +80,8 @@ export const api = {
   get: <T>(p: string, o?: Opts) => request<T>(p, { ...o, method: "GET" }),
   post: <T>(p: string, b: unknown, o?: Opts) =>
     request<T>(p, { ...o, method: "POST", body: JSON.stringify(b) }),
+  put: <T>(p: string, b: unknown, o?: Opts) =>
+    request<T>(p, { ...o, method: "PUT", body: JSON.stringify(b) }),
   patch: <T>(p: string, b: unknown, o?: Opts) =>
     request<T>(p, { ...o, method: "PATCH", body: JSON.stringify(b) }),
   del: <T>(p: string, o?: Opts) => request<T>(p, { ...o, method: "DELETE" }),

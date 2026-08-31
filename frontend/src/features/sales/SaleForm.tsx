@@ -1,10 +1,11 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { AsyncBoundary } from "@/ui/AsyncBoundary";
 import { useProcedures } from "@/features/procedures/hooks";
+import { usePatient } from "@/features/patients/hooks";
 import { formatBRL } from "@/lib/money/format";
 import { money } from "@/lib/money/money";
 import { ApiError } from "@/lib/http/client";
@@ -32,6 +33,9 @@ type FormValues = z.infer<typeof schema>;
 export function SaleForm() {
   const [searchParams] = useSearchParams();
   const bookingId = searchParams.get("booking_id");
+  const patientIdParam = searchParams.get("patient_id");
+  const preloadedPatientQuery = usePatient(patientIdParam || "");
+
   const proceduresQuery = useProcedures();
   const createSale = useCreateSale();
   const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null);
@@ -53,6 +57,13 @@ export function SaleForm() {
       installments: "1",
     },
   });
+
+  useEffect(() => {
+    if (preloadedPatientQuery.data && !selectedPatient) {
+      setSelectedPatient(preloadedPatientQuery.data);
+      setValue("patientId", preloadedPatientQuery.data.id);
+    }
+  }, [preloadedPatientQuery.data, selectedPatient, setValue]);
 
   const procedureId = watch("procedureId");
   const paymentMethod = watch("paymentMethod");

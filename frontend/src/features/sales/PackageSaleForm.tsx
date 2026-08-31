@@ -14,6 +14,9 @@ import type { Patient } from "@/features/patients/api";
 import type { Procedure } from "@/features/procedures/api";
 import type { Sale } from "./api";
 
+import { useSearchParams } from "react-router-dom";
+import { usePatient } from "@/features/patients/hooks";
+
 const lineSchema = z.object({
   procedureId: z.string().min(1, "Selecione o procedimento"),
   procedureName: z.string(),
@@ -21,13 +24,34 @@ const lineSchema = z.object({
   quantity: z.string().refine((v) => Number(v) > 0, "Quantidade deve ser maior que zero"),
 });
 
-const schema = z.object({
-  patientId: z.string().min(1, "Selecione a paciente"),
-  lines: z.array(lineSchema).min(1, "Adicione pelo menos um item"),
-  discount: z.string(),
-  paymentMethod: z.enum(["PIX", "DEBIT", "CREDIT", "CASH", "TRANSFER"]),
-  installments: z.string(),
-});
+const schema = z
+  .object({
+    patientId: z.string().min(1, "Selecione a paciente"),
+    lines: z.array(lineSchema).min(1, "Adicione pelo menos um item"),
+    discount: z.string(),
+    paymentMethod: z.enum(["PIX", "DEBIT", "CREDIT", "CASH", "TRANSFER"]),
+    installments: z.string(),
+  })
+  .refine(
+    (data) => {
+      try {
+        const validLines = data.lines.filter((l) => l.procedureId);
+        if (!validLines.length) return true;
+        const lineTotals = validLines.map((l) =>
+          mulQty(money(l.unitPrice || ZERO), Number(l.quantity) || 0)
+        );
+        const itemsTotal = sum(lineTotals);
+        const disc = money(data.discount || ZERO);
+        return Number(disc) <= Number(itemsTotal);
+      } catch {
+        return true;
+      }
+    },
+    {
+      message: "O desconto não pode ser maior que o total dos itens",
+      path: ["discount"],
+    }
+  );
 
 type FormValues = z.infer<typeof schema>;
 
@@ -42,6 +66,10 @@ const emptyLine = { procedureId: "", procedureName: "", unitPrice: ZERO, quantit
  * (soma simples, sem rateio) — não é uma alegação de lucro.
  */
 export function PackageSaleForm() {
+  const [searchParams] = useSearchParams();
+  const patientIdParam = searchParams.get("patient_id");
+  const preloadedPatientQuery = usePatient(patientIdParam || "");
+
   const proceduresQuery = useProcedures();
   const createSale = useCreateSale();
   const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null);
@@ -65,6 +93,13 @@ export function PackageSaleForm() {
       installments: "1",
     },
   });
+
+  useMemo(() => {
+    if (preloadedPatientQuery.data && !selectedPatient) {
+      setSelectedPatient(preloadedPatientQuery.data);
+      setValue("patientId", preloadedPatientQuery.data.id);
+    }
+  }, [preloadedPatientQuery.data, selectedPatient, setValue]);
 
   const { fields, append, remove } = useFieldArray({ control, name: "lines" });
 

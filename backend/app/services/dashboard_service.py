@@ -65,6 +65,9 @@ class DashboardService:
         session_count = self._sessions.count_completed_in_period(
             period.date_from, period.date_to, professional.timezone
         )
+        no_show_count = self._sessions.count_no_show_in_period(
+            period.date_from, period.date_to, professional.timezone
+        )
         fixed_expenses = [
             FixedExpenseForDashboard(amount=e.amount, periodicity=e.periodicity.value)
             for e in self._fixed_expenses.list_active()
@@ -73,6 +76,7 @@ class DashboardService:
         result = build_dashboard(
             sales=sales,
             session_count=session_count,
+            no_show_count=no_show_count,
             fixed_expenses=fixed_expenses,
             period_kind=period.kind,
             today=today,

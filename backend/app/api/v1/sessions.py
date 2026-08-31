@@ -10,6 +10,7 @@ from app.schemas.session import (
     OpenPackageOut,
     SessionDetailOut,
     SessionUpdate,
+    UnconfirmedSessionOut,
 )
 from app.services.session_service import SessionNotFoundError
 
@@ -30,6 +31,24 @@ def get_sessions_agenda(
             "A data final deve ser maior ou igual à data inicial.",
         )
     return svc.get_agenda(date_from, date_to)
+
+
+@router.get("/sessions/unconfirmed", response_model=list[UnconfirmedSessionOut])
+def list_unconfirmed_sessions(svc: SessionSvc) -> list[UnconfirmedSessionOut]:
+    """Lista sessões e reservas agendadas para amanhã que ainda não foram confirmadas (EPIC-S2-02, TASK-BACK-S2-06)."""
+    return svc.list_unconfirmed()
+
+
+@router.post("/sessions/{session_id}/confirm", response_model=SessionDetailOut)
+def confirm_session(session_id: UUID, svc: SessionSvc) -> SessionDetailOut:
+    """Registra a confirmação de presença da sessão (EPIC-S2-02, TASK-BACK-S2-10)."""
+    try:
+        session = svc.confirm(session_id)
+        return SessionDetailOut.model_validate(session)
+    except SessionNotFoundError as exc:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Sessão não encontrada") from exc
+    except ValueError as exc:
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, str(exc)) from exc
 
 
 @router.get("/packages/open", response_model=list[OpenPackageOut])

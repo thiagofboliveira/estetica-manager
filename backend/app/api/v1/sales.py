@@ -56,6 +56,11 @@ def create_sale(
             status.HTTP_409_CONFLICT,
             "Idempotency-Key já usada com um corpo diferente",
         ) from exc
+    except ValueError as exc:
+        raise HTTPException(
+            status.HTTP_422_UNPROCESSABLE_ENTITY,
+            str(exc),
+        ) from exc
     response.status_code = (
         status.HTTP_200_OK if was_existing else status.HTTP_201_CREATED
     )

@@ -22,7 +22,10 @@ def list_payment_fee_rules(svc: PaymentFeeRuleSvc) -> list[PaymentFeeRuleOut]:
 def create_payment_fee_rule(
     payload: PaymentFeeRuleCreate, svc: PaymentFeeRuleSvc
 ) -> PaymentFeeRuleOut:
-    return PaymentFeeRuleOut.model_validate(svc.create(payload))
+    try:
+        return PaymentFeeRuleOut.model_validate(svc.create(payload))
+    except ValueError as exc:
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, str(exc)) from exc
 
 
 @router.patch("/{rule_id}", response_model=PaymentFeeRuleOut)
@@ -33,6 +36,8 @@ def update_payment_fee_rule(
         rule = svc.update(rule_id, payload)
     except PaymentFeeRuleNotFoundError as exc:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Regra não encontrada") from exc
+    except ValueError as exc:
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, str(exc)) from exc
     return PaymentFeeRuleOut.model_validate(rule)
 
 

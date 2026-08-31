@@ -8,12 +8,14 @@ Rotas públicas (/health) simplesmente não declaram DbSession.
 from typing import Annotated
 from uuid import UUID
 
-from fastapi import Depends
+from fastapi import Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.core.security import get_current_professional_id
-from app.db.session import get_tenant_session
+from app.db.session import get_tenant_session, unsafe_session_without_tenant
+from app.models.user import User
 from app.repositories.booking import BookingRepository
+from app.repositories.clinic import ClinicRepository
 from app.repositories.financial_settings import FinancialSettingsRepository
 from app.repositories.fixed_expense import FixedExpenseRepository
 from app.repositories.patient import PatientRepository
@@ -24,7 +26,10 @@ from app.repositories.return_opportunity import ReturnOpportunityRepository
 from app.repositories.sale import SaleRepository
 from app.repositories.sale_item import SaleItemRepository
 from app.repositories.session import SessionRepository
+from app.repositories.user import UserRepository
+from app.services.attribution_service import AttributionService
 from app.services.booking_service import BookingService
+from app.services.clinic_service import ClinicService
 from app.services.dashboard_service import DashboardService
 from app.services.financial_settings_service import FinancialSettingsService
 from app.services.fixed_expense_service import FixedExpenseService
@@ -35,6 +40,8 @@ from app.services.procedure_service import ProcedureService
 from app.services.retention_service import RetentionService
 from app.services.sale_service import SaleService
 from app.services.session_service import SessionService
+from app.services.system_service import SystemService
+from app.services.user_service import UserService
 
 CurrentProfessional = Annotated[UUID, Depends(get_current_professional_id)]
 
@@ -44,6 +51,57 @@ def _db(professional_id: CurrentProfessional):
 
 
 DbSession = Annotated[Session, Depends(_db)]
+
+
+def _system_db():
+    with unsafe_session_without_tenant("system status or setup") as session:
+        yield session
+
+
+SystemDbSession = Annotated[Session, Depends(_system_db)]
+
+
+def get_current_user(
+    session: DbSession, professional_id: CurrentProfessional
+) -> User:
+    user = UserRepository(session).get_by_id(professional_id)
+    if user is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Usuário não encontrado",
+        )
+    if not user.is_active:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Usuário inativo",
+        )
+    return user
+
+
+CurrentUser = Annotated[User, Depends(get_current_user)]
+
+
+def require_admin(user: CurrentUser) -> User:
+    if user.role not in ("admin", "superadmin") and not user.is_superuser:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Acesso restrito a administradores",
+        )
+    return user
+
+
+def require_superadmin(user: CurrentUser) -> User:
+    if user.role != "superadmin" and not user.is_superuser:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Acesso restrito ao Super Admin",
+        )
+    return user
+
+
+AdminUser = Annotated[User, Depends(require_admin)]
+SuperAdminUser = Annotated[User, Depends(require_superadmin)]
+GlobalSuperAdminUser = Annotated[User, Depends(require_superadmin)]
 
 
 def get_patient_service(
@@ -153,6 +211,35 @@ def get_booking_service(
     )
 
 
+def get_user_service(session: DbSession) -> UserService:
+    return UserService(UserRepository(session))
+
+
+def get_system_service(session: SystemDbSession) -> SystemService:
+    return SystemService(UserRepository(session), session)
+
+
+def get_clinic_service(session: DbSession) -> ClinicService:
+    return ClinicService(ClinicRepository(session))
+
+
+def get_system_clinic_service(session: SystemDbSession) -> ClinicService:
+    return ClinicService(ClinicRepository(session))
+
+
+def get_system_user_service(session: SystemDbSession) -> UserService:
+    return UserService(UserRepository(session))
+
+
+def get_attribution_service(
+    session: DbSession, professional_id: CurrentProfessional
+) -> AttributionService:
+    return AttributionService(
+        opportunity_repo=ReturnOpportunityRepository(session, professional_id),
+        professional_repo=ProfessionalRepository(session, professional_id),
+    )
+
+
 PatientSvc = Annotated[PatientService, Depends(get_patient_service)]
 ProcedureSvc = Annotated[ProcedureService, Depends(get_procedure_service)]
 FinancialSettingsSvc = Annotated[
@@ -170,3 +257,9 @@ ProcedureRankingSvc = Annotated[
 SessionSvc = Annotated[SessionService, Depends(get_session_service)]
 RetentionSvc = Annotated[RetentionService, Depends(get_retention_service)]
 BookingSvc = Annotated[BookingService, Depends(get_booking_service)]
+UserSvc = Annotated[UserService, Depends(get_user_service)]
+SystemSvc = Annotated[SystemService, Depends(get_system_service)]
+ClinicSvc = Annotated[ClinicService, Depends(get_clinic_service)]
+SystemClinicSvc = Annotated[ClinicService, Depends(get_system_clinic_service)]
+SystemUserSvc = Annotated[UserService, Depends(get_system_user_service)]
+AttributionSvc = Annotated[AttributionService, Depends(get_attribution_service)]

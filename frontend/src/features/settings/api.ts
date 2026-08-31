@@ -1,4 +1,4 @@
-﻿import { api } from "@/lib/http/client";
+import { api } from "@/lib/http/client";
 
 export type PaymentMethod = "PIX" | "DEBIT" | "CREDIT" | "CASH" | "TRANSFER";
 export type SplitBase = "GROSS" | "NET_OF_FEE";
@@ -45,6 +45,7 @@ export type PaymentFeeRuleCreateInput = {
 };
 
 export type PaymentFeeRuleUpdateInput = {
+  payment_method?: PaymentMethod;
   installments_min?: number;
   installments_max?: number;
   fee_percentage?: string;

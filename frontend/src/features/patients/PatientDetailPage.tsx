@@ -1,8 +1,9 @@
-﻿import { useState } from "react";
+import { useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { AsyncBoundary } from "@/ui/AsyncBoundary";
 import { PatientForm, type PatientFormValues } from "./PatientForm";
-import { usePatient, useUpdatePatient } from "./hooks";
+import { useAnonymizePatient, useOptOutPatient, usePatient, useUpdatePatient } from "./hooks";
+import { patientsApi } from "./api";
 
 type Tab = "data" | "history";
 
@@ -11,7 +12,10 @@ export function PatientDetailPage() {
   const navigate = useNavigate();
   const query = usePatient(id);
   const update = useUpdatePatient(id);
+  const anonymize = useAnonymizePatient(id);
+  const optOut = useOptOutPatient(id);
   const [tab, setTab] = useState<Tab>("data");
+  const [exporting, setExporting] = useState(false);
 
   async function handleSubmit(values: PatientFormValues) {
     await update.mutateAsync({
@@ -22,6 +26,41 @@ export function PatientDetailPage() {
       notes: values.notes || null,
       consent_whatsapp: values.consent_whatsapp,
     });
+  }
+
+  async function handleExport() {
+    setExporting(true);
+    try {
+      const data = await patientsApi.exportData(id);
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `paciente_${id}_lgpd.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch {
+      alert("Erro ao exportar dados do paciente.");
+    } finally {
+      setExporting(false);
+    }
+  }
+
+  async function handleOptOut() {
+    if (confirm("Deseja registrar o Opt-Out de comunicações por WhatsApp para esta paciente?")) {
+      await optOut.mutateAsync();
+    }
+  }
+
+  async function handleAnonymize() {
+    if (
+      confirm(
+        "Atenção: A anonimização é irreversível e substituirá nome, telefone e dados pessoais por identificadores anônimos para conformidade com a LGPD. Confirmar?"
+      )
+    ) {
+      await anonymize.mutateAsync();
+      navigate("/pacientes");
+    }
   }
 
   return (
@@ -82,7 +121,7 @@ export function PatientDetailPage() {
 
                   <button
                     type="button"
-                    onClick={() => navigate(`/vendas/nova`)}
+                    onClick={() => navigate(`/vendas/nova?patient_id=${patient.id}`)}
                     className="button tap-target"
                   >
                     + Registrar Venda
@@ -107,7 +146,7 @@ export function PatientDetailPage() {
                   className="tab-button tap-target"
                   onClick={() => setTab("history")}
                 >
-                  Resumo & Observações
+                  Resumo, Privacidade & LGPD
                 </button>
               </div>
 
@@ -119,7 +158,7 @@ export function PatientDetailPage() {
                 )}
 
                 {tab === "history" && (
-                  <div className="card patient-summary">
+                  <div className="card patient-summary" style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
                     <div className="patient-summary__item">
                       <span className="summary-label">Consentimento LGPD (WhatsApp)</span>
                       <span className="summary-value">
@@ -143,6 +182,51 @@ export function PatientDetailPage() {
                       <p className="summary-notes">
                         {patient.notes ? patient.notes : "Nenhuma anotação registrada."}
                       </p>
+                    </div>
+
+                    <hr style={{ borderColor: "#e2e8f0", margin: "8px 0" }} />
+
+                    <div>
+                      <h3 style={{ fontSize: "15px", fontWeight: 700, marginBottom: "8px", color: "#0f172a" }}>
+                        Privacidade & Direitos do Titular (LGPD)
+                      </h3>
+                      <p style={{ fontSize: "13px", color: "#64748b", marginBottom: "16px" }}>
+                        Ações para atender aos direitos de revogação de consentimento, portabilidade e eliminação de dados.
+                      </p>
+
+                      <div style={{ display: "flex", flexWrap: "wrap", gap: "10px" }}>
+                        <button
+                          type="button"
+                          onClick={handleExport}
+                          disabled={exporting}
+                          className="button button--secondary tap-target"
+                          style={{ fontSize: "13px" }}
+                        >
+                          📦 {exporting ? "Exportando..." : "Exportar Dados (JSON)"}
+                        </button>
+
+                        {patient.consent_whatsapp && (
+                          <button
+                            type="button"
+                            onClick={handleOptOut}
+                            disabled={optOut.isPending}
+                            className="button button--secondary tap-target"
+                            style={{ fontSize: "13px", color: "#d97706" }}
+                          >
+                            🚫 Registrar Opt-Out
+                          </button>
+                        )}
+
+                        <button
+                          type="button"
+                          onClick={handleAnonymize}
+                          disabled={anonymize.isPending}
+                          className="button tap-target"
+                          style={{ fontSize: "13px", background: "#ef4444", color: "#fff" }}
+                        >
+                          🗑️ Anonimizar Paciente
+                        </button>
+                      </div>
                     </div>
                   </div>
                 )}

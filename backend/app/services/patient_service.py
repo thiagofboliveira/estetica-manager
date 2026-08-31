@@ -1,10 +1,17 @@
 from datetime import UTC, datetime
-from uuid import UUID
+from uuid import UUID, uuid4
 
-from app.core.phone import normalize_br_phone
+from app.core.phone import InvalidPhoneError, normalize_br_phone
 from app.models.patient import Patient
 from app.repositories.patient import PatientRepository
-from app.schemas.patient import PatientCreate, PatientUpdate
+from app.schemas.patient import (
+    PatientBatchImportError,
+    PatientBatchImportRequest,
+    PatientBatchImportResult,
+    PatientCreate,
+    PatientOut,
+    PatientUpdate,
+)
 
 
 class PatientNotFoundError(Exception):
@@ -25,6 +32,80 @@ class PatientService:
             notes=dto.notes,
         )
         return self._repo.add(patient)
+
+    def batch_import(self, request: PatientBatchImportRequest) -> PatientBatchImportResult:
+        """Importação em lote de pacientes com deduplicação por telefone e validação atômica (EPIC-S2-03, TASK-BACK-S2-14)."""
+        existing_phones = self._repo.list_existing_phones()
+        seen_batch_phones: set[str] = set()
+
+        created_patients: list[Patient] = []
+        errors: list[PatientBatchImportError] = []
+        skipped_count = 0
+
+        total_items = len(request.patients)
+
+        for i, item in enumerate(request.patients):
+            line_no = i + 1
+            name = item.name.strip() if item.name else ""
+
+            if not name:
+                errors.append(
+                    PatientBatchImportError(line=line_no, reason="Nome é obrigatório.")
+                )
+                continue
+
+            normalized_phone: str | None = None
+            if item.phone and item.phone.strip():
+                try:
+                    normalized_phone = normalize_br_phone(item.phone)
+                except (InvalidPhoneError, ValueError):
+                    # Validação suave: telefone malformado vira None com aviso
+                    normalized_phone = None
+
+            # Deduplicação: se telefone já existe no tenant ou neste lote, pula
+            if normalized_phone:
+                if (
+                    normalized_phone in existing_phones
+                    or normalized_phone in seen_batch_phones
+                ):
+                    skipped_count += 1
+                    continue
+                seen_batch_phones.add(normalized_phone)
+
+            now = datetime.now(UTC)
+            new_patient = Patient(
+                id=uuid4(),
+                name=name,
+                phone=normalized_phone,
+                email=item.email.strip() if item.email else None,
+                notes=item.notes,
+                consent_whatsapp=False,
+                is_active=True,
+                created_at=now,
+                updated_at=now,
+            )
+            created_patients.append(new_patient)
+
+        # Transação atômica: se houver erros críticos (> 20% das linhas), aborta
+        if total_items > 0 and len(errors) / total_items > 0.20:
+            return PatientBatchImportResult(
+                created_count=0,
+                skipped_count=0,
+                errors=errors,
+                patients=[],
+            )
+
+        for p in created_patients:
+            self._repo.add(p)
+
+        self._repo.flush()
+
+        return PatientBatchImportResult(
+            created_count=len(created_patients),
+            skipped_count=skipped_count,
+            errors=errors,
+            patients=[PatientOut.model_validate(p) for p in created_patients],
+        )
 
     def get(self, patient_id: UUID) -> Patient:
         patient = self._repo.get(patient_id)

@@ -14,6 +14,7 @@ import {
 
 const ruleSchema = z
   .object({
+    payment_method: z.enum(["CREDIT", "DEBIT", "PIX", "CASH", "TRANSFER"]),
     installments_min: z.string().min(1, "Obrigatório").refine((v) => Number(v) >= 1, "Mínimo 1 parcela"),
     installments_max: z.string().min(1, "Obrigatório").refine((v) => Number(v) >= 1, "Mínimo 1 parcela"),
     fee_percentage: z.string().refine((v) => {
@@ -47,6 +48,7 @@ export function PaymentFeeRulesManager() {
   } = useForm<RuleFormValues>({
     resolver: zodResolver(ruleSchema),
     defaultValues: {
+      payment_method: "CREDIT",
       installments_min: "1",
       installments_max: "1",
       fee_percentage: "3.20",
@@ -59,6 +61,7 @@ export function PaymentFeeRulesManager() {
     setIsAdding(true);
     setErrorMsg(null);
     reset({
+      payment_method: rule.payment_method as "CREDIT" | "DEBIT" | "PIX" | "CASH" | "TRANSFER",
       installments_min: rule.installments_min.toString(),
       installments_max: rule.installments_max.toString(),
       fee_percentage: rule.fee_percentage,
@@ -71,6 +74,7 @@ export function PaymentFeeRulesManager() {
     setIsAdding(true);
     setErrorMsg(null);
     reset({
+      payment_method: "CREDIT",
       installments_min: "1",
       installments_max: "1",
       fee_percentage: "3.20",
@@ -91,6 +95,7 @@ export function PaymentFeeRulesManager() {
         await updateRule.mutateAsync({
           id: editingRule.id,
           payload: {
+            payment_method: values.payment_method,
             installments_min: Number(values.installments_min),
             installments_max: Number(values.installments_max),
             fee_percentage: values.fee_percentage,
@@ -99,7 +104,7 @@ export function PaymentFeeRulesManager() {
         });
       } else {
         await createRule.mutateAsync({
-          payment_method: "CREDIT",
+          payment_method: values.payment_method,
           installments_min: Number(values.installments_min),
           installments_max: Number(values.installments_max),
           fee_percentage: values.fee_percentage,
@@ -142,6 +147,17 @@ export function PaymentFeeRulesManager() {
       {isAdding && (
         <form onSubmit={submit} className="form form--nested">
           <h4>{editingRule ? "Editar faixa de parcelas" : "Nova faixa de parcelas"}</h4>
+
+          <label className="form__field">
+            <span>Método de Pagamento</span>
+            <select {...register("payment_method")} style={{ padding: "8px 12px", borderRadius: "6px", border: "1px solid #cbd5e1" }}>
+              <option value="CREDIT">Cartão de Crédito</option>
+              <option value="DEBIT">Cartão de Débito</option>
+              <option value="PIX">Pix</option>
+              <option value="CASH">Dinheiro</option>
+              <option value="TRANSFER">Transferência</option>
+            </select>
+          </label>
 
           <div className="form__row">
             <label className="form__field">

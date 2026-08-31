@@ -20,6 +20,7 @@ class SessionDetailOut(OutputSchema):
     sequence_number: int
     scheduled_at: datetime | None
     completed_at: datetime | None
+    confirmed_at: datetime | None = None
     status: SessionStatus
     modality: Modality
     cost_override: MoneyOut | None
@@ -41,6 +42,20 @@ class AgendaItemOut(OutputSchema):
     sequence_number: int | None = None
     total_sessions: int | None = None
     note: str | None = None
+    confirmed_at: datetime | None = None
+
+
+class UnconfirmedSessionOut(OutputSchema):
+    session_id: UUID
+    type: str = "SESSION"  # "SESSION" | "BOOKING"
+    patient_name: str
+    patient_phone: str | None
+    procedure_name: str
+    scheduled_at: datetime
+    modality: Modality
+    whatsapp_link: str | None
+    consent_whatsapp: bool
+    confirmed_at: datetime | None = None
 
 
 class OpenPackageOut(OutputSchema):

@@ -42,6 +42,17 @@ export type ProcedureRanking = {
   rows: ProcedureRankingRow[];
 };
 
+export type ROI = {
+  attributed_revenue: string;
+  attributed_sale_count: number;
+  patients_reactivated: number;
+  roi_ratio: string | null;
+  period: string;
+  date_from: string;
+  date_to: string;
+  is_estimated: boolean;
+};
+
 export const dashboardApi = {
   get: (params: DashboardParams) => {
     const qs = new URLSearchParams({ period: params.period });
@@ -54,5 +65,11 @@ export const dashboardApi = {
     if (params.date_from) qs.set("date_from", params.date_from);
     if (params.date_to) qs.set("date_to", params.date_to);
     return api.get<ProcedureRanking>(`/reports/procedures?${qs.toString()}`);
+  },
+  getRoi: (params: DashboardParams) => {
+    const qs = new URLSearchParams({ period: params.period });
+    if (params.date_from) qs.set("date_from", params.date_from);
+    if (params.date_to) qs.set("date_to", params.date_to);
+    return api.get<ROI>(`/dashboard/roi?${qs.toString()}`);
   },
 };

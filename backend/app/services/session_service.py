@@ -1,8 +1,14 @@
-from datetime import UTC, date, datetime, time
+from datetime import UTC, date, datetime, time, timedelta
 from uuid import UUID
 from zoneinfo import ZoneInfo
 
 from app.core.money import money
+from app.core.tz import today_in_timezone
+from app.domain.bookings.enums import BookingStatus
+from app.domain.messaging.templates import (
+    build_confirmation_message,
+    build_whatsapp_link,
+)
 from app.domain.retention.enums import ReturnOpportunityStatus
 from app.domain.retention.opportunity_rules import calculate_due_date
 from app.domain.sales.session_state_machine import SessionStatus, validate_transition
@@ -16,7 +22,12 @@ from app.repositories.return_opportunity import ReturnOpportunityRepository
 from app.repositories.sale import SaleRepository
 from app.repositories.sale_item import SaleItemRepository
 from app.repositories.session import SessionRepository
-from app.schemas.session import AgendaItemOut, OpenPackageOut, SessionUpdate
+from app.schemas.session import (
+    AgendaItemOut,
+    OpenPackageOut,
+    SessionUpdate,
+    UnconfirmedSessionOut,
+)
 
 
 class SessionNotFoundError(Exception):
@@ -309,4 +320,99 @@ class SessionService:
                 pkg.last_session_completed_at or datetime.min.replace(tzinfo=UTC),
             )
         )
+        return result
+
+    def confirm(self, session_id: UUID) -> Session:
+        """Registra a confirmação de presença da sessão (EPIC-S2-02, TASK-BACK-S2-10)."""
+        session = self.get(session_id)
+        if session.status != SessionStatus.SCHEDULED:
+            raise ValueError(
+                f"Apenas sessões agendadas podem ser confirmadas (status atual: {session.status.value})."
+            )
+        session.confirmed_at = datetime.now(UTC)
+        self._sessions.flush()
+        return session
+
+    def list_unconfirmed(self) -> list[UnconfirmedSessionOut]:
+        """Lista sessões e agendamentos provisórios para amanhã que ainda não foram confirmados (TASK-BACK-S2-06)."""
+        professional = self._professionals.get_current()
+        tz = ZoneInfo(professional.timezone)
+        today = today_in_timezone(professional.timezone)
+        tomorrow = today + timedelta(days=1)
+
+        start_dt = datetime.combine(tomorrow, time.min, tzinfo=tz)
+        end_dt = datetime.combine(tomorrow, time.max, tzinfo=tz)
+
+        unconfirmed_sessions = self._sessions.list_unconfirmed_in_range(
+            start_dt.astimezone(UTC), end_dt.astimezone(UTC)
+        )
+        bookings = self._bookings.list_in_range(
+            start_dt.astimezone(UTC), end_dt.astimezone(UTC), status=BookingStatus.SCHEDULED
+        )
+
+        result: list[UnconfirmedSessionOut] = []
+
+        for s in unconfirmed_sessions:
+            sale_item = self._sale_items.get(s.sale_item_id)
+            if not sale_item:
+                continue
+            sale = self._sales.get(sale_item.sale_id)
+            if not sale:
+                continue
+            patient = self._patients.get(sale.patient_id)
+            proc = self._procedures.get(sale_item.procedure_id)
+
+            pat_name = patient.name if patient else "Paciente"
+            pat_phone = patient.phone if patient else None
+            proc_name = proc.name if proc else "Procedimento"
+            consent = patient.consent_whatsapp if patient else False
+
+            sched_local = s.scheduled_at.astimezone(tz) if s.scheduled_at else start_dt
+            time_str = sched_local.strftime("%H:%M")
+
+            msg = build_confirmation_message(pat_name, proc_name, time_str)
+            link = build_whatsapp_link(pat_phone, msg) if consent and pat_phone else None
+
+            result.append(
+                UnconfirmedSessionOut(
+                    session_id=s.id,
+                    type="SESSION",
+                    patient_name=pat_name,
+                    patient_phone=pat_phone,
+                    procedure_name=proc_name,
+                    scheduled_at=s.scheduled_at or start_dt,
+                    modality=s.modality,
+                    whatsapp_link=link,
+                    consent_whatsapp=consent,
+                    confirmed_at=s.confirmed_at,
+                )
+            )
+
+        for b in bookings:
+            sched_local = b.scheduled_at.astimezone(tz)
+            time_str = sched_local.strftime("%H:%M")
+
+            pat_name = b.patient.name if b.patient else (b.patient_name_hint or "Contato novo")
+            pat_phone = b.patient.phone if b.patient else None
+            consent = b.patient.consent_whatsapp if b.patient else False
+
+            msg = build_confirmation_message(pat_name, "Atendimento", time_str)
+            link = build_whatsapp_link(pat_phone, msg) if consent and pat_phone else None
+
+            result.append(
+                UnconfirmedSessionOut(
+                    session_id=b.id,
+                    type="BOOKING",
+                    patient_name=pat_name,
+                    patient_phone=pat_phone,
+                    procedure_name="Atendimento",
+                    scheduled_at=b.scheduled_at,
+                    modality=b.modality,
+                    whatsapp_link=link,
+                    consent_whatsapp=consent,
+                    confirmed_at=None,
+                )
+            )
+
+        result.sort(key=lambda item: item.scheduled_at)
         return result

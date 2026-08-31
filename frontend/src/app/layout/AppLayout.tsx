@@ -1,4 +1,5 @@
-import { Link, NavLink, Outlet, useNavigate } from "react-router-dom";
+import { Link, NavLink, Outlet } from "react-router-dom";
+import { useAuth } from "@/lib/auth/AuthContext";
 import styles from "./AppLayout.module.css";
 
 /**
@@ -17,13 +18,9 @@ const NAV_ITEMS: { to: string; label: string; icon: string; end: boolean }[] = [
 ];
 
 export function AppLayout() {
-  const navigate = useNavigate();
-
-  function handleLogout() {
-    sessionStorage.removeItem("access_token");
-    sessionStorage.removeItem("returnTo");
-    navigate("/");
-  }
+  const { user, logout } = useAuth();
+  const isAdmin = user?.role === "admin";
+  const isGlobalAdmin = user?.role === "superadmin";
 
   return (
     <div className={styles.appLayout}>
@@ -40,7 +37,7 @@ export function AppLayout() {
 
           <div className={styles.clinicSelector}>
             <span className={styles.statusDot} />
-            <span className={styles.clinicName}>Clínica Lumière • Matriz</span>
+            <span className={styles.clinicName}>{user?.clinic_name || "Clínica Principal"}</span>
           </div>
         </div>
 
@@ -50,10 +47,20 @@ export function AppLayout() {
           </Link>
 
           <div className={styles.userMenu}>
-            <div className={styles.userAvatar}>DR</div>
+            {isAdmin && (
+              <Link to="/admin" className={styles.adminLink} title="Painel da Clínica">
+                ⚙️ Admin
+              </Link>
+            )}
+            {isGlobalAdmin && (
+              <Link to="/super-admin" className={styles.adminLink} title="Painel Plataforma">
+                👑 Painel SaaS
+              </Link>
+            )}
+            <div className={styles.userAvatar}>{user?.name?.[0]?.toUpperCase() ?? "U"}</div>
             <button
               type="button"
-              onClick={handleLogout}
+              onClick={logout}
               className={styles.btnLogout}
               title="Encerrar sessão e voltar ao site"
             >

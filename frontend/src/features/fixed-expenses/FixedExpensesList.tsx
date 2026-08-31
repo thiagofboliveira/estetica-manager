@@ -1,4 +1,4 @@
-﻿import { useState } from "react";
+import { useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -35,6 +35,7 @@ export function FixedExpensesList() {
   const [editingExpense, setEditingExpense] = useState<FixedExpense | null>(null);
   const [isAdding, setIsAdding] = useState(false);
   const [serverError, setServerError] = useState<string | null>(null);
+  const [archiveError, setArchiveError] = useState<string | null>(null);
 
   const todayStr = new Date().toISOString().slice(0, 10);
 
@@ -119,10 +120,11 @@ export function FixedExpensesList() {
     if (!window.confirm(`Deseja encerrar a despesa fixa "${item.label}"? Ela deixará de contar a partir de hoje.`)) {
       return;
     }
+    setArchiveError(null);
     try {
       await archiveExpense.mutateAsync(item.id);
     } catch (e) {
-      alert(e instanceof ApiError ? e.message : "Erro ao encerrar despesa.");
+      setArchiveError(e instanceof ApiError ? e.message : "Erro ao encerrar despesa fixa.");
     }
   }
 
@@ -141,6 +143,12 @@ export function FixedExpensesList() {
           </button>
         )}
       </div>
+
+      {archiveError && (
+        <div style={{ background: "#fee2e2", color: "#b91c1c", padding: "10px 14px", borderRadius: "8px", marginBottom: "16px", fontSize: "14px" }}>
+          {archiveError}
+        </div>
+      )}
 
       {isAdding && (
         <form onSubmit={submit} className="form form--nested">

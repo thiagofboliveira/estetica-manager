@@ -3,7 +3,13 @@ from uuid import UUID
 from fastapi import APIRouter, HTTPException, Query, status
 
 from app.api.deps import PatientSvc
-from app.schemas.patient import PatientCreate, PatientOut, PatientUpdate
+from app.schemas.patient import (
+    PatientBatchImportRequest,
+    PatientBatchImportResult,
+    PatientCreate,
+    PatientOut,
+    PatientUpdate,
+)
 from app.services.patient_service import PatientNotFoundError
 
 router = APIRouter(prefix="/patients", tags=["patients"])
@@ -12,6 +18,14 @@ router = APIRouter(prefix="/patients", tags=["patients"])
 @router.post("", response_model=PatientOut, status_code=status.HTTP_201_CREATED)
 def create_patient(payload: PatientCreate, svc: PatientSvc) -> PatientOut:
     return PatientOut.model_validate(svc.create(payload))
+
+
+@router.post("/import", response_model=PatientBatchImportResult)
+def import_patients(
+    payload: PatientBatchImportRequest, svc: PatientSvc
+) -> PatientBatchImportResult:
+    """Importa pacientes em lote com deduplicação por telefone (EPIC-S2-03, TASK-BACK-S2-15)."""
+    return svc.batch_import(payload)
 
 
 @router.get("", response_model=list[PatientOut])

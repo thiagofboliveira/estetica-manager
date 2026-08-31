@@ -1,7 +1,8 @@
-﻿import { useState } from "react";
+import { useState } from "react";
 import { AgendaView } from "./AgendaView";
 import { OpenPackagesList } from "./OpenPackagesList";
 import { NewBookingModal } from "./NewBookingModal";
+import { NoShowAlert } from "./NoShowAlert";
 
 type Tab = "agenda" | "packages";
 
@@ -44,7 +45,12 @@ export function AgendaPage() {
       </div>
 
       <div className="tab-content">
-        {tab === "agenda" && <AgendaView />}
+        {tab === "agenda" && (
+          <>
+            <NoShowAlert />
+            <AgendaView />
+          </>
+        )}
         {tab === "packages" && <OpenPackagesList />}
       </div>
 

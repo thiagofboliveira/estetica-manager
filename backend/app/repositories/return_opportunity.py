@@ -1,7 +1,9 @@
+from datetime import date
 from uuid import UUID
 
 from app.domain.retention.enums import ReturnOpportunityStatus
 from app.models.return_opportunity import ReturnOpportunity
+from app.models.sale import Sale, SaleStatus
 from app.repositories.base import TenantRepository
 
 
@@ -71,3 +73,24 @@ class ReturnOpportunityRepository(TenantRepository[ReturnOpportunity]):
             opp.status = ReturnOpportunityStatus.CLOSED
             opp.resolved_by_sale_id = resolved_by_sale_id
         return len(opps)
+
+    def list_attributed(
+        self, date_from: date | None = None, date_to: date | None = None
+    ) -> list[tuple[ReturnOpportunity, Sale]]:
+        """Busca oportunidades resolvidas por vendas no período com join na Sale (EPIC-S2-01, TASK-BACK-S2-02)."""
+        stmt = (
+            self._session.query(ReturnOpportunity, Sale)
+            .join(Sale, ReturnOpportunity.resolved_by_sale_id == Sale.id)
+            .where(
+                ReturnOpportunity.professional_id == self._professional_id,
+                Sale.professional_id == self._professional_id,
+                ReturnOpportunity.contacted_at.is_not(None),
+                ReturnOpportunity.resolved_by_sale_id.is_not(None),
+                Sale.status == SaleStatus.ACTIVE,
+            )
+        )
+        if date_from:
+            stmt = stmt.where(Sale.sold_at >= date_from)
+        if date_to:
+            stmt = stmt.where(Sale.sold_at <= date_to)
+        return stmt.all()

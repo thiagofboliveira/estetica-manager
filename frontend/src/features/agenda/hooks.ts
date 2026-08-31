@@ -1,4 +1,4 @@
-﻿import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { CACHE } from "@/lib/query/client";
 import { invalidateAfterScheduling } from "@/lib/query/invalidation";
 import { qk } from "@/lib/query/keys";
@@ -50,6 +50,24 @@ export function useUpdateBooking() {
   return useMutation({
     mutationFn: ({ id, payload }: { id: string; payload: BookingUpdateInput }) =>
       bookingsApi.update(id, payload),
+    onSuccess: async () => {
+      await invalidateAfterScheduling();
+    },
+  });
+}
+
+export function useUnconfirmedSessions() {
+  return useQuery({
+    queryKey: [...qk.sessions(), "unconfirmed"],
+    queryFn: () => sessionsApi.getUnconfirmed(),
+    refetchInterval: 5 * 60 * 1000,
+    ...CACHE.MONEY,
+  });
+}
+
+export function useConfirmSession() {
+  return useMutation({
+    mutationFn: (id: string) => sessionsApi.confirmSession(id),
     onSuccess: async () => {
       await invalidateAfterScheduling();
     },

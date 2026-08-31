@@ -1,4 +1,4 @@
-﻿import { api } from "@/lib/http/client";
+import { api } from "@/lib/http/client";
 
 export type Modality = "IN_PERSON" | "REMOTE";
 
@@ -67,6 +67,18 @@ export type BookingUpdateInput = {
   status?: BookingStatus | null;
 };
 
+export type UnconfirmedSession = {
+  session_id: string;
+  patient_name: string;
+  patient_phone: string | null;
+  procedure_name: string;
+  scheduled_at: string;
+  modality: Modality;
+  whatsapp_link: string;
+  consent_whatsapp: boolean;
+  confirmed_at: string | null;
+};
+
 export const sessionsApi = {
   getAgenda: (from: string, to: string) => {
     const qs = new URLSearchParams({ from, to });
@@ -75,6 +87,8 @@ export const sessionsApi = {
   getOpenPackages: () => api.get<OpenPackage[]>("/packages/open"),
   updateSession: (id: string, payload: SessionUpdateInput) =>
     api.patch<void>(`/sessions/${id}`, payload),
+  getUnconfirmed: () => api.get<UnconfirmedSession[]>("/sessions/unconfirmed"),
+  confirmSession: (id: string) => api.post<void>(`/sessions/${id}/confirm`, {}),
 };
 
 export const bookingsApi = {

@@ -1,12 +1,25 @@
 from uuid import UUID
 
 from app.core.money import money
-from app.models.procedure import Procedure
+from app.domain.catalog.procedure_templates import (
+    find_procedure_template,
+    list_procedure_templates,
+)
+from app.models.procedure import Procedure, ProcedureType
 from app.repositories.procedure import ProcedureRepository
-from app.schemas.procedure import ProcedureCreate, ProcedureUpdate
+from app.schemas.procedure import (
+    ProcedureCreate,
+    ProcedureFromTemplateCreate,
+    ProcedureTemplateOut,
+    ProcedureUpdate,
+)
 
 
 class ProcedureNotFoundError(Exception):
+    pass
+
+
+class ProcedureAlreadyExistsError(Exception):
     pass
 
 
@@ -24,6 +37,56 @@ class ProcedureService:
             default_modality=dto.default_modality,
         )
         return self._repo.add(procedure)
+
+    def list_templates(self) -> list[ProcedureTemplateOut]:
+        """Retorna templates de procedimentos do catálogo de domínio (EPIC-S2-04, TASK-BACK-S2-17)."""
+        templates = list_procedure_templates()
+        return [
+            ProcedureTemplateOut(
+                template_id=t.template_id,
+                name=t.name,
+                type=t.type,
+                suggested_price=t.suggested_price,
+                suggested_cost=t.suggested_cost,
+                suggested_return_interval_days=t.suggested_return_interval_days,
+                category=t.category,
+                is_suggested=t.is_suggested,
+            )
+            for t in templates
+        ]
+
+    def create_from_template(self, dto: ProcedureFromTemplateCreate) -> Procedure:
+        """Cria procedimento a partir de template com overrides opcionais (TASK-BACK-S2-19)."""
+        template = find_procedure_template(dto.template_id)
+        if not template:
+            raise ValueError(f"Template '{dto.template_id}' não encontrado.")
+
+        name = dto.name.strip() if dto.name else template.name
+        existing = self._repo.find_by_name(name)
+        if existing:
+            raise ProcedureAlreadyExistsError(f"Procedimento '{name}' já está cadastrado.")
+
+        price = dto.price if dto.price is not None else str(template.suggested_price)
+        estimated_cost = (
+            dto.estimated_cost
+            if dto.estimated_cost is not None
+            else str(template.suggested_cost)
+        )
+        return_interval_days = (
+            dto.return_interval_days
+            if dto.return_interval_days is not None
+            else template.suggested_return_interval_days
+        )
+
+        create_dto = ProcedureCreate(
+            name=name,
+            type=ProcedureType.SERVICE,
+            price=price,
+            estimated_cost=estimated_cost,
+            return_interval_days=return_interval_days,
+            default_modality=dto.default_modality,
+        )
+        return self.create(create_dto)
 
     def get(self, procedure_id: UUID) -> Procedure:
         procedure = self._repo.get(procedure_id)

@@ -1,9 +1,10 @@
-﻿import { useState } from "react";
+import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { ApiError } from "@/lib/http/client";
 import type { OpenPackage } from "./api";
+import { formatDateToLocalInput } from "@/lib/format/date";
 import { useScheduleSession } from "./hooks";
 
 const schema = z.object({
@@ -22,11 +23,12 @@ export function ScheduleSessionModal({ pkg, onClose }: Props) {
   const scheduleSession = useScheduleSession();
   const [serverError, setServerError] = useState<string | null>(null);
 
-  // Data/hora padrão: amanhã às 10:00
+  // Data/hora padrão: amanhã às 10:00 (hora local)
   const defaultDate = new Date();
   defaultDate.setDate(defaultDate.getDate() + 1);
   defaultDate.setHours(10, 0, 0, 0);
-  const defaultIso = defaultDate.toISOString().slice(0, 16);
+  
+  const localISOTime = formatDateToLocalInput(defaultDate);
 
   const {
     register,
@@ -35,7 +37,7 @@ export function ScheduleSessionModal({ pkg, onClose }: Props) {
   } = useForm<FormValues>({
     resolver: zodResolver(schema),
     defaultValues: {
-      scheduled_at: defaultIso,
+      scheduled_at: localISOTime,
       notes: "",
     },
   });

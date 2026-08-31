@@ -34,6 +34,25 @@ class PaymentFeeRuleService:
     def __init__(self, repo: PaymentFeeRuleRepository) -> None:
         self._repo = repo
 
+    def _validate_no_overlap(
+        self,
+        payment_method: PaymentMethod,
+        imin: int,
+        imax: int,
+        exclude_rule_id: UUID | None = None,
+    ) -> None:
+        existing_rules = self._repo.list_all()
+        for r in existing_rules:
+            if exclude_rule_id and r.id == exclude_rule_id:
+                continue
+            if (
+                r.payment_method == payment_method
+                and max(imin, r.installments_min) <= min(imax, r.installments_max)
+            ):
+                raise ValueError(
+                    f"A faixa de parcelas ({imin} a {imax}) se sobrepõe com a regra existente ({r.installments_min} a {r.installments_max}) para {payment_method.value}."
+                )
+
     def list_or_seed_defaults(self) -> list[PaymentFeeRule]:
         existing = self._repo.list_all()
         if existing:
@@ -51,6 +70,9 @@ class PaymentFeeRuleService:
         return self._repo.list_all()
 
     def create(self, dto: PaymentFeeRuleCreate) -> PaymentFeeRule:
+        self._validate_no_overlap(
+            dto.payment_method, dto.installments_min, dto.installments_max
+        )
         rule = PaymentFeeRule(
             payment_method=dto.payment_method,
             installments_min=dto.installments_min,
@@ -69,6 +91,13 @@ class PaymentFeeRuleService:
     def update(self, rule_id: UUID, dto: PaymentFeeRuleUpdate) -> PaymentFeeRule:
         rule = self.get(rule_id)
         data = dto.model_dump(exclude_unset=True)
+
+        new_method = data.get("payment_method", rule.payment_method)
+        new_min = data.get("installments_min", rule.installments_min)
+        new_max = data.get("installments_max", rule.installments_max)
+
+        self._validate_no_overlap(new_method, new_min, new_max, exclude_rule_id=rule_id)
+
         if "fee_percentage" in data and data["fee_percentage"] is not None:
             data["fee_percentage"] = money(data["fee_percentage"])
         if "fixed_fee" in data and data["fixed_fee"] is not None:

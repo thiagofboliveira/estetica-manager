@@ -31,6 +31,11 @@ def list_bookings(
     date_to: date | None = Query(default=None, alias="to"),
 ) -> list[BookingOut]:
     """Lista agendamentos provisórios em intervalo de datas (TASK-034b)."""
+    if date_from and date_to and date_from > date_to:
+        raise HTTPException(
+            status.HTTP_422_UNPROCESSABLE_ENTITY,
+            "A data final deve ser maior ou igual à data inicial",
+        )
     bookings = svc.list_bookings(date_from, date_to)
     return [BookingOut.model_validate(b) for b in bookings]
 

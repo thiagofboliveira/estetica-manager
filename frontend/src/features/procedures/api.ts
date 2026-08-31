@@ -28,10 +28,20 @@ export type ProcedureCreateInput = {
 export type ProcedureUpdateInput = Partial<
   Pick<
     ProcedureCreateInput,
-    "name" | "price" | "estimated_cost" | "return_interval_days" | "default_modality"
+    "name" | "type" | "price" | "estimated_cost" | "return_interval_days" | "default_modality"
   >
 > & {
   is_active?: boolean;
+};
+
+export type ProcedureTemplate = {
+  template_id: string;
+  name: string;
+  type: ProcedureType;
+  suggested_price: string;
+  suggested_cost: string;
+  suggested_return_interval_days: number | null;
+  category: string;
 };
 
 export const proceduresApi = {
@@ -47,4 +57,7 @@ export const proceduresApi = {
   update: (id: string, payload: ProcedureUpdateInput) =>
     api.patch<Procedure>(`/procedures/${id}`, payload),
   deactivate: (id: string) => api.del<void>(`/procedures/${id}`),
+  getTemplates: () => api.get<ProcedureTemplate[]>("/procedures/templates"),
+  createFromTemplate: (templateId: string, payload: ProcedureCreateInput) => 
+    api.post<Procedure>("/procedures/from-template", { template_id: templateId, ...payload }),
 };
