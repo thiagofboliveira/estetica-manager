@@ -52,3 +52,13 @@ Este documento centraliza as tarefas do Frontend e do Backend para facilitar o a
 - [x] `[BACK-S2-06]` a `[BACK-S2-12]`: **EPIC-S2-02 — Anti-No-Show (Lembretes D-1)**.
 - [x] `[BACK-S2-13]` a `[BACK-S2-16]`: **EPIC-S2-03 — Importação em Lote de Pacientes (Quick Start)**.
 - [x] `[BACK-S2-17]` a `[BACK-S2-20]`: **EPIC-S2-04 — Templates de Procedimentos (Onboarding Acelerado)**.
+
+---
+
+## 4. Sprint 3: Recursos Financeiros Avançados, Projeção de Caixa e Portabilidade (Concluída)
+
+### Backend (100% Concluído - ver `backend/BACKLOG_SPRINT3.md`)
+- [x] `[BACK-S3-01]` a `[BACK-S3-04]`: **EPIC-S3-01 — Split por Procedimento (E6)**.
+- [x] `[BACK-S3-05]` a `[BACK-S3-08]`: **EPIC-S3-02 — Exportação de Dados em CSV (LGPD & Relatórios)**.
+- [x] `[BACK-S3-09]` a `[BACK-S3-12]`: **EPIC-S3-03 — Projeção de Recebíveis Futuros (Fluxo de Caixa)**.
+- [x] `[BACK-S3-13]` a `[BACK-S3-16]`: **EPIC-S3-04 — Antecipação de Recebíveis (E7)**.

@@ -83,3 +83,37 @@ class DashboardService:
             has_any_sale_ever=self._sales.has_any_sale(),
         )
         return result, period
+
+    def get_receivables_projection(
+        self, *, months_ahead: int = 12
+    ):
+        from app.domain.financial.receivables import (
+            SaleReceivableInput,
+            project_monthly_receivables,
+        )
+
+        professional = self._professionals.get_current()
+        today = today_in_timezone(professional.timezone)
+
+        sales_models = self._sales.list(limit=5000)
+        sales_inputs = [
+            SaleReceivableInput(
+                sale_id=str(s.id),
+                sold_at=s.sold_at,
+                payment_method=s.payment_method.value
+                if hasattr(s.payment_method, "value")
+                else str(s.payment_method),
+                installments=s.installments,
+                net_received_amount=s.gross_amount - s.fee_amount_applied,
+                is_anticipated=False,
+            )
+            for s in sales_models
+            if s.status.value == "ACTIVE"
+        ]
+
+        return project_monthly_receivables(
+            sales=sales_inputs,
+            reference_date=today,
+            months_ahead=months_ahead,
+        )
+

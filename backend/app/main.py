@@ -7,6 +7,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.api.v1 import (
     bookings,
     dashboard,
+    export,
     financial_settings,
     fixed_expenses,
     patients,
@@ -77,6 +78,7 @@ app.include_router(retention.router, prefix="/api/v1")
 app.include_router(fixed_expenses.router, prefix="/api/v1")
 app.include_router(dashboard.router, prefix="/api/v1")
 app.include_router(reports.router, prefix="/api/v1")
+app.include_router(export.router, prefix="/api/v1")
 app.include_router(system.router, prefix="/api/v1")
 app.include_router(users.router, prefix="/api/v1")
 app.include_router(super_admin.router, prefix="/api/v1")

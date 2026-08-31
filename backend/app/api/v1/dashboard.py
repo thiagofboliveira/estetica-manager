@@ -1,9 +1,15 @@
 from datetime import date
+from decimal import Decimal
 
 from fastapi import APIRouter, HTTPException, Query, status
 
 from app.api.deps import AttributionSvc, DashboardSvc
-from app.schemas.dashboard import DashboardOut, ROIOut
+from app.schemas.dashboard import (
+    DashboardOut,
+    MonthlyReceivableOut,
+    ReceivablesOut,
+    ROIOut,
+)
 
 router = APIRouter(prefix="/dashboard", tags=["dashboard"])
 
@@ -94,4 +100,26 @@ def get_roi(
         date_from=d_from,
         date_to=d_to,
         is_estimated=is_estimated,
+    )
+
+
+@router.get("/receivables", response_model=ReceivablesOut)
+def get_receivables(
+    svc: DashboardSvc,
+    months_ahead: int = Query(default=12, ge=1, le=24),
+) -> ReceivablesOut:
+    """Retorna projeção de fluxo de caixa futuro de recebíveis de cartão de crédito parcelado (EPIC-S3-03)."""
+    projection = svc.get_receivables_projection(months_ahead=months_ahead)
+    total = sum((p.total_amount for p in projection), Decimal("0.00"))
+
+    return ReceivablesOut(
+        total_projected_amount=total,
+        months=[
+            MonthlyReceivableOut(
+                year_month=p.year_month,
+                total_amount=p.total_amount,
+                installment_count=p.installment_count,
+            )
+            for p in projection
+        ],
     )

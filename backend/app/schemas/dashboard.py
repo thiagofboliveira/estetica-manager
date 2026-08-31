@@ -39,3 +39,14 @@ class ROIOut(OutputSchema):
     date_from: date
     date_to: date
     is_estimated: bool
+
+
+class MonthlyReceivableOut(OutputSchema):
+    year_month: str
+    total_amount: MoneyOut
+    installment_count: int
+
+
+class ReceivablesOut(OutputSchema):
+    total_projected_amount: MoneyOut
+    months: list[MonthlyReceivableOut]

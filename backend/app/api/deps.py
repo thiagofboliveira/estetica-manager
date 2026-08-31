@@ -31,6 +31,7 @@ from app.services.attribution_service import AttributionService
 from app.services.booking_service import BookingService
 from app.services.clinic_service import ClinicService
 from app.services.dashboard_service import DashboardService
+from app.services.export_service import ExportService
 from app.services.financial_settings_service import FinancialSettingsService
 from app.services.fixed_expense_service import FixedExpenseService
 from app.services.patient_service import PatientService
@@ -240,6 +241,17 @@ def get_attribution_service(
     )
 
 
+def get_export_service(
+    session: DbSession, professional_id: CurrentProfessional
+) -> ExportService:
+    return ExportService(
+        patient_repo=PatientRepository(session, professional_id),
+        sale_repo=SaleRepository(session, professional_id),
+        session_repo=SessionRepository(session, professional_id),
+        procedure_repo=ProcedureRepository(session, professional_id),
+    )
+
+
 PatientSvc = Annotated[PatientService, Depends(get_patient_service)]
 ProcedureSvc = Annotated[ProcedureService, Depends(get_procedure_service)]
 FinancialSettingsSvc = Annotated[
@@ -263,3 +275,5 @@ ClinicSvc = Annotated[ClinicService, Depends(get_clinic_service)]
 SystemClinicSvc = Annotated[ClinicService, Depends(get_system_clinic_service)]
 SystemUserSvc = Annotated[UserService, Depends(get_system_user_service)]
 AttributionSvc = Annotated[AttributionService, Depends(get_attribution_service)]
+ExportSvc = Annotated[ExportService, Depends(get_export_service)]
+

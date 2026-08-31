@@ -18,16 +18,8 @@ if (!(diagnostics_channel as any).tracingChannel) {
   })
 }
 
-if (typeof (globalThis as any).crypto === 'undefined' || !(globalThis as any).crypto.randomBytes) {
-  try {
-    Object.defineProperty(globalThis, 'crypto', {
-      value: nodeCrypto,
-      writable: true,
-      configurable: true,
-    })
-  } catch {
-    (globalThis as any).crypto = nodeCrypto
-  }
+if (!globalThis.crypto) {
+  globalThis.crypto = nodeCrypto.webcrypto as any;
 }
 
 // https://vite.dev/config/
