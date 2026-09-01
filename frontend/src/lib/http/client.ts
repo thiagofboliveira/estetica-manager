@@ -33,8 +33,9 @@ async function freshToken(force = false): Promise<string | null> {
 
 async function request<T>(path: string, opts: Opts = {}, isRetry = false): Promise<T> {
   const token = await freshToken();
+  const cleanPath = path.startsWith("/api/v1") ? path.replace(/^\/api\/v1/, "") : path;
 
-  const res = await fetch(`${BASE}${path}`, {
+  const res = await fetch(`${BASE}${cleanPath}`, {
     ...opts,
     headers: {
       "Content-Type": "application/json",
@@ -59,13 +60,17 @@ async function request<T>(path: string, opts: Opts = {}, isRetry = false): Promi
   const body = await res.json().catch(() => ({}));
 
   if (!res.ok) {
-    // FastAPI's default shape é {"detail": "..."} (HTTPException) ou
-    // {"detail": [...]} (erro de validação 422) — nunca `message`.
-    const detail = typeof body.detail === "string" ? body.detail : undefined;
+    let detailMessage: string | undefined;
+    if (typeof body.detail === "string") {
+      detailMessage = body.detail;
+    } else if (Array.isArray(body.detail) && body.detail.length > 0) {
+      detailMessage = body.detail[0]?.msg || body.detail[0]?.message;
+    }
+
     throw new ApiError(
       res.status,
       body.code,
-      body.message ?? detail ?? "Não consegui salvar. Tenta de novo?",
+      body.message ?? detailMessage ?? "Não consegui salvar. Tenta de novo?",
       body.details ?? body.detail,
     );
   }
@@ -79,6 +84,8 @@ export const api = {
   get: <T>(p: string, o?: Opts) => request<T>(p, { ...o, method: "GET" }),
   post: <T>(p: string, b: unknown, o?: Opts) =>
     request<T>(p, { ...o, method: "POST", body: JSON.stringify(b) }),
+  put: <T>(p: string, b: unknown, o?: Opts) =>
+    request<T>(p, { ...o, method: "PUT", body: JSON.stringify(b) }),
   patch: <T>(p: string, b: unknown, o?: Opts) =>
     request<T>(p, { ...o, method: "PATCH", body: JSON.stringify(b) }),
   del: <T>(p: string, o?: Opts) => request<T>(p, { ...o, method: "DELETE" }),

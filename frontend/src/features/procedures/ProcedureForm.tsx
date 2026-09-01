@@ -5,7 +5,8 @@ import { z } from "zod";
 import { ApiError } from "@/lib/http/client";
 import { CurrencyInput } from "@/ui/CurrencyInput";
 import { ZERO, type Money } from "@/lib/money/money";
-import type { Procedure, ProcedureType } from "./api";
+import type { Modality, Procedure, ProcedureType } from "./api";
+import { toast } from "@/ui/ToastContext";
 
 const schema = z.object({
   name: z.string().min(1, "Nome é obrigatório"),
@@ -13,6 +14,7 @@ const schema = z.object({
   price: z.string().refine((v) => Number(v) > 0, "Preço deve ser maior que zero"),
   estimated_cost: z.string(),
   return_interval_days: z.string().optional(),
+  default_modality: z.enum(["IN_PERSON", "REMOTE"]),
 });
 
 export type ProcedureFormValues = z.infer<typeof schema>;
@@ -40,6 +42,7 @@ export function ProcedureForm({ initial, onSubmit, submitLabel }: Props) {
       price: initial?.price ?? ZERO,
       estimated_cost: initial?.estimated_cost ?? ZERO,
       return_interval_days: initial?.return_interval_days?.toString() ?? "",
+      default_modality: (initial?.default_modality ?? "IN_PERSON") as Modality,
     },
   });
 
@@ -58,6 +61,7 @@ export function ProcedureForm({ initial, onSubmit, submitLabel }: Props) {
     try {
       await onSubmit(values);
       setSaved(true);
+      toast.success("Procedimento salvo com sucesso!");
     } catch (e) {
       setServerError(e instanceof ApiError ? e.message : "Não consegui salvar. Tenta de novo?");
     }
@@ -113,15 +117,27 @@ export function ProcedureForm({ initial, onSubmit, submitLabel }: Props) {
       </label>
 
       {type === "SERVICE" && (
-        <label className="form__field">
-          <span>Retorno recomendado (dias)</span>
-          <input
-            {...register("return_interval_days")}
-            type="number"
-            min={0}
-            placeholder="ex: 30"
-          />
-        </label>
+        <>
+          <fieldset className="form__field">
+            <legend>Modalidade padrão</legend>
+            <label>
+              <input type="radio" value="IN_PERSON" {...register("default_modality")} /> 📍 Presencial (consultório)
+            </label>
+            <label>
+              <input type="radio" value="REMOTE" {...register("default_modality")} /> 💻 Remoto / Videochamada
+            </label>
+          </fieldset>
+
+          <label className="form__field">
+            <span>Retorno recomendado (dias)</span>
+            <input
+              {...register("return_interval_days")}
+              type="number"
+              min={0}
+              placeholder="ex: 30"
+            />
+          </label>
+        </>
       )}
 
       {serverError && (

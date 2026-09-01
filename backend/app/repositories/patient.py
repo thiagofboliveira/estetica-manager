@@ -26,3 +26,8 @@ class PatientRepository(TenantRepository[Patient]):
                 stmt.order_by(Patient.name).limit(limit).offset(offset)
             )
         )
+
+    def list_existing_phones(self) -> set[str]:
+        """Retorna todos os números de telefone de pacientes cadastrados do tenant (TASK-BACK-S2-14)."""
+        stmt = self._scoped().where(Patient.phone.is_not(None)).with_only_columns(Patient.phone)
+        return {p for p in self._session.scalars(stmt) if p}

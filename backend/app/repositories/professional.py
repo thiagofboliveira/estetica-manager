@@ -29,3 +29,11 @@ class ProfessionalRepository:
                 f"professional autenticado não encontrado: {self._professional_id}"
             )
         return professional
+
+    def get_by_id(self, prof_id: UUID) -> Professional | None:
+        return self._session.scalars(
+            select(Professional).where(Professional.id == prof_id)
+        ).one_or_none()
+
+    def list_all(self) -> list[Professional]:
+        return list(self._session.scalars(select(Professional)).all())

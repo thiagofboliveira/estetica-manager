@@ -14,7 +14,9 @@ router = APIRouter(prefix="/fixed-expenses", tags=["fixed-expenses"])
 
 
 @router.post("", response_model=FixedExpenseOut, status_code=status.HTTP_201_CREATED)
-def create_fixed_expense(payload: FixedExpenseCreate, svc: FixedExpenseSvc) -> FixedExpenseOut:
+def create_fixed_expense(
+    payload: FixedExpenseCreate, svc: FixedExpenseSvc
+) -> FixedExpenseOut:
     return FixedExpenseOut.model_validate(svc.create(payload))
 
 
@@ -32,7 +34,9 @@ def get_fixed_expense(expense_id: UUID, svc: FixedExpenseSvc) -> FixedExpenseOut
     try:
         expense = svc.get(expense_id)
     except FixedExpenseNotFoundError as exc:
-        raise HTTPException(status.HTTP_404_NOT_FOUND, "Despesa não encontrada") from exc
+        raise HTTPException(
+            status.HTTP_404_NOT_FOUND, "Despesa não encontrada"
+        ) from exc
     return FixedExpenseOut.model_validate(expense)
 
 
@@ -43,7 +47,9 @@ def update_fixed_expense(
     try:
         expense = svc.update(expense_id, payload)
     except FixedExpenseNotFoundError as exc:
-        raise HTTPException(status.HTTP_404_NOT_FOUND, "Despesa não encontrada") from exc
+        raise HTTPException(
+            status.HTTP_404_NOT_FOUND, "Despesa não encontrada"
+        ) from exc
     return FixedExpenseOut.model_validate(expense)
 
 
@@ -53,4 +59,6 @@ def archive_fixed_expense(expense_id: UUID, svc: FixedExpenseSvc) -> None:
     try:
         svc.archive(expense_id)
     except FixedExpenseNotFoundError as exc:
-        raise HTTPException(status.HTTP_404_NOT_FOUND, "Despesa não encontrada") from exc
+        raise HTTPException(
+            status.HTTP_404_NOT_FOUND, "Despesa não encontrada"
+        ) from exc

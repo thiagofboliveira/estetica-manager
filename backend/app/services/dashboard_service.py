@@ -47,8 +47,10 @@ class DashboardService:
         today = today_in_timezone(professional.timezone)
 
         period = resolve_period(
-            filter_name=filter_name, today=today,
-            custom_from=custom_from, custom_to=custom_to,
+            filter_name=filter_name,
+            today=today,
+            custom_from=custom_from,
+            custom_to=custom_to,
         )
 
         sales = [
@@ -63,6 +65,9 @@ class DashboardService:
         session_count = self._sessions.count_completed_in_period(
             period.date_from, period.date_to, professional.timezone
         )
+        no_show_count = self._sessions.count_no_show_in_period(
+            period.date_from, period.date_to, professional.timezone
+        )
         fixed_expenses = [
             FixedExpenseForDashboard(amount=e.amount, periodicity=e.periodicity.value)
             for e in self._fixed_expenses.list_active()
@@ -71,9 +76,44 @@ class DashboardService:
         result = build_dashboard(
             sales=sales,
             session_count=session_count,
+            no_show_count=no_show_count,
             fixed_expenses=fixed_expenses,
             period_kind=period.kind,
             today=today,
             has_any_sale_ever=self._sales.has_any_sale(),
         )
         return result, period
+
+    def get_receivables_projection(
+        self, *, months_ahead: int = 12
+    ):
+        from app.domain.financial.receivables import (
+            SaleReceivableInput,
+            project_monthly_receivables,
+        )
+
+        professional = self._professionals.get_current()
+        today = today_in_timezone(professional.timezone)
+
+        sales_models = self._sales.list(limit=5000)
+        sales_inputs = [
+            SaleReceivableInput(
+                sale_id=str(s.id),
+                sold_at=s.sold_at,
+                payment_method=s.payment_method.value
+                if hasattr(s.payment_method, "value")
+                else str(s.payment_method),
+                installments=s.installments,
+                net_received_amount=s.gross_amount - s.fee_amount_applied,
+                is_anticipated=False,
+            )
+            for s in sales_models
+            if s.status.value == "ACTIVE"
+        ]
+
+        return project_monthly_receivables(
+            sales=sales_inputs,
+            reference_date=today,
+            months_ahead=months_ahead,
+        )
+

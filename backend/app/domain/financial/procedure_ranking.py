@@ -36,7 +36,9 @@ class ItemForRanking:
     # aqui para o domínio não precisar saber o que é uma "venda".
     sale_split_amount: Decimal
     sale_fee_charged: Decimal
-    sale_line_totals_sum: Decimal  # Σ (unit_price × quantity) de TODOS os itens da venda
+    sale_line_totals_sum: (
+        Decimal  # Σ (unit_price × quantity) de TODOS os itens da venda
+    )
 
 
 @dataclass(frozen=True)
@@ -64,13 +66,21 @@ def build_procedure_ranking(items: list[ItemForRanking]) -> list[ProcedureRankin
 
     accumulated: dict[UUID, dict[str, Decimal | str]] = {}
 
-    for (split_amount, fee_charged, _line_totals_sum), sale_items in by_sale_key.items():
+    for (
+        split_amount,
+        fee_charged,
+        _line_totals_sum,
+    ), sale_items in by_sale_key.items():
         line_totals = [_line_total(i) for i in sale_items]
         split_allocations = (
-            allocate(split_amount, line_totals) if split_amount > ZERO else [ZERO] * len(sale_items)
+            allocate(split_amount, line_totals)
+            if split_amount > ZERO
+            else [ZERO] * len(sale_items)
         )
         fee_allocations = (
-            allocate(fee_charged, line_totals) if fee_charged > ZERO else [ZERO] * len(sale_items)
+            allocate(fee_charged, line_totals)
+            if fee_charged > ZERO
+            else [ZERO] * len(sale_items)
         )
 
         for item, line_total, split_alloc, fee_alloc in zip(

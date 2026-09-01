@@ -22,6 +22,11 @@ class Professional(Base, TimestampMixin):
     id: Mapped[UUID] = mapped_column(
         PGUUID(as_uuid=True), primary_key=True, default=uuid4
     )
+    clinic_id: Mapped[UUID | None] = mapped_column(
+        PGUUID(as_uuid=True),
+        ForeignKey("clinics.id", ondelete="SET NULL"),
+        nullable=True,
+    )
     user_id: Mapped[UUID] = mapped_column(
         PGUUID(as_uuid=True), ForeignKey("users.id"), nullable=False, unique=True
     )

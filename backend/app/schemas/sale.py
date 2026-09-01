@@ -22,6 +22,7 @@ class SaleCreate(InputSchema):
     payment_method: PaymentMethod
     installments: int = Field(default=1, ge=1)
     notes: str | None = None
+    booking_id: UUID | None = None
 
     @model_validator(mode="after")
     def _pacote_pre_pago(self) -> "SaleCreate":

@@ -140,9 +140,9 @@ def _set_tenant(session: Session, professional_id: UUID) -> None:
 def get_tenant_session(professional_id: UUID) -> Iterator[Session]:
     session = SessionLocal()
     try:
-        with session.begin():          # BEGIN antes do set_config
+        with session.begin():  # BEGIN antes do set_config
             _set_tenant(session, professional_id)
-            yield session              # suspenso durante todo o handler
+            yield session  # suspenso durante todo o handler
             # saída normal → COMMIT · exceção → ROLLBACK
     finally:
         session.close()
@@ -168,8 +168,10 @@ def _reset_tenant_on_checkin(dbapi_conn, connection_record) -> None:
 ```python
 CurrentProfessional = Annotated[UUID, Depends(get_current_professional_id)]
 
+
 def _db(professional_id: CurrentProfessional):
     yield from get_tenant_session(professional_id)
+
 
 DbSession = Annotated[Session, Depends(_db)]
 ```
@@ -191,7 +193,7 @@ class TenantRepository(Generic[M]):
     def __init__(self, session: Session, professional_id: UUID) -> None:
         if professional_id is None:
             raise ValueError("professional_id é obrigatório")
-        self._session = session          # privado: autocomplete não sugere .query()
+        self._session = session  # privado: autocomplete não sugere .query()
         self._professional_id = professional_id
 
     def _scoped(self) -> Select[tuple[M]]:
@@ -224,7 +226,8 @@ O `add()` que **carimba** protege mesmo que um schema descuidado aceite `profess
 # 2) Teste de arquitetura
 def test_nenhum_query_cru_fora_do_repositorio():
     for py in ROOT.rglob("*.py"):
-        if "repositories" in py.parts: continue
+        if "repositories" in py.parts:
+            continue
         assert not re.search(r"\.query\(|session\.execute\(select\(", py.read_text())
 ```
 
@@ -243,7 +246,9 @@ def _jwk_client() -> PyJWKClient:
     """
     return PyJWKClient(
         f"{settings.SUPABASE_URL}/auth/v1/.well-known/jwks.json",
-        cache_keys=True, lifespan=600, max_cached_keys=8,
+        cache_keys=True,
+        lifespan=600,
+        max_cached_keys=8,
     )
 
 
@@ -251,8 +256,9 @@ def _decode(token: str) -> dict:
     try:
         key = _jwk_client().get_signing_key_from_jwt(token)
         return jwt.decode(
-            token, key.key,
-            algorithms=["ES256", "RS256"],   # lista explícita; NUNCA o alg do header
+            token,
+            key.key,
+            algorithms=["ES256", "RS256"],  # lista explícita; NUNCA o alg do header
             audience="authenticated",
             issuer=f"{settings.SUPABASE_URL}/auth/v1",
             options={"require": ["exp", "sub", "aud", "iss"], "verify_signature": True},
@@ -277,6 +283,7 @@ def get_current_professional_id(creds=Depends(_bearer)) -> UUID:
 class InputSchema(BaseModel):
     """Base de TODO schema de request. extra='forbid' faz campo
     indesejado explodir em 422 em vez de ser ignorado em silêncio."""
+
     model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
 ```
 
@@ -297,7 +304,7 @@ E **nenhuma rota tem `professional_id` no path** — `/professionals/{pid}/sales
 
 ```python
 Money = Annotated[Decimal, mapped_column(Numeric(12, 2, asdecimal=True))]
-Rate  = Annotated[Decimal, mapped_column(Numeric(9, 4, asdecimal=True))]
+Rate = Annotated[Decimal, mapped_column(Numeric(9, 4, asdecimal=True))]
 ```
 
 `Rate` com 4 casas: 3,99% → `0.0399`. Duas casas arredondariam a taxa antes da multiplicação.
@@ -325,7 +332,7 @@ MoneyOut = Annotated[
     PlainSerializer(
         lambda d: str(d.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)),
         return_type=str,
-        when_used="json",   # em Python continua Decimal para cálculo
+        when_used="json",  # em Python continua Decimal para cálculo
     ),
 ]
 ```
@@ -349,13 +356,14 @@ def allocate(total: Decimal, weights: list[Decimal]) -> list[Decimal]:
     num item — com 10 itens e R$ 0,09 de sobra, o último fica 9 centavos
     fora da proporção. Pior ainda se esse item for estornado depois.
     """
-    exact  = [abs_total * w / total_weight for w in weights]
+    exact = [abs_total * w / total_weight for w in weights]
     floors = [e.quantize(cent, rounding=ROUND_DOWN) for e in exact]
     remainder = int(((abs_total - sum(floors)) / cent).to_integral_value())
 
     # Desempate por índice mantém determinístico — recálculo reproduz o mesmo rateio
-    order = sorted(range(len(weights)),
-                   key=lambda i: (exact[i] - floors[i], -i), reverse=True)
+    order = sorted(
+        range(len(weights)), key=lambda i: (exact[i] - floors[i], -i), reverse=True
+    )
     for i in order[:remainder]:
         floors[i] += cent
 
@@ -381,19 +389,20 @@ def allocate(total: Decimal, weights: list[Decimal]) -> list[Decimal]:
 ```python
 class Sale(TenantModel):
     # SNAPSHOT: copiados no ato da venda, NUNCA relidos de Config depois
-    snapshot_fee_rate:   Mapped[Decimal] = mapped_column(Rate)
+    snapshot_fee_rate: Mapped[Decimal] = mapped_column(Rate)
     snapshot_split_rate: Mapped[Decimal] = mapped_column(Rate)
-    snapshot_fee_payer:  Mapped[str] = mapped_column(String(20))   # E1
-    snapshot_split_base: Mapped[str] = mapped_column(String(20))   # E2
+    snapshot_fee_payer: Mapped[str] = mapped_column(String(20))  # E1
+    snapshot_split_base: Mapped[str] = mapped_column(String(20))  # E2
 
     config_version_id: Mapped[UUID] = mapped_column(ForeignKey("config_versions.id"))
-    snapshot_payload:  Mapped[dict] = mapped_column(JSONB)   # auditoria
+    snapshot_payload: Mapped[dict] = mapped_column(JSONB)  # auditoria
 
     __table_args__ = (
         # A identidade contábil, garantida pelo BANCO. Nenhum bug de
         # aplicação consegue gravar uma venda que não fecha.
-        CheckConstraint("net_amount = gross_amount - discount_amount",
-                        name="ck_sales_net_coerente"),
+        CheckConstraint(
+            "net_amount = gross_amount - discount_amount", name="ck_sales_net_coerente"
+        ),
     )
 ```
 
@@ -406,12 +415,17 @@ class ConfigVersion(TenantModel):
     """Config NUNCA sofre UPDATE. Toda mudança cria versão nova com
     valid_from/valid_to — é o que torna possível responder
     'qual era a taxa em 12/03?'"""
+
     valid_from: Mapped[datetime]
-    valid_to:   Mapped[datetime | None]   # NULL = vigente
+    valid_to: Mapped[datetime | None]  # NULL = vigente
 
     __table_args__ = (
-        Index("uq_config_vigente", "professional_id", unique=True,
-              postgresql_where=text("valid_to IS NULL")),
+        Index(
+            "uq_config_vigente",
+            "professional_id",
+            unique=True,
+            postgresql_where=text("valid_to IS NULL"),
+        ),
     )
 ```
 
@@ -480,19 +494,21 @@ fees = allocate(fee_total, nets)
 
 # 2) Total do lucro = SOMA dos itens, não cálculo independente.
 #    Garante que o cabeçalho nunca contradiz o detalhamento exibido.
-professional_profit=money(sum(r.professional_profit for r in resultados))
+professional_profit = money(sum(r.professional_profit for r in resultados))
 ```
 
 ### Máquina de estados
 
 ```python
-SALE_TRANSITIONS = MappingProxyType({    # imutável em runtime
-    SaleStatus.DRAFT:     frozenset({SaleStatus.PENDING, SaleStatus.CANCELLED}),
-    SaleStatus.PENDING:   frozenset({SaleStatus.PAID, SaleStatus.CANCELLED}),
-    SaleStatus.PAID:      frozenset({SaleStatus.REFUNDED}),
-    SaleStatus.CANCELLED: frozenset(),   # terminal
-    SaleStatus.REFUNDED:  frozenset(),
-})
+SALE_TRANSITIONS = MappingProxyType(
+    {  # imutável em runtime
+        SaleStatus.DRAFT: frozenset({SaleStatus.PENDING, SaleStatus.CANCELLED}),
+        SaleStatus.PENDING: frozenset({SaleStatus.PAID, SaleStatus.CANCELLED}),
+        SaleStatus.PAID: frozenset({SaleStatus.REFUNDED}),
+        SaleStatus.CANCELLED: frozenset(),  # terminal
+        SaleStatus.REFUNDED: frozenset(),
+    }
+)
 
 # Depois de PAID o dinheiro entrou: correção é estorno + nova venda
 EDITABLE_STATES = frozenset({SaleStatus.DRAFT, SaleStatus.PENDING})
@@ -539,7 +555,9 @@ def db_connection(engine):
     SessionTest = sessionmaker(bind=conn, join_transaction_mode="create_savepoint")
     session = SessionTest()
     yield conn, session
-    session.close(); trans.rollback(); conn.close()
+    session.close()
+    trans.rollback()
+    conn.close()
 ```
 
 > ⚠️ O engine de teste conecta como `estetica_app` — senão RLS não vale e os testes de isolamento são teatro.
@@ -614,8 +632,10 @@ class TestInvariantesUniversais:
 Property test para o que ninguém pensa em escrever:
 
 ```python
-@given(valores=st.lists(st.decimals(min_value=D("0.01"), places=2), min_size=1),
-       frac=st.decimals(min_value=D("0"), max_value=D("1"), places=4))
+@given(
+    valores=st.lists(st.decimals(min_value=D("0.01"), places=2), min_size=1),
+    frac=st.decimals(min_value=D("0"), max_value=D("1"), places=4),
+)
 def test_rateio_sempre_fecha(valores, frac):
     """Hypothesis acha os casos de arredondamento que a gente não imagina."""
     desconto = money(sum(valores) * frac)
@@ -629,6 +649,7 @@ def test_dominio_nao_importa_infraestrutura():
     """O valor de domain/ é ser testável sem banco. Um `from app.models`
     destrói isso silenciosamente — só se percebe quando o suite fica lento."""
     proibidos = ("sqlalchemy", "fastapi", "app.models", "app.repositories")
+
 
 def test_dominio_nao_usa_float():
     for py in (ROOT / "domain").rglob("*.py"):

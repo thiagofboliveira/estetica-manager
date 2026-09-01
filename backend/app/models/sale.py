@@ -40,6 +40,7 @@ class SaleType(StrEnum):
 class SaleStatus(StrEnum):
     ACTIVE = "ACTIVE"
     REFUNDED = "REFUNDED"
+    CANCELLED = "CANCELLED"
 
 
 class Sale(TenantModel):

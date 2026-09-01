@@ -56,6 +56,9 @@ class Session(TenantModel):
     completed_at: Mapped[datetime | None] = mapped_column(
         TIMESTAMP(timezone=True), nullable=True
     )
+    confirmed_at: Mapped[datetime | None] = mapped_column(
+        TIMESTAMP(timezone=True), nullable=True
+    )
     status: Mapped[SessionStatus] = mapped_column(
         Enum(SessionStatus, name="session_status", native_enum=False),
         nullable=False,

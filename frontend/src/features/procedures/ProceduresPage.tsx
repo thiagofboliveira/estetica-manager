@@ -34,7 +34,16 @@ export function ProceduresPage() {
             {procedures.map((p) => (
               <li key={p.id} className="list__item">
                 <button className="list__item-btn tap-target" onClick={() => navigate(p.id)}>
-                  <span className="list__item-title">{p.name}</span>
+                  <div className="list__item-main">
+                    <span className="list__item-title">{p.name}</span>
+                    <span className="list__item-badge">
+                      {p.type === "PRODUCT"
+                        ? "📦 Produto"
+                        : p.default_modality === "REMOTE"
+                          ? "💻 Remoto"
+                          : "📍 Presencial"}
+                    </span>
+                  </div>
                   <span className="list__item-sub">{formatBRL(money(p.price))}</span>
                 </button>
               </li>

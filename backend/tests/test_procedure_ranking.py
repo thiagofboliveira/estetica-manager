@@ -15,10 +15,14 @@ LIMPEZA_ID = uuid.uuid4()
 def test_venda_avulsa_simples() -> None:
     items = [
         ItemForRanking(
-            procedure_id=BOTOX_ID, procedure_name="Botox",
-            unit_price=D("1000.00"), quantity=1, unit_cost_estimated=D("300.00"),
+            procedure_id=BOTOX_ID,
+            procedure_name="Botox",
+            unit_price=D("1000.00"),
+            quantity=1,
+            unit_cost_estimated=D("300.00"),
             discount_allocated=D("0.00"),
-            sale_split_amount=D("300.00"), sale_fee_charged=D("50.00"),
+            sale_split_amount=D("300.00"),
+            sale_fee_charged=D("50.00"),
             sale_line_totals_sum=D("1000.00"),
         ),
     ]
@@ -34,17 +38,25 @@ def test_venda_avulsa_simples() -> None:
 
 def test_agrupa_por_procedimento_entre_vendas_diferentes() -> None:
     sale_a = ItemForRanking(
-        procedure_id=BOTOX_ID, procedure_name="Botox",
-        unit_price=D("1000.00"), quantity=1, unit_cost_estimated=D("300.00"),
+        procedure_id=BOTOX_ID,
+        procedure_name="Botox",
+        unit_price=D("1000.00"),
+        quantity=1,
+        unit_cost_estimated=D("300.00"),
         discount_allocated=D("0.00"),
-        sale_split_amount=D("0.00"), sale_fee_charged=D("0.00"),
+        sale_split_amount=D("0.00"),
+        sale_fee_charged=D("0.00"),
         sale_line_totals_sum=D("1000.00"),
     )
     sale_b = ItemForRanking(
-        procedure_id=BOTOX_ID, procedure_name="Botox",
-        unit_price=D("1000.00"), quantity=1, unit_cost_estimated=D("300.00"),
+        procedure_id=BOTOX_ID,
+        procedure_name="Botox",
+        unit_price=D("1000.00"),
+        quantity=1,
+        unit_cost_estimated=D("300.00"),
         discount_allocated=D("0.00"),
-        sale_split_amount=D("100.00"), sale_fee_charged=D("0.00"),
+        sale_split_amount=D("100.00"),
+        sale_fee_charged=D("0.00"),
         sale_line_totals_sum=D("1000.00"),
     )
     ranking = build_procedure_ranking([sale_a, sale_b])
@@ -57,17 +69,25 @@ def test_pacote_com_dois_procedimentos_diferentes_rateio_fecha_com_o_total() -> 
     # Pacote: 4 limpezas (R$250) + 2 peelings (R$400) = R$1800.
     # Vendido por R$1500 -> desconto R$300 (mesmo exemplo do MVP §11.5).
     limpeza = ItemForRanking(
-        procedure_id=LIMPEZA_ID, procedure_name="Limpeza",
-        unit_price=D("250.00"), quantity=4, unit_cost_estimated=D("50.00"),
+        procedure_id=LIMPEZA_ID,
+        procedure_name="Limpeza",
+        unit_price=D("250.00"),
+        quantity=4,
+        unit_cost_estimated=D("50.00"),
         discount_allocated=D("166.67"),
-        sale_split_amount=D("450.00"), sale_fee_charged=D("0.00"),
+        sale_split_amount=D("450.00"),
+        sale_fee_charged=D("0.00"),
         sale_line_totals_sum=D("1800.00"),
     )
     peeling = ItemForRanking(
-        procedure_id=BOTOX_ID, procedure_name="Peeling",  # reusando UUID só como id distinto
-        unit_price=D("400.00"), quantity=2, unit_cost_estimated=D("80.00"),
+        procedure_id=BOTOX_ID,
+        procedure_name="Peeling",  # reusando UUID só como id distinto
+        unit_price=D("400.00"),
+        quantity=2,
+        unit_cost_estimated=D("80.00"),
         discount_allocated=D("133.33"),
-        sale_split_amount=D("450.00"), sale_fee_charged=D("0.00"),
+        sale_split_amount=D("450.00"),
+        sale_fee_charged=D("0.00"),
         sale_line_totals_sum=D("1800.00"),
     )
     ranking = build_procedure_ranking([limpeza, peeling])
@@ -84,10 +104,14 @@ def test_pacote_com_dois_procedimentos_diferentes_rateio_fecha_com_o_total() -> 
 
 def test_margem_none_quando_receita_zero() -> None:
     item = ItemForRanking(
-        procedure_id=BOTOX_ID, procedure_name="Cortesia",
-        unit_price=D("0.00"), quantity=1, unit_cost_estimated=D("0.00"),
+        procedure_id=BOTOX_ID,
+        procedure_name="Cortesia",
+        unit_price=D("0.00"),
+        quantity=1,
+        unit_cost_estimated=D("0.00"),
         discount_allocated=D("0.00"),
-        sale_split_amount=D("0.00"), sale_fee_charged=D("0.00"),
+        sale_split_amount=D("0.00"),
+        sale_fee_charged=D("0.00"),
         sale_line_totals_sum=D("0.00"),
     )
     ranking = build_procedure_ranking([item])
@@ -96,17 +120,25 @@ def test_margem_none_quando_receita_zero() -> None:
 
 def test_ordenado_por_faturamento_decrescente() -> None:
     baixo = ItemForRanking(
-        procedure_id=LIMPEZA_ID, procedure_name="Limpeza",
-        unit_price=D("100.00"), quantity=1, unit_cost_estimated=D("20.00"),
+        procedure_id=LIMPEZA_ID,
+        procedure_name="Limpeza",
+        unit_price=D("100.00"),
+        quantity=1,
+        unit_cost_estimated=D("20.00"),
         discount_allocated=D("0.00"),
-        sale_split_amount=D("0.00"), sale_fee_charged=D("0.00"),
+        sale_split_amount=D("0.00"),
+        sale_fee_charged=D("0.00"),
         sale_line_totals_sum=D("100.00"),
     )
     alto = ItemForRanking(
-        procedure_id=BOTOX_ID, procedure_name="Botox",
-        unit_price=D("1000.00"), quantity=1, unit_cost_estimated=D("300.00"),
+        procedure_id=BOTOX_ID,
+        procedure_name="Botox",
+        unit_price=D("1000.00"),
+        quantity=1,
+        unit_cost_estimated=D("300.00"),
         discount_allocated=D("0.00"),
-        sale_split_amount=D("0.00"), sale_fee_charged=D("0.00"),
+        sale_split_amount=D("0.00"),
+        sale_fee_charged=D("0.00"),
         sale_line_totals_sum=D("1000.00"),
     )
     ranking = build_procedure_ranking([baixo, alto])

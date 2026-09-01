@@ -150,8 +150,13 @@ def upgrade() -> None:
     fee_payer.create(op.get_bind(), checkfirst=True)
 
     payment_method = postgresql.ENUM(
-        "PIX", "DEBIT", "CREDIT", "CASH", "TRANSFER",
-        name="payment_method", create_type=False,
+        "PIX",
+        "DEBIT",
+        "CREDIT",
+        "CASH",
+        "TRANSFER",
+        name="payment_method",
+        create_type=False,
     )
     payment_method.create(op.get_bind(), checkfirst=True)
 
@@ -166,8 +171,15 @@ def upgrade() -> None:
     sale_status.create(op.get_bind(), checkfirst=True)
 
     session_status = postgresql.ENUM(
-        "PENDING", "SCHEDULED", "CONFIRMED", "COMPLETED", "CANCELLED",
-        "NO_SHOW", "EXPIRED", name="session_status", create_type=False,
+        "PENDING",
+        "SCHEDULED",
+        "CONFIRMED",
+        "COMPLETED",
+        "CANCELLED",
+        "NO_SHOW",
+        "EXPIRED",
+        name="session_status",
+        create_type=False,
     )
     session_status.create(op.get_bind(), checkfirst=True)
 
@@ -192,7 +204,9 @@ def upgrade() -> None:
         "financial_settings",
         [
             sa.Column(
-                "split_clinic_percentage", sa.Numeric(5, 2), nullable=False,
+                "split_clinic_percentage",
+                sa.Numeric(5, 2),
+                nullable=False,
                 server_default="0.00",
             ),
             sa.Column("split_base", split_base, nullable=False, server_default="GROSS"),
@@ -200,15 +214,21 @@ def upgrade() -> None:
                 "fee_payer", fee_payer, nullable=False, server_default="PROFESSIONAL"
             ),
             sa.Column(
-                "pix_fee_percentage", sa.Numeric(5, 2), nullable=False,
+                "pix_fee_percentage",
+                sa.Numeric(5, 2),
+                nullable=False,
                 server_default="0.00",
             ),
             sa.Column(
-                "debit_card_fee_percentage", sa.Numeric(5, 2), nullable=False,
+                "debit_card_fee_percentage",
+                sa.Numeric(5, 2),
+                nullable=False,
                 server_default="1.99",
             ),
             sa.Column(
-                "default_payment_method", payment_method, nullable=False,
+                "default_payment_method",
+                payment_method,
+                nullable=False,
                 server_default="PIX",
             ),
         ],
@@ -224,10 +244,21 @@ def upgrade() -> None:
         "payment_fee_rules",
         [
             sa.Column("payment_method", payment_method, nullable=False),
-            sa.Column("installments_min", sa.Integer(), nullable=False, server_default="1"),
-            sa.Column("installments_max", sa.Integer(), nullable=False, server_default="1"),
-            sa.Column("fee_percentage", sa.Numeric(5, 2), nullable=False, server_default="0.00"),
-            sa.Column("fixed_fee", sa.Numeric(12, 2), nullable=False, server_default="0.00"),
+            sa.Column(
+                "installments_min", sa.Integer(), nullable=False, server_default="1"
+            ),
+            sa.Column(
+                "installments_max", sa.Integer(), nullable=False, server_default="1"
+            ),
+            sa.Column(
+                "fee_percentage",
+                sa.Numeric(5, 2),
+                nullable=False,
+                server_default="0.00",
+            ),
+            sa.Column(
+                "fixed_fee", sa.Numeric(12, 2), nullable=False, server_default="0.00"
+            ),
         ],
     )
     op.create_check_constraint(
@@ -252,7 +283,12 @@ def upgrade() -> None:
             sa.Column("payment_method", payment_method, nullable=False),
             sa.Column("installments", sa.Integer(), nullable=False, server_default="1"),
             sa.Column("items_total", sa.Numeric(12, 2), nullable=False),
-            sa.Column("discount_amount", sa.Numeric(12, 2), nullable=False, server_default="0.00"),
+            sa.Column(
+                "discount_amount",
+                sa.Numeric(12, 2),
+                nullable=False,
+                server_default="0.00",
+            ),
             sa.Column("gross_amount", sa.Numeric(12, 2), nullable=False),
             sa.Column("split_applied", sa.Numeric(5, 2), nullable=False),
             sa.Column("split_base_applied", split_base, nullable=False),
@@ -265,14 +301,21 @@ def upgrade() -> None:
             sa.Column("margin", sa.Numeric(5, 4), nullable=True),
             sa.Column("expected_receipt_date", sa.Date(), nullable=True),
             sa.Column("notes", sa.String(), nullable=True),
-            sa.Column("snapshot_payload", postgresql.JSONB(), nullable=False, server_default="{}"),
+            sa.Column(
+                "snapshot_payload",
+                postgresql.JSONB(),
+                nullable=False,
+                server_default="{}",
+            ),
             sa.Column("idempotency_key", sa.String(), nullable=True),
             sa.Column("idempotency_body_hash", sa.String(), nullable=True),
         ],
     )
     op.create_index("ix_sales_patient_id", "sales", ["patient_id"])
     op.create_index(
-        "ix_sales_prof_created", "sales", ["professional_id", sa.text("created_at DESC")]
+        "ix_sales_prof_created",
+        "sales",
+        ["professional_id", sa.text("created_at DESC")],
     )
     op.create_unique_constraint(
         "uq_sales_id_professional", "sales", ["id", "professional_id"]
@@ -311,7 +354,9 @@ def upgrade() -> None:
             sa.Column("unit_cost_estimated", sa.Numeric(12, 2), nullable=False),
             sa.Column("return_interval_applied", sa.Integer(), nullable=True),
             sa.Column(
-                "discount_allocated", sa.Numeric(12, 2), nullable=False,
+                "discount_allocated",
+                sa.Numeric(12, 2),
+                nullable=False,
                 server_default="0.00",
             ),
         ],

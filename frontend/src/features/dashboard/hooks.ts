@@ -11,3 +11,21 @@ export function useDashboard(params: DashboardParams) {
     enabled: params.period !== "custom" || Boolean(params.date_from && params.date_to),
   });
 }
+
+export function useProcedureRanking(params: DashboardParams) {
+  return useQuery({
+    queryKey: qk.procedureRanking(params),
+    queryFn: () => dashboardApi.getProcedureRanking(params),
+    ...CACHE.MONEY,
+    enabled: params.period !== "custom" || Boolean(params.date_from && params.date_to),
+  });
+}
+
+export function useROI(params: DashboardParams) {
+  return useQuery({
+    queryKey: qk.roi(params),
+    queryFn: () => dashboardApi.getRoi(params),
+    ...CACHE.MONEY,
+    enabled: params.period === "this_month" || params.period === "last_month",
+  });
+}

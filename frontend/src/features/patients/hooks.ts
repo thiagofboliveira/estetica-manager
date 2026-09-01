@@ -15,6 +15,10 @@ export function usePatientsSearch(search: string) {
   });
 }
 
+export function usePatients(search = "") {
+  return usePatientsSearch(search);
+}
+
 export function usePatient(id: string) {
   return useQuery({
     queryKey: qk.patientDetail(id),
@@ -47,6 +51,39 @@ export function useArchivePatient() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (id: string) => patientsApi.archive(id),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: qk.patients() });
+    },
+  });
+}
+
+export function useAnonymizePatient(id: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: () => patientsApi.anonymize(id),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: qk.patientDetail(id) });
+      qc.invalidateQueries({ queryKey: qk.patients() });
+    },
+  });
+}
+
+export function useOptOutPatient(id: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: () => patientsApi.optOut(id),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: qk.patientDetail(id) });
+      qc.invalidateQueries({ queryKey: qk.patients() });
+    },
+  });
+}
+
+export function usePatientImport() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (payload: { patients: { name: string; phone?: string | null }[] }) => 
+      patientsApi.batchImport(payload),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: qk.patients() });
     },

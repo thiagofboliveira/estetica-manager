@@ -69,3 +69,10 @@ class FinancialSettings(TenantModel):
         nullable=False,
         default=PaymentMethod.PIX,
     )
+    # E7 — Antecipação de Recebíveis (P1)
+    anticipates_all: Mapped[bool] = mapped_column(
+        default=False, nullable=False
+    )
+    anticipation_rate_per_installment: Mapped[Decimal | None] = mapped_column(
+        Numeric(5, 2, asdecimal=True), nullable=True
+    )

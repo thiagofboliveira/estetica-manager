@@ -56,6 +56,11 @@ def create_sale(
             status.HTTP_409_CONFLICT,
             "Idempotency-Key já usada com um corpo diferente",
         ) from exc
+    except ValueError as exc:
+        raise HTTPException(
+            status.HTTP_422_UNPROCESSABLE_ENTITY,
+            str(exc),
+        ) from exc
     response.status_code = (
         status.HTTP_200_OK if was_existing else status.HTTP_201_CREATED
     )
@@ -69,3 +74,35 @@ def get_sale(sale_id: UUID, svc: SaleSvc) -> SaleOut:
     except SaleNotFoundError as exc:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Venda não encontrada") from exc
     return _to_sale_out(svc, sale)
+
+
+@router.post("/{sale_id}/cancel", response_model=SaleOut)
+def cancel_sale(
+    sale_id: UUID,
+    svc: SaleSvc,
+    reason: str | None = None,
+) -> SaleOut:
+    """Cancela uma venda e todas as suas sessões não concluídas (TASK-017)."""
+    try:
+        sale = svc.cancel(sale_id, reason)
+        return _to_sale_out(svc, sale)
+    except SaleNotFoundError as exc:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Venda não encontrada") from exc
+    except ValueError as exc:
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, str(exc)) from exc
+
+
+@router.post("/{sale_id}/refund", response_model=SaleOut)
+def refund_sale(
+    sale_id: UUID,
+    svc: SaleSvc,
+    reason: str | None = None,
+) -> SaleOut:
+    """Estorna uma venda e cancela as sessões pendentes/agendadas (TASK-017)."""
+    try:
+        sale = svc.refund(sale_id, reason)
+        return _to_sale_out(svc, sale)
+    except SaleNotFoundError as exc:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Venda não encontrada") from exc
+    except ValueError as exc:
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, str(exc)) from exc

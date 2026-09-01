@@ -15,9 +15,14 @@ export function PatientsPage() {
     <div className="page">
       <header className="page__header">
         <h1>Pacientes</h1>
-        <button className="tap-target" onClick={() => navigate("novo")}>
-          + Nova paciente
-        </button>
+        <div style={{ display: 'flex', gap: '8px' }}>
+          <button className="tap-target button--ghost" onClick={() => navigate("importar")}>
+            📥 Importar
+          </button>
+          <button className="tap-target" onClick={() => navigate("novo")}>
+            + Nova
+          </button>
+        </div>
       </header>
 
       <input

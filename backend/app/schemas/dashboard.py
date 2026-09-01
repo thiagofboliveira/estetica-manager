@@ -23,3 +23,30 @@ class DashboardOut(OutputSchema):
     sale_count: int
     session_count: int
     average_ticket: MoneyOut | None
+
+    # Anti-No-Show (EPIC-S2-02, TASK-BACK-S2-11)
+    no_show_count: int | None = None
+    no_show_rate: RateOut | None = None
+
+
+class ROIOut(OutputSchema):
+    attributed_revenue: MoneyOut
+    attributed_sale_count: int
+    patients_reactivated: int
+    subscription_fee: MoneyOut
+    roi_ratio: str | None
+    period: str
+    date_from: date
+    date_to: date
+    is_estimated: bool
+
+
+class MonthlyReceivableOut(OutputSchema):
+    year_month: str
+    total_amount: MoneyOut
+    installment_count: int
+
+
+class ReceivablesOut(OutputSchema):
+    total_projected_amount: MoneyOut
+    months: list[MonthlyReceivableOut]

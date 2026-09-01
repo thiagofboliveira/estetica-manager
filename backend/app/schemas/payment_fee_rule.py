@@ -17,6 +17,7 @@ class PaymentFeeRuleCreate(InputSchema):
 
 
 class PaymentFeeRuleUpdate(InputSchema):
+    payment_method: PaymentMethod | None = None
     installments_min: int | None = Field(default=None, ge=1)
     installments_max: int | None = Field(default=None, ge=1)
     fee_percentage: str | None = None

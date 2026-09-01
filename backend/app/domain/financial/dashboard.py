@@ -63,6 +63,9 @@ class DashboardResult:
     sale_count: int
     session_count: int
     average_ticket: Decimal | None  # None se sale_count == 0
+    # Anti-No-Show (EPIC-S2-02, TASK-BACK-S2-11)
+    no_show_count: int | None = None
+    no_show_rate: Decimal | None = None
 
 
 def _monthly_equivalent(expense: FixedExpenseForDashboard) -> Decimal:
@@ -75,6 +78,7 @@ def build_dashboard(
     *,
     sales: list[SaleForDashboard],
     session_count: int,
+    no_show_count: int = 0,
     fixed_expenses: list[FixedExpenseForDashboard],
     period_kind: PeriodKind,
     today: date,
@@ -84,13 +88,25 @@ def build_dashboard(
     net_profit = money(sum((s.net_profit for s in sales), ZERO))
     receivable = money(
         sum(
-            (s.gross_amount for s in sales if s.expected_receipt_date and s.expected_receipt_date > today),
+            (
+                s.gross_amount
+                for s in sales
+                if s.expected_receipt_date and s.expected_receipt_date > today
+            ),
             ZERO,
         )
     )
     sale_count = len(sales)
     average_margin = (net_profit / gross_revenue) if gross_revenue != ZERO else None
     average_ticket = money(gross_revenue / sale_count) if sale_count > 0 else None
+
+    # Cálculo da taxa de No-Show: no_show / (completed + no_show)
+    total_appointments = session_count + no_show_count
+    no_show_rate = None
+    if total_appointments > 0:
+        no_show_rate = (Decimal(no_show_count) / Decimal(total_appointments)).quantize(
+            Decimal("0.0001")
+        )
 
     fixed_total = None
     net_after_fixed = None
@@ -109,4 +125,6 @@ def build_dashboard(
         sale_count=sale_count,
         session_count=session_count,
         average_ticket=average_ticket,
+        no_show_count=no_show_count,
+        no_show_rate=no_show_rate,
     )

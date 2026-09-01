@@ -13,6 +13,7 @@ export function NewPatientPage() {
       email: values.email || null,
       birth_date: values.birth_date || null,
       notes: values.notes || null,
+      consent_whatsapp: values.consent_whatsapp,
     });
     navigate(`/pacientes/${patient.id}`);
   }

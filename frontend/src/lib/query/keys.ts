@@ -25,4 +25,11 @@ export const qk = {
 
   procedures: () => [...qk.all, "procedures"] as const,
   settings: () => [...qk.all, "settings"] as const,
+  financialSettings: () => [...qk.settings(), "financial"] as const,
+  paymentFeeRules: () => [...qk.settings(), "payment-fee-rules"] as const,
+  fixedExpenses: () => [...qk.financial(), "fixed-expenses"] as const,
+  procedureRanking: (params: { period: string; date_from?: string; date_to?: string }) =>
+    [...qk.financial(), "procedure-ranking", params] as const,
+  roi: (params: { period: string; date_from?: string; date_to?: string }) =>
+    [...qk.financial(), "roi", params] as const,
 } as const;
