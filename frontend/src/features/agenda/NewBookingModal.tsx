@@ -6,6 +6,7 @@ import { ApiError } from "@/lib/http/client";
 import type { Modality } from "./api";
 import { formatDateToLocalInput } from "@/lib/format/date";
 import { useCreateBooking } from "./hooks";
+import { toast } from "@/ui/ToastContext";
 
 const schema = z.object({
   patient_name_hint: z.string().min(1, "Nome do paciente ou contato é obrigatório"),
@@ -18,17 +19,18 @@ type FormValues = z.infer<typeof schema>;
 
 type Props = {
   onClose: () => void;
+  initialDateTime?: string;
 };
 
-export function NewBookingModal({ onClose }: Props) {
+export function NewBookingModal({ onClose, initialDateTime }: Props) {
   const createBooking = useCreateBooking();
   const [serverError, setServerError] = useState<string | null>(null);
 
-  // Data padrão: hoje na próxima hora cheia (hora local)
+  // Data padrão: prop initialDateTime ou hoje na próxima hora cheia (hora local)
   const now = new Date();
   now.setHours(now.getHours() + 1, 0, 0, 0);
   
-  const localISOTime = formatDateToLocalInput(now);
+  const localISOTime = initialDateTime || formatDateToLocalInput(now);
 
   const {
     register,
@@ -53,6 +55,7 @@ export function NewBookingModal({ onClose }: Props) {
         modality: values.modality as Modality,
         note: values.note || null,
       });
+      toast.success("Horário reservado com sucesso!");
       onClose();
     } catch (e) {
       setServerError(e instanceof ApiError ? e.message : "Erro ao criar agendamento provisório.");

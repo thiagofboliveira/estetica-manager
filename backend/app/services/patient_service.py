@@ -24,12 +24,15 @@ class PatientService:
 
     def create(self, dto: PatientCreate) -> Patient:
         phone = normalize_br_phone(dto.phone) if dto.phone else None
+        consent_at = datetime.now(UTC) if dto.consent_whatsapp else None
         patient = Patient(
             name=dto.name,
             phone=phone,
             email=dto.email,
             birth_date=dto.birth_date,
             notes=dto.notes,
+            consent_whatsapp=dto.consent_whatsapp,
+            consent_at=consent_at,
         )
         return self._repo.add(patient)
 

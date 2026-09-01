@@ -1,19 +1,24 @@
 import { type FormEvent, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { getSessionToken } from "@/lib/auth/session";
+import { devLogin, getSessionToken } from "@/lib/auth/session";
+import { useAuth } from "@/lib/auth/AuthContext";
+import { IconSparkles, IconCheck, IconShield, IconAlertTriangle } from "@/ui/icons";
+import { ThemeToggle } from "@/ui/ThemeToggle";
 import styles from "./LoginPage.module.css";
 
 const DEV_AUTH = import.meta.env.VITE_DEV_AUTH === "true";
 
 export function LoginPage() {
   const navigate = useNavigate();
+  const { checkAuth } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [isPending, setIsPending] = useState(false);
   const [authMode, setAuthMode] = useState<"dev" | "standard">(DEV_AUTH ? "dev" : "standard");
 
-  function goToReturnTo() {
+  async function goToReturnTo() {
+    await checkAuth();
     const returnTo = sessionStorage.getItem("returnTo") ?? "/dashboard";
     sessionStorage.removeItem("returnTo");
     navigate(returnTo, { replace: true });
@@ -30,10 +35,11 @@ export function LoginPage() {
         setError("Não foi possível autenticar no backend de desenvolvimento.");
         return;
       }
-      goToReturnTo();
-    } catch (err: any) {
+      await goToReturnTo();
+    } catch (err: unknown) {
       setIsPending(false);
-      setError(err?.message || "Erro ao conectar com servidor local.");
+      const errMsg = err instanceof Error ? err.message : "Erro ao conectar com servidor local.";
+      setError(errMsg);
     }
   }
 
@@ -42,6 +48,17 @@ export function LoginPage() {
     setError(null);
     setIsPending(true);
     try {
+      if (DEV_AUTH) {
+        const token = await devLogin(email, password);
+        setIsPending(false);
+        if (!token) {
+          setError("Não foi possível autenticar. Verifique se o e-mail está cadastrado.");
+          return;
+        }
+        await goToReturnTo();
+        return;
+      }
+
       const { supabase } = await import("@/lib/auth/supabase");
       const { error: signInError } = await supabase.auth.signInWithPassword({
         email,
@@ -52,7 +69,7 @@ export function LoginPage() {
         setError("E-mail ou senha inválidos.");
         return;
       }
-      goToReturnTo();
+      await goToReturnTo();
     } catch {
       setIsPending(false);
       setError("Falha ao autenticar. Tente novamente.");
@@ -65,28 +82,36 @@ export function LoginPage() {
         {/* Left Side: Brand & Value Prop */}
         <div className={styles.brandSide}>
           <div className={styles.brandHeader}>
-            <div className={styles.logoBadge}>✨</div>
+            <div className={styles.logoBadge}>
+              <IconSparkles width="20" height="20" />
+            </div>
             <span className={styles.brandName}>Lumina</span>
           </div>
 
           <div className={styles.brandBody}>
-            <h2>Gestão e inteligência de retorno para sua clínica.</h2>
+            <h2>Gestão e inteligência de retorno para estética avançada.</h2>
             <p>
-              Acesse o painel para visualizar a régua diária de WhatsApp, controlar
+              Acesse o painel para orquestrar a régua de retenção via WhatsApp, controlar
               pacotes e blindar seu lucro real.
             </p>
 
             <div className={styles.featureHighlights}>
               <div className={styles.featureItem}>
-                <span className={styles.featureDot}>✓</span>
-                <span>Régua diária de WhatsApp com 1 clique</span>
+                <span className={styles.featureDot}>
+                  <IconCheck width="14" height="14" />
+                </span>
+                <span>Régua diária de WhatsApp com 1 toque</span>
               </div>
               <div className={styles.featureItem}>
-                <span className={styles.featureDot}>✓</span>
+                <span className={styles.featureDot}>
+                  <IconCheck width="14" height="14" />
+                </span>
                 <span>Lucro real vs. provisório por sessão</span>
               </div>
               <div className={styles.featureItem}>
-                <span className={styles.featureDot}>✓</span>
+                <span className={styles.featureDot}>
+                  <IconCheck width="14" height="14" />
+                </span>
                 <span>Agenda integrada à baixa de procedimentos</span>
               </div>
             </div>
@@ -94,7 +119,7 @@ export function LoginPage() {
 
           <div className={styles.brandFooter}>
             <Link to="/" className={styles.backLink}>
-              ← Voltar para o site institucional
+              ← Voltar para o início
             </Link>
           </div>
         </div>
@@ -102,31 +127,36 @@ export function LoginPage() {
         {/* Right Side: Login Form */}
         <div className={styles.formSide}>
           <div className={styles.formHeader}>
-            <h3>Acesse sua conta</h3>
-            <p>Selecione a forma de acesso para continuar</p>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+              <div>
+                <h3>Acesse sua conta</h3>
+                <p>Selecione a modalidade de acesso</p>
+              </div>
+              <ThemeToggle />
+            </div>
           </div>
 
           {/* Quick Tab Switcher */}
           <div className={styles.tabSwitcher}>
             <button
               type="button"
-              className={`${styles.tabBtn} ${authMode === "standard" ? styles.tabBtnActive : ""}`}
+              className={authMode === "standard" ? `${styles.tabBtn} ${styles.tabBtnActive}` : styles.tabBtn}
               onClick={() => setAuthMode("standard")}
             >
               Email & Senha
             </button>
             <button
               type="button"
-              className={`${styles.tabBtn} ${authMode === "dev" ? styles.tabBtnActive : ""}`}
+              className={authMode === "dev" ? `${styles.tabBtn} ${styles.tabBtnActive}` : styles.tabBtn}
               onClick={() => setAuthMode("dev")}
             >
-              ⚡ Acesso Dev (Cliente Zero)
+              Acesso Rápido Dev
             </button>
           </div>
 
           {error && (
             <div role="alert" className={styles.alertError}>
-              <span>⚠️</span>
+              <IconAlertTriangle width="18" height="18" />
               <span>{error}</span>
             </div>
           )}
@@ -134,7 +164,7 @@ export function LoginPage() {
           {authMode === "standard" ? (
             <form onSubmit={handleStandardSubmit} className={styles.form}>
               <div className={styles.inputGroup}>
-                <label htmlFor="email">E-mail Profissional</label>
+                <label htmlFor="email">E-mail de Acesso</label>
                 <input
                   id="email"
                   type="email"
@@ -151,7 +181,7 @@ export function LoginPage() {
                 <div className={styles.labelRow}>
                   <label htmlFor="password">Senha</label>
                   <a href="#recuperar" className={styles.forgotLink}>
-                    Esqueceu?
+                    Esqueceu a senha?
                   </a>
                 </div>
                 <input
@@ -176,10 +206,13 @@ export function LoginPage() {
           ) : (
             <div className={styles.devBox}>
               <div className={styles.devCardInfo}>
-                <strong>Modo de Desenvolvimento</strong>
+                <div className={styles.devCardHeader}>
+                  <IconShield width="16" height="16" />
+                  <strong>Ambiente de Desenvolvimento</strong>
+                </div>
                 <p>
-                  Autentica diretamente contra a rota <code>/dev/login</code> do backend
-                  local para testes imediatos sem necessidade de Supabase ativo.
+                  Autentica instantaneamente contra a API local (<code>/dev/login</code>)
+                  com credenciais locais de teste.
                 </p>
               </div>
 
@@ -189,13 +222,13 @@ export function LoginPage() {
                 disabled={isPending}
                 className={styles.devSubmitBtn}
               >
-                {isPending ? "Conectando ao Backend…" : "⚡ Entrar como Cliente Zero"}
+                {isPending ? "Conectando ao Backend…" : "Entrar com Conta de Teste"}
               </button>
             </div>
           )}
 
           <div className={styles.termsNote}>
-            Ao acessar, você concorda com os Termos de Uso e Política de Privacidade LGPD da Lumina.
+            Plataforma protegida e em conformidade com as diretrizes de privacidade LGPD.
           </div>
         </div>
       </div>

@@ -1,0 +1,134 @@
+﻿/* ==========================================================================
+   SuperAdminClinicsPage Styles — Dual-Theme Support
+   ========================================================================== */
+
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.title {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--text-h);
+  margin: 0;
+  letter-spacing: -0.02em;
+}
+
+.subtitle {
+  color: var(--text-muted);
+  margin: 4px 0 0;
+  font-size: 13.5px;
+}
+
+.btnNew {
+  background: var(--accent);
+  color: #ffffff;
+  border: none;
+  padding: 9px 16px;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 13.5px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.15s ease;
+  box-shadow: var(--shadow-sm);
+}
+
+.btnNew:hover {
+  background: var(--accent-hover);
+  transform: translateY(-1px);
+}
+
+.tableCard {
+  background: var(--bg-card);
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  overflow: hidden;
+  box-shadow: var(--shadow-card);
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+}
+
+.table th {
+  background: var(--bg-subtle);
+  padding: 12px 16px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  border-bottom: 1px solid var(--border);
+}
+
+.table td {
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--border);
+  vertical-align: middle;
+  color: var(--text);
+}
+
+.table tr:last-child td {
+  border-bottom: none;
+}
+
+.table tbody tr:hover td {
+  background: var(--bg-subtle);
+}
+
+.clinicName {
+  font-weight: 600;
+  color: var(--text-h);
+  font-size: 14px;
+}
+
+.clinicDoc {
+  font-size: 12.5px;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+
+.statusActive {
+  color: var(--success);
+  font-weight: 600;
+  font-size: 13px;
+}
+
+.statusInactive {
+  color: var(--text-muted);
+  font-weight: 600;
+  font-size: 13px;
+}
+
+.btnAction {
+  background: var(--bg-card);
+  border: 1px solid var(--border-input);
+  padding: 5px 10px;
+  border-radius: 6px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--text);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.btnAction:hover {
+  background: var(--bg-subtle);
+  border-color: var(--border-focus);
+  color: var(--text-h);
+}

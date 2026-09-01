@@ -1,0 +1,174 @@
+/* ==========================================================================
+   SuperAdminLayout Styles — High-Agency Platform Dashboard
+   ========================================================================== */
+
+.layout {
+  display: flex;
+  min-height: 100vh;
+  min-height: 100dvh;
+  background-color: var(--bg);
+  color: var(--text);
+}
+
+.sidebar {
+  width: 250px;
+  background-color: #0f172a;
+  color: #ffffff;
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 24px 20px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.logoBadge {
+  width: 34px;
+  height: 34px;
+  border-radius: 9px;
+  background: var(--accent);
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 6px rgba(15, 118, 110, 0.3);
+}
+
+.brandText {
+  display: flex;
+  flex-direction: column;
+}
+
+.brandName {
+  font-weight: 700;
+  font-size: 16px;
+  color: #ffffff;
+  letter-spacing: -0.02em;
+}
+
+.brandSub {
+  font-size: 10.5px;
+  color: #94a3b8;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-weight: 600;
+}
+
+.nav {
+  flex: 1;
+  padding: 20px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.navLink {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #94a3b8;
+  text-decoration: none;
+  font-size: 13.5px;
+  font-weight: 500;
+  padding: 10px 14px;
+  border-radius: 8px;
+  transition: all 0.15s ease;
+}
+
+.navLink:hover {
+  background-color: rgba(255, 255, 255, 0.05);
+  color: #ffffff;
+}
+
+.navLinkActive {
+  background-color: rgba(15, 118, 110, 0.2) !important;
+  color: #2dd4bf !important;
+  font-weight: 600;
+}
+
+.userSection {
+  padding: 18px 16px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.userInfo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background-color: #334155;
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.userMeta {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.userName {
+  font-size: 13px;
+  font-weight: 600;
+  color: #ffffff;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  overflow: hidden;
+}
+
+.userRole {
+  font-size: 11px;
+  color: #94a3b8;
+}
+
+.btnLogout {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  background: rgba(255, 255, 255, 0.05) !important;
+  color: #94a3b8 !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  padding: 8px 12px !important;
+  border-radius: 6px !important;
+  font-size: 13px !important;
+  font-weight: 500 !important;
+  min-height: auto !important;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  box-shadow: none !important;
+}
+
+.btnLogout:hover {
+  background: rgba(239, 68, 68, 0.15) !important;
+  color: #f87171 !important;
+  border-color: rgba(239, 68, 68, 0.3) !important;
+}
+
+.main {
+  flex: 1;
+  padding: 32px 40px;
+  overflow-y: auto;
+}
+
+.mainContainer {
+  max-width: 1200px;
+  margin: 0 auto;
+}

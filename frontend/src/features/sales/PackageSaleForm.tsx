@@ -8,13 +8,14 @@ import { useProcedures } from "@/features/procedures/hooks";
 import { formatBRL } from "@/lib/money/format";
 import { ApiError } from "@/lib/http/client";
 import { ZERO, money, mulQty, sub, sum, type Money } from "@/lib/money/money";
+import { toast } from "@/ui/ToastContext";
 import { PatientPicker } from "./PatientPicker";
 import { useCreateSale } from "./hooks";
 import type { Patient } from "@/features/patients/api";
 import type { Procedure } from "@/features/procedures/api";
 import type { Sale } from "./api";
 
-import { useSearchParams } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { usePatient } from "@/features/patients/hooks";
 
 const lineSchema = z.object({
@@ -126,35 +127,45 @@ export function PackageSaleForm() {
     }
   }, [lines, discount]);
 
-  const submit = handleSubmit(async (values) => {
-    setServerError(null);
-    try {
-      const sale = await createSale.mutateAsync({
-        patient_id: values.patientId,
-        type: "PACKAGE",
-        items: values.lines.map((l) => ({ procedure_id: l.procedureId, quantity: Number(l.quantity) })),
-        discount_amount: values.discount || ZERO,
-        payment_method: values.paymentMethod,
-        installments: values.paymentMethod === "CREDIT" ? Number(values.installments) : 1,
-      });
-      setConfirmedSale(sale);
-    } catch (e) {
-      setServerError(e instanceof ApiError ? e.message : "Não consegui registrar a venda. Tenta de novo?");
+  const submit = handleSubmit(
+    async (values) => {
+      setServerError(null);
+      try {
+        const sale = await createSale.mutateAsync({
+          patient_id: values.patientId,
+          type: "PACKAGE",
+          items: values.lines.map((l) => ({ procedure_id: l.procedureId, quantity: Number(l.quantity) })),
+          discount_amount: values.discount || ZERO,
+          payment_method: values.paymentMethod,
+          installments: values.paymentMethod === "CREDIT" ? Number(values.installments) : 1,
+        });
+        setConfirmedSale(sale);
+        toast.success("Venda de pacote registrada com sucesso!");
+      } catch (e) {
+        setServerError(e instanceof ApiError ? e.message : "Não consegui registrar a venda. Tenta de novo?");
+      }
+    },
+    () => {
+      toast.show("Por favor, selecione a paciente e os procedimentos do pacote antes de confirmar.", "error");
     }
-  });
+  );
 
   if (confirmedSale) {
     return (
-      <div className="sale-confirm" role="status">
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-          <h2>Venda de pacote registrada</h2>
-          <span className="badge badge--accent" title="Sessões futuras ainda a serem realizadas">
+      <div className="sale-confirm" role="status" style={{ padding: "24px", backgroundColor: "#f8fafc", borderRadius: "12px", border: "1px solid #e2e8f0" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
+          <h2 style={{ margin: 0, color: "#0f172a" }}>Venda de pacote registrada com sucesso!</h2>
+          <span className="badge badge--accent" style={{ backgroundColor: "#fef3c7", color: "#92400e", padding: "6px 12px", borderRadius: "20px", fontWeight: "600" }} title="Sessões futuras ainda a serem realizadas">
             🟡 Lucro Provisório
           </span>
         </div>
-        {selectedPatient && <p>{selectedPatient.name}</p>}
+        {selectedPatient && (
+          <p style={{ fontSize: "15px", color: "#334155", marginBottom: "8px" }}>
+            <strong>Paciente:</strong> {selectedPatient.name}
+          </p>
+        )}
         {confirmedSale.items.length > 1 && (
-          <ul className="sale-form__line-discounts">
+          <ul className="sale-form__line-discounts" style={{ margin: "12px 0", paddingLeft: "20px", color: "#475569" }}>
             {confirmedSale.items.map((item) => (
               <li key={item.id}>
                 {lines.find((l) => l.procedureId === item.procedure_id)?.procedureName ?? item.procedure_id}
@@ -163,33 +174,69 @@ export function PackageSaleForm() {
             ))}
           </ul>
         )}
-        <p>Total dos itens: {formatBRL(money(confirmedSale.items_total))}</p>
-        <p>Desconto: {formatBRL(money(confirmedSale.discount_amount))}</p>
-        <p>Valor da venda: {formatBRL(money(confirmedSale.gross_amount))}</p>
-        <p>
-          Lucro: <strong>{formatBRL(money(confirmedSale.net_profit))}</strong>
+        <p style={{ fontSize: "15px", color: "#334155", marginBottom: "6px" }}>
+          <strong>Total dos Itens:</strong> {formatBRL(money(confirmedSale.items_total))}
         </p>
+        {Number(money(confirmedSale.discount_amount)) > 0 && (
+          <p style={{ fontSize: "15px", color: "#dc2626", marginBottom: "6px" }}>
+            <strong>Desconto Aplicado:</strong> -{formatBRL(money(confirmedSale.discount_amount))}
+          </p>
+        )}
+        <p style={{ fontSize: "15px", color: "#334155", marginBottom: "6px" }}>
+          <strong>Valor Final:</strong> {formatBRL(money(confirmedSale.gross_amount))}
+        </p>
+        <p style={{ fontSize: "16px", color: "#15803d", marginBottom: "20px" }}>
+          <strong>Lucro Líquido Provisório:</strong> {formatBRL(money(confirmedSale.net_profit))}
+        </p>
+
+        <div style={{ display: "flex", gap: "12px", flexWrap: "wrap", marginTop: "16px" }}>
+          <button
+            type="button"
+            className="button tap-target"
+            onClick={() => {
+              setConfirmedSale(null);
+              setSelectedPatient(null);
+              setValue("patientId", "");
+              setValue("lines", [emptyLine]);
+              setValue("discount", ZERO);
+            }}
+          >
+            + Registrar outro pacote
+          </button>
+          <Link to="/agenda" className="button button--secondary tap-target">
+            📅 Agendar Sessões na Agenda
+          </Link>
+          <Link to="/dashboard" className="button button--secondary tap-target">
+            📊 Ir para o Dashboard
+          </Link>
+        </div>
       </div>
     );
   }
 
   return (
     <form onSubmit={submit} noValidate className="form">
-      <label className="form__field">
-        <span>Paciente *</span>
+      <div className="form__field">
+        <label htmlFor="patient-select" style={{ fontWeight: 600, fontSize: "14px", color: "var(--text-h)", marginBottom: "4px", display: "block" }}>
+          Paciente *
+        </label>
         <PatientPicker
           selected={selectedPatient}
           onSelect={(p) => {
             setSelectedPatient(p);
-            setValue("patientId", p.id);
+            setValue("patientId", p.id, { shouldValidate: true });
           }}
           onClear={() => {
             setSelectedPatient(null);
-            setValue("patientId", "");
+            setValue("patientId", "", { shouldValidate: true });
           }}
         />
-        {errors.patientId && <span role="alert">{errors.patientId.message}</span>}
-      </label>
+        {errors.patientId && (
+          <span role="alert" className="form__error" style={{ color: "#dc2626", fontWeight: "600", fontSize: "13px", marginTop: "4px", display: "block" }}>
+            {errors.patientId.message}
+          </span>
+        )}
+      </div>
 
       <fieldset className="form__field">
         <legend>Itens do pacote</legend>

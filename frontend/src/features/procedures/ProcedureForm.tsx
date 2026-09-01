@@ -6,6 +6,7 @@ import { ApiError } from "@/lib/http/client";
 import { CurrencyInput } from "@/ui/CurrencyInput";
 import { ZERO, type Money } from "@/lib/money/money";
 import type { Modality, Procedure, ProcedureType } from "./api";
+import { toast } from "@/ui/ToastContext";
 
 const schema = z.object({
   name: z.string().min(1, "Nome é obrigatório"),
@@ -60,6 +61,7 @@ export function ProcedureForm({ initial, onSubmit, submitLabel }: Props) {
     try {
       await onSubmit(values);
       setSaved(true);
+      toast.success("Procedimento salvo com sucesso!");
     } catch (e) {
       setServerError(e instanceof ApiError ? e.message : "Não consegui salvar. Tenta de novo?");
     }

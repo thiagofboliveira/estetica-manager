@@ -1,0 +1,359 @@
+﻿/* ==========================================================================
+   AdminUsersPage Styles — Dual-Theme Support
+   ========================================================================== */
+
+.container {
+  padding: 0;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.title {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--text-h);
+  margin: 0;
+  letter-spacing: -0.02em;
+}
+
+.subtitle {
+  color: var(--text-muted);
+  margin: 4px 0 0;
+  font-size: 13.5px;
+}
+
+.btnNew {
+  background: var(--accent);
+  color: #ffffff;
+  border: none;
+  padding: 9px 16px;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 13.5px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.15s ease;
+  box-shadow: var(--shadow-sm);
+}
+
+.btnNew:hover {
+  background: var(--accent-hover);
+  transform: translateY(-1px);
+}
+
+.tableCard {
+  background: var(--bg-card);
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  overflow: hidden;
+  box-shadow: var(--shadow-card);
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+}
+
+.table th {
+  background: var(--bg-subtle);
+  padding: 12px 16px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  border-bottom: 1px solid var(--border);
+}
+
+.table td {
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--border);
+  vertical-align: middle;
+  color: var(--text);
+}
+
+.table tr:last-child td {
+  border-bottom: none;
+}
+
+.table tbody tr:hover td {
+  background-color: var(--bg-subtle);
+}
+
+.userCell {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--bg-subtle);
+  color: var(--text-h);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 13px;
+  border: 1px solid var(--border);
+}
+
+.userInfo {
+  display: flex;
+  flex-direction: column;
+}
+
+.userName {
+  font-weight: 600;
+  color: var(--text-h);
+  font-size: 14px;
+}
+
+.userEmail {
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.badge {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 9999px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.badgeRoleSuper {
+  background: var(--danger-bg);
+  color: var(--danger);
+  border: 1px solid var(--danger-border);
+}
+
+.badgeRoleAdmin {
+  background: var(--accent-bg);
+  color: var(--accent);
+  border: 1px solid var(--accent-border);
+}
+
+.badgeRolePro {
+  background: var(--bg-subtle);
+  color: var(--text-muted);
+  border: 1px solid var(--border);
+}
+
+.badgeRoleRec {
+  background: var(--warning-bg);
+  color: var(--warning);
+  border: 1px solid var(--warning-border);
+}
+
+.statusActive {
+  color: var(--success);
+  font-weight: 600;
+  font-size: 13px;
+}
+
+.statusInactive {
+  color: var(--text-muted);
+  font-weight: 600;
+  font-size: 13px;
+}
+
+.actions {
+  display: flex;
+  gap: 8px;
+}
+
+.btnAction {
+  background: var(--bg-card);
+  border: 1px solid var(--border-input);
+  padding: 5px 10px;
+  border-radius: 6px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--text);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.btnAction:hover {
+  background: var(--bg-subtle);
+  border-color: var(--border-focus);
+  color: var(--text-h);
+}
+
+.loadingState,
+.emptyState {
+  padding: 48px;
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 14px;
+}
+
+.errorMessage {
+  background: var(--danger-bg);
+  color: var(--danger);
+  padding: 12px 16px;
+  border-radius: 8px;
+  margin-bottom: 16px;
+  font-size: 13.5px;
+  border: 1px solid var(--danger-border);
+}
+
+/* Modal */
+.modalOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.65);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 16px;
+}
+
+.modalCard {
+  background: var(--bg-card);
+  border-radius: 16px;
+  width: 100%;
+  max-width: 480px;
+  box-shadow: var(--shadow-lg);
+  overflow: hidden;
+  border: 1px solid var(--border);
+}
+
+.modalHeader {
+  padding: 20px 24px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.modalTitle {
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--text-h);
+  margin: 0;
+  letter-spacing: -0.02em;
+}
+
+.modalCloseBtn {
+  background: none;
+  border: none;
+  font-size: 20px;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+}
+
+.modalCloseBtn:hover {
+  color: var(--text-h);
+  background: var(--bg-subtle);
+}
+
+.modalBody {
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.formGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.formLabel {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.input,
+.select {
+  padding: 10px 14px;
+  border-radius: 8px;
+  border: 1.5px solid var(--input-border) !important;
+  font-size: 14px;
+  font-family: inherit;
+  color: var(--input-text) !important;
+  background-color: var(--input-bg) !important;
+  outline: none;
+  transition: all 0.15s ease;
+}
+
+.input::placeholder {
+  color: var(--input-placeholder) !important;
+}
+
+.input:focus,
+.select:focus {
+  border-color: var(--input-focus-border) !important;
+  box-shadow: 0 0 0 3px var(--input-focus-ring) !important;
+}
+
+.modalFooter {
+  padding: 16px 24px;
+  background: var(--bg-subtle);
+  border-top: 1px solid var(--border);
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.btnCancel {
+  background: var(--bg-card);
+  border: 1.5px solid var(--border-input);
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--text);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.btnCancel:hover {
+  background: var(--bg-subtle);
+  border-color: var(--border-focus);
+}
+
+.btnSave {
+  background: var(--accent);
+  color: #ffffff;
+  border: none;
+  padding: 8px 18px;
+  border-radius: 8px;
+  font-size: 13.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  box-shadow: var(--shadow-sm);
+}
+
+.btnSave:hover:not(:disabled) {
+  background: var(--accent-hover);
+  transform: translateY(-1px);
+}
+
+.btnSave:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}

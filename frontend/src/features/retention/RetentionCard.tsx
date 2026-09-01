@@ -5,6 +5,7 @@ import { Logger } from "@/lib/telemetry/logger";
 import { MESSAGES, fillTemplate } from "@/lib/constants/messages";
 import type { PatientRetentionCard } from "./api";
 import { useUpdateRetentionOpportunity } from "./hooks";
+import { IconAlertTriangle, IconCalendar, IconWhatsApp, IconSparkles } from "@/ui/icons";
 import styles from "./RetentionCard.module.css";
 
 type Props = {
@@ -49,18 +50,29 @@ export function RetentionCard({ card }: Props) {
     if (timing === "OVERDUE") {
       return (
         <span className="badge badge--danger">
-          ⚠️ Atrasado ({Math.abs(daysDiff)} {Math.abs(daysDiff) === 1 ? "dia" : "dias"})
+          <IconAlertTriangle width="12" height="12" />
+          <span>Atrasado ({Math.abs(daysDiff)} {Math.abs(daysDiff) === 1 ? "dia" : "dias"})</span>
         </span>
       );
     }
     if (timing === "DUE") {
-      return <span className="badge badge--accent">⏰ Na janela ideal</span>;
+      return (
+        <span className="badge badge--accent">
+          <IconSparkles width="12" height="12" />
+          <span>Na janela ideal</span>
+        </span>
+      );
     }
-    return <span className="badge badge--neutral">Em {daysDiff} dias</span>;
+    return (
+      <span className="badge badge--neutral">
+        <IconCalendar width="12" height="12" />
+        <span>Em {daysDiff} dias</span>
+      </span>
+    );
   }
 
   return (
-    <article className={`card ${styles.card}`}>
+    <article className={styles.card}>
       <div className={styles.header}>
         <div className={styles.avatar}>
           {card.patient_name.charAt(0).toUpperCase()}
@@ -124,7 +136,8 @@ export function RetentionCard({ card }: Props) {
               onClick={handleWhatsAppClick}
               className="button button--whatsapp tap-target"
             >
-              💬 Chamar no WhatsApp
+              <IconWhatsApp width="16" height="16" />
+              <span>Chamar no WhatsApp</span>
             </a>
           ) : (
             <button
@@ -133,11 +146,12 @@ export function RetentionCard({ card }: Props) {
               className="button button--secondary tap-target"
               title={card.disabled_reason || "WhatsApp indisponível"}
             >
-              💬 WhatsApp desabilitado ({card.disabled_reason || "Sem consentimento"})
+              <IconWhatsApp width="16" height="16" />
+              <span>WhatsApp indisponível ({card.disabled_reason || "Sem consentimento"})</span>
             </button>
           )}
           {feedback && (
-            <span style={{ fontSize: "12px", color: feedback.includes("não") ? "#ef4444" : "#10b981", marginTop: "4px", display: "block" }}>
+            <span style={{ fontSize: "12px", color: feedback.includes("não") ? "#dc2626" : "#059669", marginTop: "4px", display: "block" }}>
               {feedback}
             </span>
           )}

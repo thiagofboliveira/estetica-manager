@@ -1,9 +1,11 @@
 ﻿import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { AsyncBoundary } from "@/ui/AsyncBoundary";
-import { EmptyState } from "@/ui/EmptyState";
+import { formatLocalDate } from "@/lib/format/date";
 import type { AgendaItem, SessionStatus } from "./api";
 import { useAgenda, useScheduleSession } from "./hooks";
+import { VisualTimelineAgenda } from "./VisualTimelineAgenda";
+import { NewBookingModal } from "./NewBookingModal";
 
 type ViewMode = "today" | "week" | "custom";
 
@@ -11,12 +13,13 @@ export function AgendaView() {
   const navigate = useNavigate();
   const scheduleSession = useScheduleSession();
 
-  const [mode, setMode] = useState<ViewMode>("today");
+  const [mode, setMode] = useState<ViewMode>("week");
+  const [slotToBook, setSlotToBook] = useState<string | null>(null);
 
-  const todayStr = new Date().toISOString().slice(0, 10);
+  const todayStr = formatLocalDate(new Date());
   const next7Days = new Date();
   next7Days.setDate(next7Days.getDate() + 7);
-  const next7DaysStr = next7Days.toISOString().slice(0, 10);
+  const next7DaysStr = formatLocalDate(next7Days);
 
   const [customFrom, setCustomFrom] = useState(todayStr);
   const [customTo, setCustomTo] = useState(next7DaysStr);
@@ -27,7 +30,8 @@ export function AgendaView() {
   const query = useAgenda(dateFrom, dateTo);
 
   async function handleUpdateSessionStatus(session: AgendaItem, status: SessionStatus) {
-    if (!window.confirm(`Deseja marcar esta sessão como ${status === "COMPLETED" ? "Concluída" : "Falta (No-show)"}?`)) {
+    const statusLabel = status === "COMPLETED" ? "Concluída" : "Falta (No-show)";
+    if (!window.confirm(`Deseja marcar esta sessão como ${statusLabel}?`)) {
       return;
     }
     try {
@@ -46,7 +50,7 @@ export function AgendaView() {
 
   return (
     <div className="agenda-view">
-      <div className="agenda-view__controls">
+      <div className="agenda-view__controls" style={{ marginBottom: "18px" }}>
         <div className="tab-group" role="group" aria-label="Período da agenda">
           <button
             type="button"
@@ -90,93 +94,28 @@ export function AgendaView() {
 
       <AsyncBoundary
         query={query}
-        skeleton={<p>Carregando agenda…</p>}
-        empty={
-          <EmptyState
-            tone="good"
-            title="Nenhum atendimento agendado no período"
-            body="Sua agenda está livre para estas datas."
-          />
-        }
-        isEmpty={(items) => items.length === 0}
+        skeleton={<p>Carregando agenda visual…</p>}
+        empty={null}
+        isEmpty={() => false}
       >
         {(items) => (
-          <ul className="list agenda-list">
-            {items.map((item) => {
-              const dt = new Date(item.scheduled_at);
-              const timeStr = dt.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
-              const dateFormatted = dt.toLocaleDateString("pt-BR", { weekday: "short", day: "numeric", month: "short" });
-
-              return (
-                <li key={`${item.type}-${item.id}`} className="list__item agenda-item">
-                  <div className="agenda-item__time-block">
-                    <span className="agenda-item__time">{timeStr}</span>
-                    <span className="agenda-item__date">{dateFormatted}</span>
-                  </div>
-
-                  <div className="agenda-item__main">
-                    <div className="agenda-item__header">
-                      <strong className="agenda-item__patient">{item.patient_name}</strong>
-                      <div className="agenda-item__badges">
-                        {/* F-017a: modalidade com ícone + texto */}
-                        <span className="badge badge--neutral">
-                          {item.modality === "REMOTE" ? "💻 Remoto" : "📍 Presencial"}
-                        </span>
-                        {item.type === "BOOKING" && (
-                          <span className="badge badge--accent">Reserva Provisória</span>
-                        )}
-                        {item.type === "SESSION" && item.sequence_number && item.total_sessions && (
-                          <span className="badge badge--success">
-                            Sessão {item.sequence_number} de {item.total_sessions}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-
-                    <div className="agenda-item__details">
-                      <span className="agenda-item__proc">{item.procedure_name}</span>
-                      {item.note && <span className="agenda-item__note">Obs: {item.note}</span>}
-                    </div>
-                  </div>
-
-                  <div className="agenda-item__actions">
-                    {item.type === "BOOKING" && (
-                      <button
-                        type="button"
-                        onClick={() => handleConvertBooking(item)}
-                        className="button button--secondary tap-target"
-                      >
-                        💳 Converter em Venda
-                      </button>
-                    )}
-
-                    {item.type === "SESSION" && item.status === "SCHEDULED" && (
-                      <div className="agenda-item__btn-group">
-                        <button
-                          type="button"
-                          onClick={() => handleUpdateSessionStatus(item, "COMPLETED")}
-                          className="button tap-target"
-                          title="Marcar sessão como realizada"
-                        >
-                          ✓ Concluir
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => handleUpdateSessionStatus(item, "NO_SHOW")}
-                          className="button button--ghost tap-target"
-                          title="Paciente não compareceu"
-                        >
-                          Falta
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                </li>
-              );
-            })}
-          </ul>
+          <VisualTimelineAgenda
+            items={items}
+            currentDateFrom={dateFrom}
+            currentDateTo={dateTo}
+            onUpdateSessionStatus={handleUpdateSessionStatus}
+            onConvertBooking={handleConvertBooking}
+            onBookSlot={(slotDateTimeISO) => setSlotToBook(slotDateTimeISO)}
+          />
         )}
       </AsyncBoundary>
+
+      {slotToBook && (
+        <NewBookingModal
+          initialDateTime={slotToBook}
+          onClose={() => setSlotToBook(null)}
+        />
+      )}
     </div>
   );
 }

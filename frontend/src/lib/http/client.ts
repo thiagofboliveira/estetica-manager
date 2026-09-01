@@ -60,13 +60,17 @@ async function request<T>(path: string, opts: Opts = {}, isRetry = false): Promi
   const body = await res.json().catch(() => ({}));
 
   if (!res.ok) {
-    // FastAPI's default shape é {"detail": "..."} (HTTPException) ou
-    // {"detail": [...]} (erro de validação 422) — nunca `message`.
-    const detail = typeof body.detail === "string" ? body.detail : undefined;
+    let detailMessage: string | undefined;
+    if (typeof body.detail === "string") {
+      detailMessage = body.detail;
+    } else if (Array.isArray(body.detail) && body.detail.length > 0) {
+      detailMessage = body.detail[0]?.msg || body.detail[0]?.message;
+    }
+
     throw new ApiError(
       res.status,
       body.code,
-      body.message ?? detail ?? "Não consegui salvar. Tenta de novo?",
+      body.message ?? detailMessage ?? "Não consegui salvar. Tenta de novo?",
       body.details ?? body.detail,
     );
   }

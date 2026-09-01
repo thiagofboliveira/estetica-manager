@@ -5,6 +5,9 @@ import { z } from "zod";
 import { ApiError } from "@/lib/http/client";
 import type { Patient } from "./api";
 
+import { toast } from "@/ui/ToastContext";
+import { IconWhatsApp } from "@/ui/icons";
+
 const schema = z.object({
   name: z.string().min(1, "Nome é obrigatório"),
   phone: z.string().optional(),
@@ -55,6 +58,7 @@ export function PatientForm({ initial, onSubmit, submitLabel }: Props) {
     try {
       await onSubmit(values);
       setSaved(true);
+      toast.success("Paciente salva com sucesso!");
     } catch (e) {
       setServerError(e instanceof ApiError ? e.message : "Não consegui salvar. Tenta de novo?");
     }
@@ -89,11 +93,15 @@ export function PatientForm({ initial, onSubmit, submitLabel }: Props) {
         <textarea {...register("notes")} rows={3} />
       </label>
 
-      {/* F-011b: gate explícito do botão de contato em F-015b — sem
-          consentimento registrado aqui, o WhatsApp não pode ser oferecido. */}
-      <label className="form__field form__field--checkbox">
+      {/* Gate explícito de consentimento para contato WhatsApp */}
+      <label className="whatsapp-consent-toggle">
         <input type="checkbox" {...register("consent_whatsapp")} />
-        <span>Autorizou receber mensagem no WhatsApp</span>
+        <div className="whatsapp-consent-content">
+          <span className="whatsapp-consent-icon">
+            <IconWhatsApp width="16" height="16" />
+          </span>
+          <span>Autorizou receber lembretes e mensagens no WhatsApp</span>
+        </div>
       </label>
 
       {serverError && (

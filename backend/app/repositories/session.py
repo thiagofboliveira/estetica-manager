@@ -38,7 +38,6 @@ class SessionRepository(TenantRepository[Session]):
                         SessionStatus.CONFIRMED,
                         SessionStatus.COMPLETED,
                         SessionStatus.NO_SHOW,
-                        SessionStatus.RESCHEDULED,
                     ]
                 ),
             )

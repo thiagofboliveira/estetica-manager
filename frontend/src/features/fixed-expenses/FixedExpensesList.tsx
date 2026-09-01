@@ -8,6 +8,7 @@ import { money, ZERO, type Money } from "@/lib/money/money";
 import { AsyncBoundary } from "@/ui/AsyncBoundary";
 import { CurrencyInput } from "@/ui/CurrencyInput";
 import { EmptyState } from "@/ui/EmptyState";
+import { formatLocalDate } from "@/lib/format/date";
 import type { ExpensePeriodicity, FixedExpense } from "./api";
 import {
   useArchiveFixedExpense,
@@ -37,7 +38,7 @@ export function FixedExpensesList() {
   const [serverError, setServerError] = useState<string | null>(null);
   const [archiveError, setArchiveError] = useState<string | null>(null);
 
-  const todayStr = new Date().toISOString().slice(0, 10);
+  const todayStr = formatLocalDate(new Date());
 
   const {
     register,

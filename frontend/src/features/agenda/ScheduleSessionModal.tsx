@@ -6,6 +6,7 @@ import { ApiError } from "@/lib/http/client";
 import type { OpenPackage } from "./api";
 import { formatDateToLocalInput } from "@/lib/format/date";
 import { useScheduleSession } from "./hooks";
+import { toast } from "@/ui/ToastContext";
 
 const schema = z.object({
   scheduled_at: z.string().min(1, "Data e horário são obrigatórios"),
@@ -58,6 +59,7 @@ export function ScheduleSessionModal({ pkg, onClose }: Props) {
           notes: values.notes || null,
         },
       });
+      toast.success("Sessão agendada com sucesso!");
       onClose();
     } catch (e) {
       setServerError(e instanceof ApiError ? e.message : "Erro ao agendar sessão.");

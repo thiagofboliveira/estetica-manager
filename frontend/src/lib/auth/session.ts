@@ -17,8 +17,12 @@ const DEV_AUTH = import.meta.env.VITE_DEV_AUTH === "true";
 const API_ROOT = import.meta.env.VITE_API_URL.replace(/\/api\/v1\/?$/, "");
 const DEV_TOKEN_KEY = "estetica.dev-auth.token";
 
-async function devLogin(): Promise<string | null> {
-  const res = await fetch(`${API_ROOT}/dev/login`, { method: "POST" });
+export async function devLogin(email?: string, password?: string): Promise<string | null> {
+  const res = await fetch(`${API_ROOT}/dev/login`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(email ? { email, password } : {}),
+  });
   if (!res.ok) return null;
   const body = (await res.json()) as { access_token: string };
   sessionStorage.setItem(DEV_TOKEN_KEY, body.access_token);
@@ -36,7 +40,7 @@ export async function getSessionToken(): Promise<string | null> {
 
 export async function refreshSessionToken(): Promise<string | null> {
   if (DEV_AUTH) {
-    // Token dev dura 8h (ver backend/app/main.py) — "refresh" é só pedir outro.
+    // Token dev dura 24h (ver backend/app/main.py) — "refresh" é só pedir outro.
     return devLogin();
   }
   const { supabase } = await import("./supabase");

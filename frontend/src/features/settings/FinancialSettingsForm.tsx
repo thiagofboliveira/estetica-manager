@@ -6,6 +6,7 @@ import { ApiError } from "@/lib/http/client";
 import type { FeePayer, FinancialSettings, PaymentMethod, SplitBase } from "./api";
 import { useUpdateFinancialSettings } from "./hooks";
 import { PaymentFeeRulesManager } from "./PaymentFeeRulesManager";
+import { toast } from "@/ui/ToastContext";
 
 const schema = z.object({
   has_split: z.enum(["YES", "NO"]),
@@ -78,6 +79,7 @@ export function FinancialSettingsForm({ initial }: Props) {
         default_payment_method: values.default_payment_method as PaymentMethod,
       });
       setSaved(true);
+      toast.success("Configurações financeiras salvas com sucesso!");
     } catch (e) {
       setServerError(e instanceof ApiError ? e.message : "Erro ao salvar configurações financeiras.");
     }

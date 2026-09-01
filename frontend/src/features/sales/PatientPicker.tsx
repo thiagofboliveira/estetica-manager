@@ -1,13 +1,13 @@
 import { useState } from "react";
+import { Link } from "react-router-dom";
 import { AsyncBoundary } from "@/ui/AsyncBoundary";
 import { useDebouncedValue } from "@/lib/hooks/useDebouncedValue";
-import { usePatientsSearch } from "@/features/patients/hooks";
+import { usePatients } from "@/features/patients/hooks";
 import type { Patient } from "@/features/patients/api";
 
 /**
- * Busca + seleção de paciente, compartilhada entre venda avulsa (F-014)
- * e venda de pacote (F-014b) — mesmo padrão de `PatientsPage`, mas
- * inline em vez de navegar para outra tela.
+ * Busca + seleção de paciente via dropdown nativo com busca dinâmica
+ * e suporte a criação rápida de novas pacientes.
  */
 export function PatientPicker({
   selected,
@@ -20,48 +20,86 @@ export function PatientPicker({
 }) {
   const [search, setSearch] = useState("");
   const debounced = useDebouncedValue(search, 300);
-  const query = usePatientsSearch(debounced);
-
-  if (selected) {
-    return (
-      <div className="sale-form__selected">
-        <span>{selected.name}</span>
-        <button type="button" className="tap-target" onClick={onClear}>
-          Trocar
-        </button>
-      </div>
-    );
-  }
+  const query = usePatients(debounced);
 
   return (
-    <>
-      <input
-        type="search"
-        placeholder="Buscar por nome ou telefone…"
-        value={search}
-        onChange={(e) => setSearch(e.target.value)}
-        aria-label="Buscar paciente"
-      />
-      {debounced && (
-        <AsyncBoundary query={query} skeleton={<p>Buscando…</p>} empty={<p>Nenhuma paciente encontrada.</p>}>
-          {(patients) => (
-            <ul className="list">
-              {patients.map((p) => (
-                <li key={p.id} className="list__item">
-                  <button
-                    type="button"
-                    className="list__item-btn tap-target"
-                    onClick={() => onSelect(p)}
-                  >
-                    <span className="list__item-title">{p.name}</span>
-                    {p.phone && <span className="list__item-sub">{p.phone}</span>}
-                  </button>
-                </li>
-              ))}
-            </ul>
-          )}
-        </AsyncBoundary>
-      )}
-    </>
+    <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+      <AsyncBoundary
+        query={query}
+        skeleton={<p style={{ fontSize: "13px", color: "#64748b" }}>Carregando pacientes…</p>}
+        empty={
+          <div style={{ padding: "8px 0", fontSize: "13px", color: "#64748b" }}>
+            Nenhuma paciente cadastrada.{" "}
+            <Link to="/pacientes/novo" style={{ color: "var(--accent)", fontWeight: "600" }}>
+              + Cadastrar nova paciente
+            </Link>
+          </div>
+        }
+      >
+        {(patients) => {
+          if (!patients || patients.length === 0) {
+            return (
+              <div style={{ padding: "8px 0", fontSize: "13px", color: "#64748b" }}>
+                Nenhuma paciente encontrada.{" "}
+                <Link to="/pacientes/novo" style={{ color: "var(--accent)", fontWeight: "600" }}>
+                  + Cadastrar nova paciente
+                </Link>
+              </div>
+            );
+          }
+
+          return (
+            <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+              <select
+                value={selected?.id || ""}
+                onChange={(e) => {
+                  const pid = e.target.value;
+                  if (!pid) {
+                    onClear();
+                  } else {
+                    const found = patients.find((p) => p.id === pid);
+                    if (found) onSelect(found);
+                  }
+                }}
+              >
+                <option value="">Selecione uma paciente…</option>
+                {patients.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.name} {p.phone ? `(${p.phone})` : ""}
+                  </option>
+                ))}
+              </select>
+
+              <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                <input
+                  type="search"
+                  placeholder="🔍 Digite para filtrar a lista…"
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  style={{
+                    fontSize: "13px",
+                    padding: "6px 12px",
+                    minHeight: "36px",
+                    flex: 1,
+                  }}
+                />
+                <Link
+                  to="/pacientes/novo"
+                  className="button button--secondary tap-target"
+                  style={{
+                    fontSize: "12.5px",
+                    padding: "6px 12px",
+                    minHeight: "36px",
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  + Nova Paciente
+                </Link>
+              </div>
+            </div>
+          );
+        }}
+      </AsyncBoundary>
+    </div>
   );
 }

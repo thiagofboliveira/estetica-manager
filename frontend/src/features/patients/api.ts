@@ -20,6 +20,7 @@ export type PatientCreateInput = {
   email?: string | null;
   birth_date?: string | null;
   notes?: string | null;
+  consent_whatsapp?: boolean;
 };
 
 export type PatientUpdateInput = Partial<PatientCreateInput> & {

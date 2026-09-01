@@ -13,6 +13,7 @@ class PatientCreate(InputSchema):
     email: EmailStr | None = None
     birth_date: date | None = None
     notes: str | None = None
+    consent_whatsapp: bool = False
 
     @field_validator("phone")
     @classmethod

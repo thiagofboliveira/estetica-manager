@@ -1,0 +1,47 @@
+.banner {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 9999;
+  background: linear-gradient(90deg, #7c3aed, #4f46e5);
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 20px;
+  font-size: 13px;
+  font-weight: 500;
+  box-shadow: 0 2px 8px rgba(79, 70, 229, 0.4);
+}
+
+.icon {
+  font-size: 16px;
+  flex-shrink: 0;
+}
+
+.text {
+  flex: 1;
+}
+
+.subtle {
+  opacity: 0.75;
+  font-size: 12px;
+}
+
+.exitBtn {
+  background: rgba(255, 255, 255, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  color: #ffffff;
+  padding: 4px 12px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.15s;
+}
+
+.exitBtn:hover {
+  background: rgba(255, 255, 255, 0.35);
+}
