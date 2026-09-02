@@ -21,6 +21,7 @@ export const qk = {
   sessionsRange: (from: string, to: string) => [...qk.sessions(), { from, to }] as const,
   sales: () => [...qk.financial(), "sales"] as const,
   saleDetail: (id: string) => [...qk.sales(), "detail", id] as const,
+  saleAudit: (id: string) => [...qk.sales(), "audit", id] as const,
   // Despesa fixa alimenta fixed_expenses_total/net_profit_after_fixed_expenses
   // no GET /dashboard — fica sob financial() para a mesma invalidação em cascata
   // (ver ENGENHARIA.md: "financial-settings parece cacheável mas é input do lucro").

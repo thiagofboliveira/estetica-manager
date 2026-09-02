@@ -1,4 +1,4 @@
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRef } from "react";
 import { qk } from "@/lib/query/keys";
 import { invalidateAfterSale } from "@/lib/query/invalidation";
@@ -29,15 +29,26 @@ export function useSale(id: string) {
   });
 }
 
+export function useSaleAudit(id: string) {
+  return useQuery({
+    queryKey: qk.saleAudit(id),
+    queryFn: () => salesApi.getAudit(id),
+    enabled: !!id,
+  });
+}
+
 // F-014d/T-017: corrigir é estornar + criar venda nova (id diferente).
 // Sem idempotency-key própria porque o backend usa `reason` obrigatório
 // e um segundo clique acidental cairia em 409 (venda já estornada), não
 // numa duplicata silenciosa — risco menor que o de F-014a.
 export function useCorrectSale(id: string) {
+  const qc = useQueryClient();
   return useMutation({
     mutationFn: (payload: SaleCorrectInput) => salesApi.correct(id, payload),
     onSuccess: async (sale) => {
       await invalidateAfterSale(sale.patient_id);
+      qc.invalidateQueries({ queryKey: qk.saleDetail(id) });
+      qc.invalidateQueries({ queryKey: qk.saleAudit(id) });
     },
   });
 }

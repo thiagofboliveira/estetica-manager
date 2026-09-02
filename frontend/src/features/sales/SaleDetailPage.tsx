@@ -1,11 +1,11 @@
 import { useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { AsyncBoundary } from "@/ui/AsyncBoundary";
 import { formatBRL } from "@/lib/money/format";
 import { money } from "@/lib/money/money";
 import { ApiError } from "@/lib/http/client";
-import { useSale, useCorrectSale } from "./hooks";
+import { useSale, useSaleAudit, useCorrectSale } from "./hooks";
 import type { Sale } from "./api";
 
 type CorrectionFormValues = {
@@ -17,8 +17,9 @@ type CorrectionFormValues = {
 /**
  * F-014d/T-017. "Editar" uma venda não é um UPDATE — o backend estorna
  * a original (`status` vira `REFUNDED`) e cria uma venda NOVA com id
- * diferente. Não há endpoint de histórico (`sale_audit` não é
- * exposto), então não dá pra mostrar "esta venda corrigiu a X" ainda.
+ * diferente. `GET /sales/{id}/audit` (adicionado depois, mesma task)
+ * expõe o vínculo original→substituta, usado abaixo para mostrar "esta
+ * venda foi corrigida, veja a nova".
  * ⚠️ Achado real: a nota antiga do backlog dizia "recalcula com a
  * config do momento original (I3)" — o backend faz o OPOSTO, usa a
  * config de HOJE (sem versionamento de config). O aviso abaixo reflete
@@ -42,11 +43,25 @@ export function SaleDetailPage() {
 
 function SaleDetail({ sale }: { sale: Sale }) {
   const [correcting, setCorrecting] = useState(false);
+  const auditQuery = useSaleAudit(sale.id);
+  // Se esta venda já foi corrigida, existe no máximo 1 entrada com
+  // original_sale_id === sale.id (não dá pra corrigir 2x a mesma —
+  // a segunda tentativa cai em 409, ver CorrectionForm).
+  const correction = auditQuery.data?.[0];
 
   if (sale.status === "REFUNDED") {
     return (
       <div>
-        <p className="form__error">Esta venda foi estornada — já foi substituída por uma correção.</p>
+        <p className="form__error">
+          Esta venda foi estornada — já foi substituída por uma correção.
+          {correction && (
+            <>
+              {" "}
+              Motivo: "{correction.reason}".{" "}
+              <Link to={`/vendas/${correction.replacement_sale_id}`}>Ver venda corrigida</Link>
+            </>
+          )}
+        </p>
         <SaleSummary sale={sale} />
       </div>
     );

@@ -77,6 +77,14 @@ export type Sale = {
 
 export type SaleCorrectInput = SaleCreateInput & { reason: string };
 
+export type SaleAuditEntry = {
+  id: string;
+  original_sale_id: string;
+  replacement_sale_id: string;
+  reason: string;
+  corrected_at: string;
+};
+
 export const salesApi = {
   create: (payload: SaleCreateInput, idempotencyKey: string) =>
     api.post<Sale>("/sales", payload, { headers: { "Idempotency-Key": idempotencyKey } }),
@@ -86,4 +94,7 @@ export const salesApi = {
   // com id diferente, usando a config financeira de HOJE (não a do
   // momento original — sem versionamento de config, ver F-014d).
   correct: (id: string, payload: SaleCorrectInput) => api.patch<Sale>(`/sales/${id}`, payload),
+  // Histórico de correções — array vazio se a venda nunca foi
+  // corrigida. Uma entrada aqui aponta original -> substituta.
+  getAudit: (id: string) => api.get<SaleAuditEntry[]>(`/sales/${id}/audit`),
 };
