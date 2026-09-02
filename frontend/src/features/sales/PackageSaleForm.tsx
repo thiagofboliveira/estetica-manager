@@ -131,6 +131,7 @@ export function PackageSaleForm() {
         <p>
           Lucro: <strong>{formatBRL(money(confirmedSale.net_profit))}</strong>
         </p>
+        <Link to={`/vendas/${confirmedSale.id}`}>Errou algo? Corrigir venda</Link>
       </div>
     );
   }

@@ -75,8 +75,15 @@ export type Sale = {
   sessions: SessionOut[];
 };
 
+export type SaleCorrectInput = SaleCreateInput & { reason: string };
+
 export const salesApi = {
   create: (payload: SaleCreateInput, idempotencyKey: string) =>
     api.post<Sale>("/sales", payload, { headers: { "Idempotency-Key": idempotencyKey } }),
   get: (id: string) => api.get<Sale>(`/sales/${id}`),
+  // T-017: NÃO é um UPDATE — o backend estorna a venda original
+  // (status vira REFUNDED, campos congelados) e cria uma venda nova
+  // com id diferente, usando a config financeira de HOJE (não a do
+  // momento original — sem versionamento de config, ver F-014d).
+  correct: (id: string, payload: SaleCorrectInput) => api.patch<Sale>(`/sales/${id}`, payload),
 };

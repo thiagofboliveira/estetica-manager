@@ -365,6 +365,16 @@ fieldset.form__field label {
   color: var(--text-h);
 }
 
+/* F-013b: sinaliza que o número ainda pode mudar — nunca deixar um
+   valor incerto com aparência de definitivo (I7). */
+.chip--provisional {
+  background: #fff3cd;
+  color: #7a5c00;
+  font-size: 11px;
+  margin-left: 6px;
+  vertical-align: middle;
+}
+
 /* F-015: retenção — um card por paciente. */
 .retention-card {
   display: flex;

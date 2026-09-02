@@ -81,13 +81,27 @@ function DashboardMetrics({ dashboard }: { dashboard: Dashboard }) {
       </div>
 
       <div className="dashboard__metric">
-        <dt>Lucro real</dt>
+        <dt>
+          Lucro real
+          {dashboard.has_provisional_profit && (
+            <span className="chip chip--provisional" title="Tem sessão de pacote ainda não realizada neste período — o custo pode mudar quando ela acontecer">
+              provisório
+            </span>
+          )}
+        </dt>
         <dd>{formatBRL(money(dashboard.net_profit))}</dd>
       </div>
 
       {showFixedExpenses && (
         <div className="dashboard__metric">
-          <dt>Lucro real do mês</dt>
+          <dt>
+            Lucro real do mês
+            {dashboard.has_provisional_profit && (
+              <span className="chip chip--provisional" title="Tem sessão de pacote ainda não realizada neste período — o custo pode mudar quando ela acontecer">
+                provisório
+              </span>
+            )}
+          </dt>
           <dd>
             {formatBRL(money(net_profit_after_fixed_expenses))}
             <span className="dashboard__metric-note">

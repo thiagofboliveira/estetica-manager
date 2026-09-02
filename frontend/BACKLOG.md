@@ -4,7 +4,7 @@ Escopo: todas as telas, estado, integração com a API.
 Fonte de escopo: [MVP v7.1](../MVP%20—%20Micro-SaaS%20para%20Gestão%20Financeira%20e%20Retenção%20em%20Estética%20\(v6\).md) · Coordenação: [../BACKLOG.md](../BACKLOG.md)
 <sub>O arquivo continua nomeado `v6`; v7/v7.1 são seções acrescentadas dentro dele, não arquivos novos.</sub>
 
-**Atualizado:** 2026-09-02 · **Progresso:** 28/36 (78%) · F-012a/F-012b/F-012c/F-013c/F-030/F-031/F-015/F-015a/F-015b/F-015c/F-021a verificados/entregues e marcados `[x]` · T-029 (motor de retenção) mergeada por sessão paralela, desbloqueando F-015 · F-016 e F-021 `[!]` bloqueadas (ver notas — ambas precisam de trabalho novo no backend)
+**Atualizado:** 2026-09-02 · **Progresso:** 29/36 (81%, escopo MVP v7.1 original) · F-012a/F-012b/F-012c/F-013b/F-013c/F-014d/F-014e/F-030/F-031/F-015/F-015a/F-015b/F-015c/F-021a verificados/entregues e marcados `[x]` · T-017/T-022b/T-024a e T-029 (motor de retenção) entregues por sessão paralela no backend, desbloqueando várias linhas · F-016 e F-021 `[!]` bloqueadas (ver notas — ambas precisam de trabalho novo no backend) · **F-014d/F-014e são achados da revisão de produto (Fase 5+), fora do denominador 36 do MVP original — já marcados `[x]` na linha repriorizada**
 
 ---
 
@@ -56,10 +56,10 @@ Ambiente subido de novo (Postgres 5435 — 5434 estava ocupada por container de 
 |---|---:|---:|
 | 0 — Fundação | 5 | 5 |
 | 1 — Cadastros | 8 | 8 |
-| 2 — Venda + Dashboard | 9 | 7 |
+| 2 — Venda + Dashboard | 9 | 8 |
 | 3 — Retenção + Agenda + Onboarding | 12 | 5 |
 | 4 — Polimento | 2 | 2 |
-| **Total** | **36** | **28** |
+| **Total** | **36** | **29** |
 
 ---
 
@@ -169,7 +169,7 @@ O frontend **não tinha tempo alocado em nenhuma fase** do plano original. São 
 | F-014c | Exibir lucro na confirmação | `[x]` | F-014 | Ambas as telas mostram o `net_profit` real vindo de `POST /sales`. |
 | F-013 | Dashboard | `[x]` | T-022 | **Integrado com `GET /dashboard` real em 2026-08-29** (`features/dashboard/`, rota `/`). Filtro de período (Hoje/Últimos 7 dias/Este mês/Mês anterior/Personalizado), métricas: faturamento, lucro real, lucro real do mês (só quando não-null), a receber, margem média, ticket médio, vendas+atendimentos. **Verificado no navegador contra API+Postgres reais**: valores batem exatos com a resposta da API em todos os períodos testados. Bug encontrado e corrigido durante o teste: trocar para "Personalizado" antes de escolher as datas deixava a tela presa em "Carregando…" para sempre (query `enabled: false` nunca resolve `isPending`) — agora mostra "Escolha as duas datas" em vez do boundary. |
 | F-013a | Rótulos venda-vs-sessão | `[x]` | F-013 | "X vendas, Y atendimentos" implementado com singular/plural corretos, ver `DashboardMetrics` |
-| F-013b | Badge "lucro provisório" e "taxa estimada" | `[ ]` | F-013 | **Ainda não dá para implementar direito**: `GET /dashboard` retorna só o agregado do período, sem indicar se alguma venda por trás tem sessões pendentes (pacote ainda não totalmente realizado, MVP §12.1) — precisaria de um campo novo do backend (ex: `has_provisional_profit`) ou de buscar vendas individualmente, o que foge do escopo de um endpoint agregado. Registrar como pendência de contrato de API, não de UI |
+| F-013b | Badge "lucro provisório" e "taxa estimada" | `[x]` | F-013, T-022b | **Integrado em 2026-09-02** assim que outra sessão entregou `has_provisional_profit` no `GET /dashboard` (T-022b). Badge amarelo "provisório" ao lado de "Lucro real" e "Lucro real do mês" quando o campo é `true`, com `title` explicando o motivo (sessão de pacote ainda não realizada no período). **Verificado no navegador contra API+Postgres reais**: criei uma venda de pacote real (3× Limpeza de pele) via `/vendas/nova-pacote`, as sessões nasceram `PENDING`, e o badge apareceu no Dashboard tanto em "Este mês" quanto em "Últimos 7 dias" (períodos que cobrem a venda) |
 | F-013c | Ranking de procedimentos 🆕 | `[x]` | T-024 | **Integrado com `GET /reports/procedures` real em 2026-09-02** (`features/procedureRanking/`, rota `/relatorios/procedimentos`, link a partir do Dashboard). Tabela procedimento/faturamento/lucro/margem, já vem ordenada por faturamento do servidor. A API não expõe se uma linha depende de estimativa não confirmada (E4/E5, MVP §13) — não há campo no schema pra isso — então o aviso é fixo abaixo da tabela, não por linha. **Reffactor incluído**: filtro de período (5 botões + range custom, com o guard "escolha as duas datas" contra o bug do `AsyncBoundary`) extraído do Dashboard para `ui/PeriodFilter.tsx` + `lib/period/period.ts`, reusado nas duas telas. **Verificado no navegador contra API+Postgres reais**: criei uma venda real (Botox, R$1.000/lucro R$400) via `/vendas/nova` e conferi que apareceu na tabela com margem 40% calculada certa; troquei os 5 filtros de período, inclusive o guard de "Personalizado" sem datas. `tsc -b` limpo |
 | F-016 | Tela de paciente + histórico | `[!]` | T-011 | 🔴 **Ainda bloqueada — reconfirmado em 2026-09-02 após o merge do motor de retenção.** `GET /sales` (lista) **continua não existindo** — só há `POST /sales` e `GET /sales/{id}` (por id), e o merge de `feature/motor-retencao` não trouxe esse endpoint (trouxe `GET /retention/opportunities` e `PATCH /sessions/{id}`, endpoints diferentes). Não é "falta o filtro `patient_id`", é que o endpoint de listagem em si não existe. **T-027 (`return_interval_applied` por item) mudou para `[x]`** no mesmo merge — a base de dado para "próximo retorno" agora existe de verdade (confirmei em `SaleItem.return_interval_applied` via `\d sale_items` e um teste manual criando venda real), mas isso sozinho não desbloqueia a tela: ainda falta o caminho para descobrir *quais* vendas pertencem a um paciente. `PatientOut` continua sem campo agregado, `reports.py` continua só com o ranking. **Precisa de pelo menos:** `GET /sales?patient_id=...` (lista) no backend — não registrado ainda como task própria no `backend/BACKLOG.md`. |
 
@@ -250,10 +250,14 @@ Nenhuma task de front começa antes do endpoint existir — exceto com mock expl
 | T-022 | F-013 | ✅ (2026-08-29) |
 | T-024 | F-013c | ✅ (2026-08-29) |
 | T-029 | F-015 | ✅ (2026-09-02) |
+| T-017 | F-014d | ✅ (2026-09-02) |
+| T-024a | F-014e | ✅ (2026-09-02) |
+| T-022b | F-013b | ✅ (2026-09-02) |
 | T-032 | F-017 | ❌ |
 | T-034 | F-018 | ❌ |
 | T-034a, T-034b | F-019, F-019a | ❌ |
 | `GET /sales` (lista, com `patient_id`) — sem task própria ainda | F-016 | ❌ (descoberto em 2026-09-02, ver nota do F-016) |
+| campo de estimativa/confirmação em `financial_settings` — sem task própria ainda | F-021 | ❌ (descoberto em 2026-09-02, ver nota do F-021) |
 
 > Conferir sempre `../backend/BACKLOG.md` antes de assumir — esta coluna reflete o estado em 2026-09-02 e vai mudar conforme o backend avança.
 
@@ -275,9 +279,9 @@ Nenhuma task de front começa antes do endpoint existir — exceto com mock expl
 | ID | Task | Status | Depende | Nota |
 |---|---|:--:|---|---|
 | F-030 | **Responsivo (celular)** | `[x]` | F-014 | 🔴 **A-03.** Implementado em 2026-09-02 — ver nota na linha original acima (Fase 4). Testado em viewport real 375×812 via Playwright, não só devtools |
-| F-014d | Editar venda | `[ ]` | T-017 | 🔴 A-02. O próprio handoff registrou: "erro de digitação não tem conserto". §27 do MVP lista como critério de aceite. Mostrar que o recálculo usa a config **do momento original** (I3), não a de hoje |
-| F-013b | Badge "lucro provisório" / "taxa estimada" | `[ ]` | T-022b | 🟠 A-07. **Desbloqueia quando T-022b entregar `has_provisional_profit`.** Era bloqueio de contrato, não de UI — agora tem task no backend |
-| F-014e | Erro visível em parcela fora da faixa | `[ ]` | T-024a | 🔴 A-06. Hoje a venda passa silenciosamente com taxa possivelmente zerada. Exibir o erro do backend, nunca deixar o valor errado na tela com aparência de certo (I7) |
+| F-014d | Editar venda | `[x]` | T-017 | 🔴 A-02. **Implementado em 2026-09-02** assim que outra sessão entregou `PATCH /sales/{id}` (T-017). `SaleDetailPage.tsx`, rota `/vendas/:id`, link "Errou algo? Corrigir venda" nas telas de confirmação de F-014/F-014b. ⚠️ **A nota original desta linha estava errada**: dizia para "mostrar que o recálculo usa a config do momento original (I3)" — o backend faz o **oposto**: "editar" é estornar a venda (`status=REFUNDED`, campos congelados) e criar uma venda nova com **a configuração de hoje**, sem versionamento de config por data. O aviso no form reflete isso: "A correção usa a configuração financeira de hoje... se algo mudou desde então, o lucro pode sair diferente do original." Não existe endpoint de leitura de `sale_audit` — não dá pra mostrar histórico "esta venda corrigiu a X" na UI ainda, só o vínculo fica gravado no banco. **Verificado no navegador contra API+Postgres reais**: venda PIX/R$230 lucro corrigida para Crédito 3x → nova venda com id diferente, lucro recalculado para R$192, original virou `REFUNDED` e some do botão "Corrigir" (mostra aviso em vez disso), tudo conferido com `SELECT` em `sales`+`sale_audit` |
+| F-013b | Badge "lucro provisório" / "taxa estimada" | `[x]` | T-022b | 🟠 A-07. Ver linha original acima (Fase 2) |
+| F-014e | Erro visível em parcela fora da faixa | `[x]` | T-024a | 🔴 A-06. **Nenhuma mudança de código necessária** — `SaleForm.tsx`/`PackageSaleForm.tsx` já capturavam `ApiError.message` (que já lê `body.detail`) e bloqueavam o avanço para a tela de confirmação em qualquer erro. Só faltava o backend retornar o 422. **Verificado no navegador**: forcei 13x no crédito (fora de todas as faixas cadastradas), a mensagem real do backend apareceu em vermelho ("Nenhuma regra de taxa cobre 13x para CREDIT — cadastre uma faixa em /payment-fee-rules"), o botão voltou a "Confirmar venda" (não travou em "Confirmando…"), e `SELECT` confirmou que nenhuma venda com 13x foi persistida |
 | F-031 | Estados de erro, loading e vazio | `[x]` | todas | 🟠 Auditado e corrigido em 2026-09-02 — ver nota na linha original acima (Fase 4) |
 
 > ⚠️ **Padrão a repetir (bug real já encontrado):** toda tela com filtro que desabilita a query condicionalmente precisa distinguir "desabilitada" de "carregando", senão o `AsyncBoundary` mente e a tela fica presa em "Carregando…". Ver nota do F-013.

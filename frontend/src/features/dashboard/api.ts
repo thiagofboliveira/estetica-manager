@@ -9,6 +9,10 @@ export type Dashboard = {
   date_to: string;
 
   has_any_data: boolean;
+  // T-022b: existe sessão PENDING (não realizada) de venda ACTIVE no
+  // período — lucro/custo do período ainda pode mudar quando essa
+  // sessão for concluída.
+  has_provisional_profit: boolean;
 
   gross_revenue: string;
   net_profit: string;

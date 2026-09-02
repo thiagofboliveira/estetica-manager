@@ -9,6 +9,7 @@ import { NewProcedurePage } from "@/features/procedures/NewProcedurePage";
 import { ProcedureDetailPage } from "@/features/procedures/ProcedureDetailPage";
 import { NewSalePage } from "@/features/sales/NewSalePage";
 import { NewPackageSalePage } from "@/features/sales/NewPackageSalePage";
+import { SaleDetailPage } from "@/features/sales/SaleDetailPage";
 import { DashboardPage } from "@/features/dashboard/DashboardPage";
 import { ProcedureRankingPage } from "@/features/procedureRanking/ProcedureRankingPage";
 import { ExpensesPage } from "@/features/expenses/ExpensesPage";
@@ -36,6 +37,7 @@ export const router = createBrowserRouter([
       { path: "procedimentos/:id", element: <ProcedureDetailPage /> }, // F-012
       { path: "vendas/nova", element: <NewSalePage /> }, // F-014
       { path: "vendas/nova-pacote", element: <NewPackageSalePage /> }, // F-014b
+      { path: "vendas/:id", element: <SaleDetailPage /> }, // F-014d
       { path: "agenda", element: <PlaceholderPage title="Agenda" /> }, // F-017
       { path: "configuracoes", element: <SettingsPage /> },
       { path: "configuracoes/financeiro", element: <FinancialSettingsPage /> }, // F-012a
