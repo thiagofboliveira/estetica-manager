@@ -32,6 +32,13 @@ class SaleCreate(InputSchema):
         return self
 
 
+class SaleCorrect(SaleCreate):
+    """T-017: mesmo corpo de SaleCreate + motivo obrigatório da correção
+    — a venda original é estornada (REFUNDED) e esta é a venda nova."""
+
+    reason: str = Field(min_length=1)
+
+
 class SaleItemOut(OutputSchema):
     id: UUID
     procedure_id: UUID

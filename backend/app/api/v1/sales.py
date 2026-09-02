@@ -6,12 +6,13 @@ from fastapi import APIRouter, Header, HTTPException, Response, status
 from app.api.deps import SaleSvc
 from app.models.sale_item import SaleItem
 from app.models.session import Session as SessionModel
-from app.schemas.sale import SaleCreate, SaleItemOut, SaleOut, SessionOut
+from app.schemas.sale import SaleCorrect, SaleCreate, SaleItemOut, SaleOut, SessionOut
 from app.services.sale_service import (
     IdempotencyKeyConflictError,
     NoFeeRuleForInstallmentsError,
     PatientNotFoundForSaleError,
     ProcedureNotFoundForSaleError,
+    SaleAlreadyRefundedError,
     SaleNotFoundError,
 )
 
@@ -76,3 +77,33 @@ def get_sale(sale_id: UUID, svc: SaleSvc) -> SaleOut:
     except SaleNotFoundError as exc:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Venda não encontrada") from exc
     return _to_sale_out(svc, sale)
+
+
+@router.patch("/{sale_id}", response_model=SaleOut)
+def correct_sale(sale_id: UUID, payload: SaleCorrect, svc: SaleSvc) -> SaleOut:
+    """T-017, A-02: corrige uma venda registrada errada. Nunca faz
+    UPDATE na venda original (FROZEN_FIELDS) — estorna (REFUNDED) e
+    devolve a venda de SUBSTITUIÇÃO (id diferente do original)."""
+    try:
+        replacement = svc.correct(sale_id, payload)
+    except SaleNotFoundError as exc:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Venda não encontrada") from exc
+    except SaleAlreadyRefundedError as exc:
+        raise HTTPException(
+            status.HTTP_409_CONFLICT, "Venda já foi estornada/corrigida"
+        ) from exc
+    except PatientNotFoundForSaleError as exc:
+        raise HTTPException(
+            status.HTTP_404_NOT_FOUND, "Paciente não encontrado"
+        ) from exc
+    except ProcedureNotFoundForSaleError as exc:
+        raise HTTPException(
+            status.HTTP_404_NOT_FOUND, "Procedimento não encontrado"
+        ) from exc
+    except NoFeeRuleForInstallmentsError as exc:
+        raise HTTPException(
+            status.HTTP_422_UNPROCESSABLE_ENTITY,
+            f"Nenhuma regra de taxa cobre {exc.installments}x para "
+            f"{exc.payment_method} — cadastre uma faixa em /payment-fee-rules",
+        ) from exc
+    return _to_sale_out(svc, replacement)

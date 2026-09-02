@@ -43,6 +43,7 @@ from app.domain.financial.calculator import (
     SplitBase as CalcSplitBase,
 )
 from app.models.sale import Sale, SaleStatus
+from app.models.sale_audit import SaleAudit
 from app.models.sale_item import SaleItem
 from app.models.session import Session as SessionModel
 from app.models.session import SessionStatus
@@ -52,9 +53,10 @@ from app.repositories.payment_fee_rule import PaymentFeeRuleRepository
 from app.repositories.procedure import ProcedureRepository
 from app.repositories.professional import ProfessionalRepository
 from app.repositories.sale import SaleRepository
+from app.repositories.sale_audit import SaleAuditRepository
 from app.repositories.sale_item import SaleItemRepository
 from app.repositories.session import SessionRepository
-from app.schemas.sale import SaleCreate
+from app.schemas.sale import SaleCorrect, SaleCreate
 from app.services.financial_settings_service import FinancialSettingsService
 from app.services.retention_service import RetentionService
 
@@ -73,6 +75,11 @@ class ProcedureNotFoundForSaleError(Exception):
 
 class SaleNotFoundError(Exception):
     pass
+
+
+class SaleAlreadyRefundedError(Exception):
+    """T-017: uma venda REFUNDED já foi corrigida (ou estornada) antes —
+    não corrige duas vezes a mesma venda original."""
 
 
 class NoFeeRuleForInstallmentsError(Exception):
@@ -111,6 +118,7 @@ class SaleService:
         payment_fee_rule_repo: PaymentFeeRuleRepository,
         professional_repo: ProfessionalRepository,
         retention_service: RetentionService,
+        sale_audit_repo: SaleAuditRepository,
     ) -> None:
         self._sales = sale_repo
         self._sale_items = sale_item_repo
@@ -121,6 +129,7 @@ class SaleService:
         self._payment_fee_rules = payment_fee_rule_repo
         self._professionals = professional_repo
         self._retention = retention_service
+        self._sale_audit = sale_audit_repo
 
     def find_existing_by_idempotency_key(self, idempotency_key: str) -> Sale | None:
         """Usado pela rota só para decidir 200 vs 201 na resposta — a
@@ -142,6 +151,20 @@ class SaleService:
                 # nova com a mesma chave (sobrescreve o registro antigo
                 # de controle, não afeta a venda expirada já criada).
 
+        return self._build_and_persist_sale(
+            dto, idempotency_key=idempotency_key, body_hash=body_hash
+        )
+
+    def _build_and_persist_sale(
+        self,
+        dto: SaleCreate,
+        *,
+        idempotency_key: str | None,
+        body_hash: str,
+    ) -> Sale:
+        """Núcleo de criação de venda, sem a checagem de idempotência —
+        reusado por create() (T-015) e correct() (T-017, venda de
+        substituição nunca usa idempotency_key)."""
         if self._patients.get(dto.patient_id) is None:
             raise PatientNotFoundForSaleError()
 
@@ -283,6 +306,40 @@ class SaleService:
         if sale is None:
             raise SaleNotFoundError()
         return sale
+
+    def correct(self, sale_id: UUID, dto: SaleCorrect) -> Sale:
+        """T-017, A-02: "venda registrada errada pode ser corrigida".
+
+        Nunca UPDATE numa Sale persistida (FROZEN_FIELDS, invariante
+        I3) — corrigir é: (1) estornar a original (REFUNDED), (2) criar
+        uma venda nova com os dados corretos (mesma lógica de create(),
+        config ATUAL — não há versionamento histórico de
+        financial_settings/payment_fee_rules, T-020a não implementado),
+        (3) registrar o vínculo em sale_audit. Sessões da venda
+        original não são tocadas — fora de escopo desta correção."""
+        original = self._sales.get(sale_id)
+        if original is None:
+            raise SaleNotFoundError()
+        if original.status != SaleStatus.ACTIVE:
+            raise SaleAlreadyRefundedError()
+
+        create_dto = SaleCreate(**dto.model_dump(exclude={"reason"}))
+        replacement = self._build_and_persist_sale(
+            create_dto, idempotency_key=None, body_hash=_hash_body(create_dto)
+        )
+
+        original.status = SaleStatus.REFUNDED
+        self._sales.flush()
+
+        audit = SaleAudit(
+            original_sale_id=original.id,
+            replacement_sale_id=replacement.id,
+            reason=dto.reason,
+            corrected_at=datetime.now(UTC),
+        )
+        self._sale_audit.add(audit)
+
+        return replacement
 
     def get_items(self, sale_id: UUID) -> list[SaleItem]:
         return self._sale_items.list_for_sale(sale_id)

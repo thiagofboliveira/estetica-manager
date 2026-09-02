@@ -21,6 +21,7 @@ from app.repositories.procedure import ProcedureRepository
 from app.repositories.professional import ProfessionalRepository
 from app.repositories.return_opportunity import ReturnOpportunityRepository
 from app.repositories.sale import SaleRepository
+from app.repositories.sale_audit import SaleAuditRepository
 from app.repositories.sale_item import SaleItemRepository
 from app.repositories.session import SessionRepository
 from app.services.dashboard_service import DashboardService
@@ -110,6 +111,7 @@ def get_sale_service(
         payment_fee_rule_repo=PaymentFeeRuleRepository(session, professional_id),
         professional_repo=ProfessionalRepository(session, professional_id),
         retention_service=get_retention_service(session, professional_id),
+        sale_audit_repo=SaleAuditRepository(session, professional_id),
     )
 
 

@@ -247,3 +247,106 @@ class TestValidacaoDeVenda:
 
         assert resp.status_code == 422, resp.text
         assert "regra de taxa" in resp.json()["detail"].lower()
+
+
+class TestCorrecaoDeVenda:
+    """T-017, A-02: venda registrada errada pode ser corrigida.
+
+    Nunca UPDATE numa Sale já persistida (FROZEN_FIELDS) — corrigir é
+    estornar (REFUNDED) + criar uma venda nova, com sale_audit ligando
+    as duas."""
+
+    def test_patch_estorna_original_e_cria_venda_nova(
+        self,
+        client: TestClient,
+        auth_headers: dict[str, str],
+        patient_id: str,
+        procedure_id: str,
+    ) -> None:
+        original = client.post(
+            "/api/v1/sales",
+            json=_sale_body(patient_id, procedure_id, quantity=1),
+            headers=auth_headers,
+        )
+        assert original.status_code == 201, original.text
+        original_id = original.json()["id"]
+
+        corrected_body = _sale_body(patient_id, procedure_id, quantity=2)
+        corrected_body["reason"] = "Quantidade errada na venda original"
+
+        resp = client.patch(
+            f"/api/v1/sales/{original_id}", json=corrected_body, headers=auth_headers
+        )
+
+        assert resp.status_code == 200, resp.text
+        new_sale = resp.json()
+        assert new_sale["id"] != original_id
+        assert new_sale["status"] == "ACTIVE"
+        assert new_sale["items"][0]["quantity"] == 2
+
+        original_after = client.get(
+            f"/api/v1/sales/{original_id}", headers=auth_headers
+        )
+        assert original_after.status_code == 200
+        assert original_after.json()["status"] == "REFUNDED"
+
+    def test_patch_sem_reason_e_422(
+        self,
+        client: TestClient,
+        auth_headers: dict[str, str],
+        patient_id: str,
+        procedure_id: str,
+    ) -> None:
+        original = client.post(
+            "/api/v1/sales",
+            json=_sale_body(patient_id, procedure_id),
+            headers=auth_headers,
+        )
+        assert original.status_code == 201, original.text
+
+        body = _sale_body(patient_id, procedure_id)
+        resp = client.patch(
+            f"/api/v1/sales/{original.json()['id']}", json=body, headers=auth_headers
+        )
+        assert resp.status_code == 422
+
+    def test_patch_venda_inexistente_e_404(
+        self, client: TestClient, auth_headers: dict[str, str], patient_id: str, procedure_id: str
+    ) -> None:
+        body = _sale_body(patient_id, procedure_id)
+        body["reason"] = "teste"
+        resp = client.patch(
+            f"/api/v1/sales/{uuid.uuid4()}", json=body, headers=auth_headers
+        )
+        assert resp.status_code == 404
+
+    def test_patch_venda_ja_estornada_e_409(
+        self,
+        client: TestClient,
+        auth_headers: dict[str, str],
+        patient_id: str,
+        procedure_id: str,
+    ) -> None:
+        original = client.post(
+            "/api/v1/sales",
+            json=_sale_body(patient_id, procedure_id),
+            headers=auth_headers,
+        )
+        original_id = original.json()["id"]
+
+        first_correction = _sale_body(patient_id, procedure_id)
+        first_correction["reason"] = "primeira correção"
+        client.patch(
+            f"/api/v1/sales/{original_id}",
+            json=first_correction,
+            headers=auth_headers,
+        )
+
+        second_correction = _sale_body(patient_id, procedure_id)
+        second_correction["reason"] = "segunda correção, venda já estornada"
+        resp = client.patch(
+            f"/api/v1/sales/{original_id}",
+            json=second_correction,
+            headers=auth_headers,
+        )
+        assert resp.status_code == 409
