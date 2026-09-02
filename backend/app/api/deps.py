@@ -109,6 +109,7 @@ def get_sale_service(
         financial_settings_repo=FinancialSettingsRepository(session, professional_id),
         payment_fee_rule_repo=PaymentFeeRuleRepository(session, professional_id),
         professional_repo=ProfessionalRepository(session, professional_id),
+        retention_service=get_retention_service(session, professional_id),
     )
 
 

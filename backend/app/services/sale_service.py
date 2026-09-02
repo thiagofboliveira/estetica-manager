@@ -56,6 +56,7 @@ from app.repositories.sale_item import SaleItemRepository
 from app.repositories.session import SessionRepository
 from app.schemas.sale import SaleCreate
 from app.services.financial_settings_service import FinancialSettingsService
+from app.services.retention_service import RetentionService
 
 IDEMPOTENCY_TTL_HOURS = 24
 
@@ -96,6 +97,7 @@ class SaleService:
         financial_settings_repo: FinancialSettingsRepository,
         payment_fee_rule_repo: PaymentFeeRuleRepository,
         professional_repo: ProfessionalRepository,
+        retention_service: RetentionService,
     ) -> None:
         self._sales = sale_repo
         self._sale_items = sale_item_repo
@@ -105,6 +107,7 @@ class SaleService:
         self._financial_settings = financial_settings_repo
         self._payment_fee_rules = payment_fee_rule_repo
         self._professionals = professional_repo
+        self._retention = retention_service
 
     def find_existing_by_idempotency_key(self, idempotency_key: str) -> Sale | None:
         """Usado pela rota só para decidir 200 vs 201 na resposta — a
@@ -243,6 +246,16 @@ class SaleService:
                     modality=proc.default_modality,
                 )
                 self._sessions.add(session)
+
+        # T-028: uma venda nova do mesmo (paciente, procedimento) resolve
+        # qualquer oportunidade de retorno ainda não-terminal — a
+        # paciente voltou, o motivo de contatá-la deixou de existir.
+        for procedure_id in {item_dto.procedure_id for item_dto in dto.items}:
+            self._retention.close_open_opportunities(
+                patient_id=dto.patient_id,
+                procedure_id=procedure_id,
+                resolved_by_sale_id=sale.id,
+            )
 
         self._sales.flush()
         return sale
