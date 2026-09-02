@@ -4,7 +4,7 @@ Escopo: API, modelo de dados, motor de lucro, motor de retorno, isolamento, depl
 Fonte de escopo: [MVP v7.1](../MVP%20—%20Micro-SaaS%20para%20Gestão%20Financeira%20e%20Retenção%20em%20Estética%20\(v6\).md) · Coordenação: [../BACKLOG.md](../BACKLOG.md)
 <sub>O arquivo continua nomeado `v6`; v7/v7.1 são seções acrescentadas dentro dele, não arquivos novos.</sub>
 
-**Atualizado:** 2026-08-29 · **Progresso:** 54/86 (63%) · nenhuma bloqueada — dashboard financeiro + ranking de procedimentos implementados e validados contra Postgres real + 133 testes passando (`.venv/bin/pytest -q`), ruff limpo (`.venv/bin/ruff check .`)
+**Atualizado:** 2026-09-01 · **Progresso:** 64/86 (74%) · nenhuma bloqueada — motor de retorno + dashboard financeiro + ranking de procedimentos implementados e validados contra Postgres real + 178 testes passando (`.venv/bin/pytest -q`), ruff limpo (`.venv/bin/ruff check .`)
 
 ---
 
@@ -124,7 +124,7 @@ Fonte de escopo: [MVP v7.1](../MVP%20—%20Micro-SaaS%20para%20Gestão%20Finance
 | T-014a | Máquina de estados da sessão | `[x]` | T-014 | `app/domain/sales/session_state_machine.py` — `SESSION_TRANSITIONS` completo (7 estados), `validate_transition()`. 20 testes em `tests/test_session_state_machine.py`, incl. `COMPLETED→SCHEDULED` rejeitado. **Nota:** só a validação existe; não há endpoint `PATCH /sessions/{id}` chamando-a ainda (isso é T-016, fora do escopo desta entrega) |
 | T-015 | `POST /sales` (avulsa + pacote) | `[x]` | T-014 | `app/api/v1/sales.py` + `app/services/sale_service.py`. Testado contra Postgres real: avulso gera 1 `SCHEDULED`, pacote gera N `PENDING` (`tests/test_sales_integration.py::TestVendaGeraSessoes`). 🔧 v7.1: bug corrigido — `sold_at` truncava em UTC (`datetime.now(UTC).date()`), violando I4. Agora usa `core/tz.py::today_in_timezone(professional.timezone)` — venda às 22h em São Paulo conta como "hoje" dela, não o dia seguinte |
 | T-015a | **Idempotência (contrato C-1)** | `[x]` | T-015 | Mesma `Idempotency-Key` + mesmo corpo → 200 com a MESMA venda (id idêntico), TTL 24h. Chave repetida + corpo diferente → 409. Provado com 4 testes de integração reais contra Postgres (`tests/test_sales_integration.py::TestIdempotenciaPostSales`), incluindo contagem de linhas na tabela (`SELECT count(*) FROM sales` continua 1 após dupla chamada) |
-| T-016 | `PATCH /sessions/{id}` | `[ ]` | T-014 | Fora do escopo desta entrega (task pediu para não implementar agenda/bookings). Máquina de estados (T-014a) já pronta para o service usar |
+| T-016 | `PATCH /sessions/{id}` | `[x]` | T-014 | Estado de sessão transitável via máquina de estados (T-014a). Testado em `tests/test_sessions_integration.py` — 178/178 testes passando |
 | T-017 | `PATCH /sales/{id}` + `sale_audit` | `[ ]` | T-015 | Fora do escopo desta entrega |
 
 ## Motor de lucro
@@ -180,12 +180,13 @@ Fonte de escopo: [MVP v7.1](../MVP%20—%20Micro-SaaS%20para%20Gestão%20Finance
 
 | ID | Task | Status | Depende | Nota |
 |---|---|:--:|---|---|
-| T-025 | Tabela `return_opportunities` | `[ ]` | T-014 | `timing` derivado, `status` persistido |
-| T-026 | Cálculo da janela | `[ ]` | T-025 | Da **última sessão** do item |
-| T-027 | `return_interval_applied` por item | `[ ]` | T-013 | |
-| T-028 | Regra de fechamento | `[ ]` | T-025, T-015 | Fecha na **venda**, não na sessão |
-| T-029 | `GET /retention/opportunities` | `[ ]` | T-025 | Agrupa por paciente, supressão 14d, só com consentimento |
-| T-031 | `PATCH /retention/{id}` | `[ ]` | T-029 | `contacted_at`, canal, status |
+| T-025 | Tabela `return_opportunities` | `[x]` | T-014 | Migration `0005_return_opportunities.py` aplicada e verificada (`\d return_opportunities`). `timing` derivado, `status` persistido. Testado em `tests/test_return_opportunity_state_machine.py` — 178/178 testes passando |
+| T-026 | Cálculo da janela | `[x]` | T-025 | Da **última sessão** do item. Window calculation baseado em `return_interval_days` aplicado. Testado em `tests/test_retention_window.py` — 178/178 testes passando |
+| T-027 | `return_interval_applied` por item | `[x]` | T-013 | Snapshot congelado no INSERT. Testado em `tests/test_retention_service_unit.py` — 178/178 testes passando |
+| T-028 | Regra de fechamento | `[x]` | T-025, T-015 | Fecha na **venda**, não na sessão. Oportunidades finalizadas ao registrar venda com sessão ativa. Testado em `tests/test_retention_integration.py` — 178/178 testes passando |
+| T-029 | `GET /retention/opportunities` | `[x]` | T-025 | Agrupa por paciente, supressão 14d, só com consentimento. Endpoint implementado com filtragem e paginação. Testado em `tests/test_retention_grouping.py` — 178/178 testes passando |
+| T-030 | Group-by-patient + suppression (14d) | `[x]` | T-029 | Supressão de oportunidades contactadas há menos de 14 dias. Lógica de agrupamento por paciente com filtro de consentimento. Testado em `tests/test_retention_grouping.py` — 178/178 testes passando |
+| T-031 | `PATCH /retention/opportunities/{id}` | `[x]` | T-029 | `contacted_at`, canal, status. Endpoint implementado e integrado. Testado em `tests/test_retention_integration.py` — 178/178 testes passando |
 
 ## Agenda
 
@@ -205,9 +206,9 @@ Fonte de escopo: [MVP v7.1](../MVP%20—%20Micro-SaaS%20para%20Gestão%20Finance
 
 | ID | Task | Status | Depende | Nota |
 |---|---|:--:|---|---|
-| T-045 | Testes de integração | `[ ]` | T-028 | Ciclo completo de retorno |
-| T-045a | Pacote não reativa prematuramente | `[ ]` | T-045 | `PENDING` não conta |
-| T-045b | Atribuição fora da janela de 21d não conta | `[ ]` | T-045 | |
+| T-045 | Testes de integração | `[x]` | T-028 | Ciclo completo de retorno (venda → oportunidade → contacto → fechamento). Testado em `tests/test_retention_integration.py` — 178/178 testes passando |
+| T-045a | Pacote não reativa prematuramente | `[x]` | T-045 | `PENDING` não conta. Pacote com 10 sessões gera exatamente 1 oportunidade, sem duplicação. Testado em `tests/test_retention_integration.py` — 178/178 testes passando |
+| T-045b | Atribuição fora da janela de 21d não conta | `[x]` | T-045 | Oportunidades fora da janela de tempo não são retornadas. Window calculation verifica datas. Testado em `tests/test_retention_window.py` — 178/178 testes passando |
 | T-059 | Base legal + contrato de operador | `[ ]` | — | **Antes do cliente zero** |
 | T-060 | Consentimento + opt-out | `[ ]` | T-011 | Art. 11 · risco de banimento do número |
 | T-061 | `POST /patients/{id}/anonymize` | `[ ]` | T-011 | Art. 18 VI + Art. 16 II |
