@@ -4,7 +4,7 @@ Escopo: todas as telas, estado, integração com a API.
 Fonte de escopo: [MVP v7.1](../MVP%20—%20Micro-SaaS%20para%20Gestão%20Financeira%20e%20Retenção%20em%20Estética%20\(v6\).md) · Coordenação: [../BACKLOG.md](../BACKLOG.md)
 <sub>O arquivo continua nomeado `v6`; v7/v7.1 são seções acrescentadas dentro dele, não arquivos novos.</sub>
 
-**Atualizado:** 2026-09-02 · **Progresso:** 27/36 (75%) · F-012a/F-012b/F-012c/F-013c/F-030/F-031/F-015/F-015a/F-015b/F-015c verificados no navegador contra API+Postgres reais e marcados `[x]` · T-029 (motor de retenção) mergeada por sessão paralela, desbloqueando F-015 · F-016 `[!]` ainda bloqueada (ver nota)
+**Atualizado:** 2026-09-02 · **Progresso:** 28/36 (78%) · F-012a/F-012b/F-012c/F-013c/F-030/F-031/F-015/F-015a/F-015b/F-015c/F-021a verificados/entregues e marcados `[x]` · T-029 (motor de retenção) mergeada por sessão paralela, desbloqueando F-015 · F-016 e F-021 `[!]` bloqueadas (ver notas — ambas precisam de trabalho novo no backend)
 
 ---
 
@@ -57,9 +57,9 @@ Ambiente subido de novo (Postgres 5435 — 5434 estava ocupada por container de 
 | 0 — Fundação | 5 | 5 |
 | 1 — Cadastros | 8 | 8 |
 | 2 — Venda + Dashboard | 9 | 7 |
-| 3 — Retenção + Agenda + Onboarding | 12 | 4 |
+| 3 — Retenção + Agenda + Onboarding | 12 | 5 |
 | 4 — Polimento | 2 | 2 |
-| **Total** | **36** | **27** |
+| **Total** | **36** | **28** |
 
 ---
 
@@ -207,10 +207,10 @@ O frontend **não tinha tempo alocado em nenhuma fase** do plano original. São 
 
 | ID | Task | Status | Depende | Nota |
 |---|---|:--:|---|---|
-| F-021 | Checklist de primeiro acesso | `[ ]` | F-012a | Não bloquear o uso |
-| F-021a | Perguntas em linguagem natural | `[ ]` | F-021 | "A taxa sai do seu bolso ou a clínica cobre?" — nunca enum |
+| F-021 | Checklist de primeiro acesso | `[!]` | F-012a | 🔴 **Investigado e bloqueado em 2026-09-02.** F-012a está `[x]` (desbloqueando na tabela), mas o escopo real (MVP §17, EPIC-12) é maior do que a nota sugere: 5 etapas — E1/E2 (já em `FinancialSettingsForm.tsx`) + **E4 parcelamento** (não existe no form atual, nem tem campo correspondente claro em `financial_settings`) + cadastrar 1º procedimento + cadastrar 1ª paciente —, indicador de progresso, e principalmente o mecanismo "não sei agora → salva default, marca como estimativa" **exige um campo novo no backend que não existe hoje** (`financial_settings`/`professionals` não têm nenhuma flag de estimativa/confirmação por eixo). Sem esse campo não dá pra diferenciar "ela respondeu isso" de "é só o default silencioso que o backend sempre cria" — e sem essa diferença o "badge de estimativa" fica impossível de implementar corretamente. Registrar como pendência de contrato de API (mesmo padrão do F-013b), não de UI. **Precisa de:** task de backend para persistir "é estimativa?" por campo financeiro antes de continuar aqui |
+| F-021a | Perguntas em linguagem natural | `[x]` | F-021 | "A taxa sai do seu bolso ou a clínica cobre?" — **implementado dentro de F-012a** (`FinancialSettingsForm.tsx`), não como tela própria. Cobre E1 (`fee_payer`) e E2 (`split_base`); E4 (parcelamento) ainda não tem pergunta em nenhum lugar do front |
 
-> **Toda pergunta aceita "não sei agora"** → salva o default e marca como estimativa. Onboarding abandonado é pior que número aproximado.
+> **Toda pergunta aceita "não sei agora"** → salva o default e marca como estimativa. Onboarding abandonado é pior que número aproximado. **Sem suporte de backend ainda — ver nota do F-021.**
 
 **Saída:** ela agenda sessão de pacote e manda WhatsApp com um clique.
 
