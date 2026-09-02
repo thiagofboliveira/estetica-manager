@@ -290,6 +290,20 @@ class TestCorrecaoDeVenda:
         assert original_after.status_code == 200
         assert original_after.json()["status"] == "REFUNDED"
 
+        # Prova real de que sale_audit foi gravado — não basta checar o
+        # efeito colateral (status REFUNDED, novo id); sem isso, deletar
+        # a chamada self._sale_audit.add(audit) no service não quebraria
+        # nenhum teste.
+        audit_resp = client.get(
+            f"/api/v1/sales/{original_id}/audit", headers=auth_headers
+        )
+        assert audit_resp.status_code == 200, audit_resp.text
+        audit_entries = audit_resp.json()
+        assert len(audit_entries) == 1
+        assert audit_entries[0]["original_sale_id"] == original_id
+        assert audit_entries[0]["replacement_sale_id"] == new_sale["id"]
+        assert audit_entries[0]["reason"] == "Quantidade errada na venda original"
+
     def test_patch_sem_reason_e_422(
         self,
         client: TestClient,

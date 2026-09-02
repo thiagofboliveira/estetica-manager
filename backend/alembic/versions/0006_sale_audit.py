@@ -5,7 +5,8 @@ Revises: 0005
 Create Date: 2026-09-02
 
 ⚠️ Gerada manualmente (sem acesso de rede a Postgres neste ambiente de
-dev). Revisar contra app/models/sale_audit.py antes de aplicar.
+dev). Aplicada e verificada contra Postgres real em 2026-09-02 — schema,
+FKs compostas e RLS conferem com app/models/sale_audit.py (\d sale_audit).
 
 Cobre T-017 (MVP v6 §27, A-02). sales já tem UniqueConstraint(id,
 professional_id) desde 0001/0002 (uq_sales_id_professional) — sale_audit

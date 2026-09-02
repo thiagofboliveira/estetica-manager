@@ -6,7 +6,14 @@ from fastapi import APIRouter, Header, HTTPException, Response, status
 from app.api.deps import SaleSvc
 from app.models.sale_item import SaleItem
 from app.models.session import Session as SessionModel
-from app.schemas.sale import SaleCorrect, SaleCreate, SaleItemOut, SaleOut, SessionOut
+from app.schemas.sale import (
+    SaleAuditOut,
+    SaleCorrect,
+    SaleCreate,
+    SaleItemOut,
+    SaleOut,
+    SessionOut,
+)
 from app.services.sale_service import (
     IdempotencyKeyConflictError,
     NoFeeRuleForInstallmentsError,
@@ -26,6 +33,14 @@ def _to_sale_out(svc: SaleSvc, sale) -> SaleOut:
     out.items = [SaleItemOut.model_validate(i) for i in items]
     out.sessions = [SessionOut.model_validate(s) for s in sessions]
     return out
+
+
+def _no_fee_rule_http_exception(exc: NoFeeRuleForInstallmentsError) -> HTTPException:
+    return HTTPException(
+        status.HTTP_422_UNPROCESSABLE_ENTITY,
+        f"Nenhuma regra de taxa cobre {exc.installments}x para "
+        f"{exc.payment_method} — cadastre uma faixa em /payment-fee-rules",
+    )
 
 
 @router.post("", response_model=SaleOut)
@@ -59,11 +74,7 @@ def create_sale(
             "Idempotency-Key já usada com um corpo diferente",
         ) from exc
     except NoFeeRuleForInstallmentsError as exc:
-        raise HTTPException(
-            status.HTTP_422_UNPROCESSABLE_ENTITY,
-            f"Nenhuma regra de taxa cobre {exc.installments}x para "
-            f"{exc.payment_method} — cadastre uma faixa em /payment-fee-rules",
-        ) from exc
+        raise _no_fee_rule_http_exception(exc) from exc
     response.status_code = (
         status.HTTP_200_OK if was_existing else status.HTTP_201_CREATED
     )
@@ -101,9 +112,16 @@ def correct_sale(sale_id: UUID, payload: SaleCorrect, svc: SaleSvc) -> SaleOut:
             status.HTTP_404_NOT_FOUND, "Procedimento não encontrado"
         ) from exc
     except NoFeeRuleForInstallmentsError as exc:
-        raise HTTPException(
-            status.HTTP_422_UNPROCESSABLE_ENTITY,
-            f"Nenhuma regra de taxa cobre {exc.installments}x para "
-            f"{exc.payment_method} — cadastre uma faixa em /payment-fee-rules",
-        ) from exc
+        raise _no_fee_rule_http_exception(exc) from exc
     return _to_sale_out(svc, replacement)
+
+
+@router.get("/{sale_id}/audit", response_model=list[SaleAuditOut])
+def list_sale_audit(sale_id: UUID, svc: SaleSvc) -> list[SaleAuditOut]:
+    """T-017: histórico de correções de uma venda — vazio se ela nunca
+    foi corrigida."""
+    try:
+        entries = svc.list_audit_for_sale(sale_id)
+    except SaleNotFoundError as exc:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Venda não encontrada") from exc
+    return [SaleAuditOut.model_validate(e) for e in entries]

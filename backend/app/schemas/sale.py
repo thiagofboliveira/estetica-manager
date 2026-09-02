@@ -39,6 +39,14 @@ class SaleCorrect(SaleCreate):
     reason: str = Field(min_length=1)
 
 
+class SaleAuditOut(OutputSchema):
+    id: UUID
+    original_sale_id: UUID
+    replacement_sale_id: UUID
+    reason: str
+    corrected_at: datetime
+
+
 class SaleItemOut(OutputSchema):
     id: UUID
     procedure_id: UUID

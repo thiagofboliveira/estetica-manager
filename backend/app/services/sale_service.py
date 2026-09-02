@@ -316,7 +316,14 @@ class SaleService:
         config ATUAL — não há versionamento histórico de
         financial_settings/payment_fee_rules, T-020a não implementado),
         (3) registrar o vínculo em sale_audit. Sessões da venda
-        original não são tocadas — fora de escopo desta correção."""
+        original não são tocadas — fora de escopo desta correção.
+
+        Assimetria deliberada com create(): esta rota NÃO tem
+        Idempotency-Key. Um duplo-clique não gera duas substituições
+        porque a segunda chamada encontra a original já REFUNDED e
+        recebe 409 — a checagem de status É o mecanismo de idempotência
+        aqui, mais simples que replicar o contrato C-1 para uma rota
+        que só pode ser chamada uma vez por venda de qualquer forma."""
         original = self._sales.get(sale_id)
         if original is None:
             raise SaleNotFoundError()
@@ -324,6 +331,9 @@ class SaleService:
             raise SaleAlreadyRefundedError()
 
         create_dto = SaleCreate(**dto.model_dump(exclude={"reason"}))
+        # body_hash calculado só porque _build_and_persist_sale exige o
+        # parâmetro (usado para o registro de idempotência de create());
+        # aqui idempotency_key=None então o hash nunca é persistido.
         replacement = self._build_and_persist_sale(
             create_dto, idempotency_key=None, body_hash=_hash_body(create_dto)
         )
@@ -343,6 +353,11 @@ class SaleService:
 
     def get_items(self, sale_id: UUID) -> list[SaleItem]:
         return self._sale_items.list_for_sale(sale_id)
+
+    def list_audit_for_sale(self, sale_id: UUID) -> list[SaleAudit]:
+        if self._sales.get(sale_id) is None:
+            raise SaleNotFoundError()
+        return self._sale_audit.list_for_original_sale(sale_id)
 
     def get_sessions_for_items(self, item_ids: list[UUID]) -> list[SessionModel]:
         sessions: list[SessionModel] = []

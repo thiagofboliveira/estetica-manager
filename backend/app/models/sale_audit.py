@@ -50,6 +50,10 @@ class SaleAudit(TenantModel):
         PGUUID(as_uuid=True), nullable=False, index=True
     )
     reason: Mapped[str] = mapped_column(String, nullable=False)
+    # Instante técnico (TIMESTAMPTZ, UTC) — diferente de Sale.sold_at,
+    # que é uma DATA de negócio e por isso usa o fuso da profissional
+    # (invariante I4). corrected_at não precisa de conversão de fuso:
+    # não é usado para agrupar por dia, só para ordenar/auditar.
     corrected_at: Mapped[datetime] = mapped_column(
         TIMESTAMP(timezone=True), nullable=False
     )

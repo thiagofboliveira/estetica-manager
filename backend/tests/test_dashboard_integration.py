@@ -115,6 +115,17 @@ class TestHasProvisionalProfitContrato:
     def test_pacote_com_sessao_pending_no_mes_e_true(
         self, client: TestClient, auth_headers: dict[str, str]
     ) -> None:
+        """LIMITAÇÃO CONHECIDA: o banco de dev é compartilhado entre
+        execuções (sem cleanup) e já acumula sessões PENDING de outras
+        vendas ACTIVE do mesmo tenant em "hoje" — a query soma o tenant
+        inteiro no período, não filtra por paciente. Isso significa que
+        este teste sozinho NÃO PROVA que a venda criada aqui foi a
+        causa do True (pode já ser True por lixo de execuções
+        anteriores). A prova real de que a lógica discrimina
+        corretamente está em test_periodo_sem_nenhuma_venda_e_false
+        (período sem NENHUMA venda, onde é estruturalmente impossível
+        haver lixo) — este teste aqui só documenta o contrato via API
+        para o caso positivo, sem tentar isolar o efeito."""
         patient = client.post(
             "/api/v1/patients",
             json={"name": f"Paciente Dashboard {uuid.uuid4()}"},
@@ -152,3 +163,26 @@ class TestHasProvisionalProfitContrato:
         )
         assert resp.status_code == 200
         assert resp.json()["has_provisional_profit"] is True
+        # sale_count sobe pelo menos 1 com esta venda — prova mais
+        # forte de que o dashboard reflete o tenant/período corretos,
+        # já que sale_count vem da mesma query de list_in_period.
+        assert resp.json()["sale_count"] >= 1
+
+    def test_periodo_sem_nenhuma_venda_e_false(
+        self, client: TestClient, auth_headers: dict[str, str]
+    ) -> None:
+        """Discrimina de verdade (ao contrário de checar só o caso
+        True contra o banco de dev compartilhado, que já acumula
+        sessões PENDING de outros testes): uma janela custom no
+        passado, sem nenhuma venda, não pode ter lucro provisório."""
+        resp = client.get(
+            "/api/v1/dashboard",
+            params={
+                "period": "custom",
+                "date_from": "2020-01-01",
+                "date_to": "2020-01-02",
+            },
+            headers=auth_headers,
+        )
+        assert resp.status_code == 200
+        assert resp.json()["has_provisional_profit"] is False
