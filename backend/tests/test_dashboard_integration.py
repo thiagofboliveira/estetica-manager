@@ -105,3 +105,50 @@ class TestHasAnyDataContrato:
         )
         assert resp.status_code == 200
         assert resp.json()["has_any_data"] is True
+
+
+class TestHasProvisionalProfitContrato:
+    """T-022b, A-07: desbloqueia o badge "lucro provisório" — a
+    profissional precisa saber que o lucro do mês inclui pacotes ainda
+    não totalmente concluídos."""
+
+    def test_pacote_com_sessao_pending_no_mes_e_true(
+        self, client: TestClient, auth_headers: dict[str, str]
+    ) -> None:
+        patient = client.post(
+            "/api/v1/patients",
+            json={"name": f"Paciente Dashboard {uuid.uuid4()}"},
+            headers=auth_headers,
+        )
+        assert patient.status_code == 201
+        procedure = client.post(
+            "/api/v1/procedures",
+            json={
+                "name": f"Procedimento Dashboard {uuid.uuid4()}",
+                "price": "500.00",
+                "estimated_cost": "100.00",
+            },
+            headers=auth_headers,
+        )
+        assert procedure.status_code == 201
+
+        sale = client.post(
+            "/api/v1/sales",
+            json={
+                "patient_id": patient.json()["id"],
+                "type": "PACKAGE",
+                "items": [{"procedure_id": procedure.json()["id"], "quantity": 3}],
+                "payment_method": "PIX",
+            },
+            headers=auth_headers,
+        )
+        assert sale.status_code in (200, 201), sale.text
+        # Pacote recém-vendido: todas as sessões nascem PENDING (sem
+        # data), então o item nunca esgota — has_provisional_profit
+        # tem que ser True para este mês.
+
+        resp = client.get(
+            "/api/v1/dashboard", params={"period": "this_month"}, headers=auth_headers
+        )
+        assert resp.status_code == 200
+        assert resp.json()["has_provisional_profit"] is True

@@ -40,6 +40,27 @@ class TestHasAnyData:
         assert result.average_ticket is None
 
 
+class TestHasProvisionalProfit:
+    """T-022b, A-07: existe alguma venda no período com sessão PENDING?
+    Sem isso o front não tem como saber, porque o endpoint é agregado."""
+
+    def test_falso_quando_nenhuma_sessao_pending_no_periodo(self) -> None:
+        result = build_dashboard(
+            sales=[], session_count=0, fixed_expenses=[], period_kind=PeriodKind.MONTH,
+            today=date(2026, 3, 15), has_any_sale_ever=True,
+            has_pending_session_in_period=False,
+        )
+        assert result.has_provisional_profit is False
+
+    def test_verdadeiro_quando_ha_sessao_pending_no_periodo(self) -> None:
+        result = build_dashboard(
+            sales=[], session_count=0, fixed_expenses=[], period_kind=PeriodKind.MONTH,
+            today=date(2026, 3, 15), has_any_sale_ever=True,
+            has_pending_session_in_period=True,
+        )
+        assert result.has_provisional_profit is True
+
+
 class TestMetricasBasicas:
     def test_faturamento_e_lucro_somam_por_venda(self) -> None:
         sales = [_sale("1000.00", "350.00"), _sale("2000.00", "900.00")]

@@ -54,6 +54,7 @@ class FixedExpenseForDashboard:
 @dataclass(frozen=True)
 class DashboardResult:
     has_any_data: bool  # T-022a, contrato C-2: first-run vs mês vazio
+    has_provisional_profit: bool  # T-022b, A-07: alguma sessão PENDING no período
     gross_revenue: Decimal
     net_profit: Decimal
     fixed_expenses_total: Decimal | None  # None fora de period_kind=MONTH
@@ -79,6 +80,7 @@ def build_dashboard(
     period_kind: PeriodKind,
     today: date,
     has_any_sale_ever: bool,
+    has_pending_session_in_period: bool = False,
 ) -> DashboardResult:
     gross_revenue = money(sum((s.gross_amount for s in sales), ZERO))
     net_profit = money(sum((s.net_profit for s in sales), ZERO))
@@ -100,6 +102,7 @@ def build_dashboard(
 
     return DashboardResult(
         has_any_data=has_any_sale_ever,
+        has_provisional_profit=has_pending_session_in_period,
         gross_revenue=gross_revenue,
         net_profit=net_profit,
         fixed_expenses_total=fixed_total,

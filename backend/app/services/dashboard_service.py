@@ -75,5 +75,8 @@ class DashboardService:
             period_kind=period.kind,
             today=today,
             has_any_sale_ever=self._sales.has_any_sale(),
+            has_pending_session_in_period=self._sessions.has_pending_session_in_period(
+                period.date_from, period.date_to
+            ),
         )
         return result, period

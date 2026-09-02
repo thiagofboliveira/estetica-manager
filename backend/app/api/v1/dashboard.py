@@ -34,6 +34,7 @@ def get_dashboard(
         date_from=resolved.date_from,
         date_to=resolved.date_to,
         has_any_data=result.has_any_data,
+        has_provisional_profit=result.has_provisional_profit,
         gross_revenue=result.gross_revenue,
         net_profit=result.net_profit,
         fixed_expenses_total=result.fixed_expenses_total,

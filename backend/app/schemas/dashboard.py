@@ -10,6 +10,7 @@ class DashboardOut(OutputSchema):
     date_to: date
 
     has_any_data: bool
+    has_provisional_profit: bool
 
     gross_revenue: MoneyOut
     net_profit: MoneyOut
