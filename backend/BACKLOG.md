@@ -4,7 +4,7 @@ Escopo: API, modelo de dados, motor de lucro, motor de retorno, isolamento, depl
 Fonte de escopo: [MVP v7.1](../MVP%20—%20Micro-SaaS%20para%20Gestão%20Financeira%20e%20Retenção%20em%20Estética%20\(v6\).md) · Coordenação: [../BACKLOG.md](../BACKLOG.md)
 <sub>O arquivo continua nomeado `v6`; v7/v7.1 são seções acrescentadas dentro dele, não arquivos novos.</sub>
 
-**Atualizado:** 2026-09-02 · **Progresso:** 64/86 (74%) · nenhuma bloqueada — motor de retorno + dashboard financeiro + ranking de procedimentos implementados e validados contra Postgres real (T-045b revertido para `[ ]`: evidência anterior citava o teste errado; atribuição de 21d é T-090, fora de escopo desta branch) — 178 testes passando (`.venv/bin/pytest -q`), ruff limpo (`.venv/bin/ruff check .`)
+**Atualizado:** 2026-09-02 · **Progresso:** 67/86 (78%) · nenhuma bloqueada — motor de retorno + dashboard financeiro + ranking de procedimentos + correções P0 do front (T-017/T-024a/T-022b) implementados e validados contra Postgres real (T-045b revertido para `[ ]`: evidência anterior citava o teste errado; atribuição de 21d é T-090, fora de escopo desta branch) — 187 testes passando (`.venv/bin/pytest -q`), ruff limpo (`.venv/bin/ruff check .`)
 
 ---
 
@@ -127,7 +127,7 @@ Fonte de escopo: [MVP v7.1](../MVP%20—%20Micro-SaaS%20para%20Gestão%20Finance
 | T-015 | `POST /sales` (avulsa + pacote) | `[x]` | T-014 | `app/api/v1/sales.py` + `app/services/sale_service.py`. Testado contra Postgres real: avulso gera 1 `SCHEDULED`, pacote gera N `PENDING` (`tests/test_sales_integration.py::TestVendaGeraSessoes`). 🔧 v7.1: bug corrigido — `sold_at` truncava em UTC (`datetime.now(UTC).date()`), violando I4. Agora usa `core/tz.py::today_in_timezone(professional.timezone)` — venda às 22h em São Paulo conta como "hoje" dela, não o dia seguinte |
 | T-015a | **Idempotência (contrato C-1)** | `[x]` | T-015 | Mesma `Idempotency-Key` + mesmo corpo → 200 com a MESMA venda (id idêntico), TTL 24h. Chave repetida + corpo diferente → 409. Provado com 4 testes de integração reais contra Postgres (`tests/test_sales_integration.py::TestIdempotenciaPostSales`), incluindo contagem de linhas na tabela (`SELECT count(*) FROM sales` continua 1 após dupla chamada) |
 | T-016 | `PATCH /sessions/{id}` | `[x]` | T-014 | Estado de sessão transitável via máquina de estados (T-014a). Testado em `tests/test_sessions_integration.py` — 178/178 testes passando |
-| T-017 | `PATCH /sales/{id}` + `sale_audit` | `[ ]` | T-015 | Fora do escopo desta entrega |
+| T-017 | `PATCH /sales/{id}` + `sale_audit` | `[x]` | T-015 | Nunca UPDATE na venda persistida (`FROZEN_FIELDS`) — estorna a original (`status=REFUNDED`) e cria venda de substituição via a mesma lógica de `create()`, ligadas por `sale_audit` (`app/models/sale_audit.py`, migration `0006_sale_audit.py`, RLS verificado). **Limitação documentada:** recalcula com a config ATUAL, não a "do momento original" — não há versionamento por data (T-020a não implementado). Sessões da venda original não são tocadas. 4 testes de integração reais (`tests/test_sales_integration.py::TestCorrecaoDeVenda`) |
 
 ## Motor de lucro
 
@@ -248,7 +248,8 @@ Mudanças nestes pontos **quebram o front** — avise antes (ver [../BACKLOG.md]
 | `POST /auth` (JWT do Supabase) | T-006 | F-001 |
 | `GET/POST /patients`, `/procedures` | T-010, T-011 | F-011, F-012 |
 | `POST /sales` | T-015 | F-014 |
-| `GET /dashboard` | T-022 | F-013 |
+| `PATCH /sales/{id}` | T-017 | F-014d, F-014e |
+| `GET /dashboard` (`has_provisional_profit`) | T-022, T-022b | F-013, F-013b |
 | `GET /reports/procedures` | T-024 | (ranking de procedimentos, sem F-ID dedicado ainda) |
 | `GET /retention/opportunities` | T-029 | F-015 |
 | `GET /sessions?from&to` | T-032 | F-017 |
@@ -274,9 +275,9 @@ Não são tasks novas; são repriorizações justificadas na §4 da revisão.
 
 | ID | Task | Status | Depende | Nota |
 |---|---|:--:|---|---|
-| T-017 | `PATCH /sales/{id}` + `sale_audit` | `[ ]` | T-015 | 🔴 **Sobe para P0** (A-02). Estava "fora do escopo desta entrega", mas a §27 do MVP lista "venda registrada errada pode ser corrigida" como critério de aceite **e** como não-cortável. O front já reportou a lacuna. Recalcular com a config **do momento original** (I3), nunca com a de hoje |
-| T-024a | Erro em parcelas fora da faixa de `payment_fee_rules` | `[ ]` | T-008 | 🔴 A-06. Hoje a venda passa **silenciosamente** com taxa possivelmente zerada — viola I7 e o corolário "número errado é pior que nenhum número". Retornar 422 com mensagem explícita, ou aplicar a faixa mais próxima **e** marcar como estimada |
-| T-022b | `has_provisional_profit` no `GET /dashboard` | `[ ]` | T-022 | 🟠 A-07. Booleano no agregado: existe alguma venda no período com sessão `PENDING`? Desbloqueia F-013b (badge "lucro provisório"), exigido por I7. Sem isso o front não tem como saber, porque o endpoint é agregado |
+| T-017 | `PATCH /sales/{id}` + `sale_audit` | `[x]` | T-015 | Implementado via estorno+substituição (ver nota completa na linha original acima). **Limitação:** recalcula com a config atual, não a do momento original — T-020a (versionamento) não implementado |
+| T-024a | Erro em parcelas fora da faixa de `payment_fee_rules` | `[x]` | T-008 | Retorna 422 explícito (não aplica faixa mais próxima). `app/services/sale_service.py::NoFeeRuleForInstallmentsError`. Testado em `tests/test_sales_integration.py::test_parcela_fora_da_faixa_de_payment_fee_rules_retorna_422` |
+| T-022b | `has_provisional_profit` no `GET /dashboard` | `[x]` | T-022 | Clone estrutural do padrão `has_any_data` (T-022a): `SessionRepository.has_pending_session_in_period()` → `build_dashboard()` → `DashboardOut`. Testado em `tests/test_dashboard.py::TestHasProvisionalProfit` (puro) + `tests/test_dashboard_integration.py::TestHasProvisionalProfitContrato` (Postgres real) |
 | T-059..T-062 | LGPD (base legal, consentimento, anonimização, retenção) | `[ ]` | — | 🔴 A-08. Já existiam na Fase 4. **Reforço:** com cliente pagante você deixa de ser controlador dos seus dados e passa a ser **operador** de dado sensível de terceiros. Contrato de operador não é formalidade |
 | T-047 | Deploy + observabilidade + **restore testado** | `[ ]` | T-022 | 🔴 A-10. Backup não restaurado não é backup. Perder dado financeiro de cliente pagante é evento de extinção. Exigir evidência de um restore real, não da configuração do backup |
 
