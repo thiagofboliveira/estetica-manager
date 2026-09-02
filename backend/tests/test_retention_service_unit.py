@@ -240,25 +240,24 @@ def test_close_open_opportunities_chama_validate_transition_antes_do_update():
 
 
 def test_close_open_opportunities_com_status_open_real_levanta_bug_conhecido():
-    """Documenta o comportamento REAL e ATUAL (não o desejado) quando
-    close_open_opportunities recebe o status que
-    list_open_or_contacted_for_patient_and_procedure() de fato devolve
-    em produção (OPEN). Isso vai FALHAR ao "fechar" — levanta em vez de
-    fechar — porque OPEN -> CLOSED não está na tabela de transições da
-    Task 1, apesar do design doc de T-028 descrever exatamente esse
-    caminho como o fluxo principal do fechamento automático por venda.
-    Este teste existe para que qualquer correção futura da máquina de
-    estados (Task 1) quebre este teste em vez de mascarar o problema —
-    quando isso acontecer, atualizar para assert de sucesso."""
+    """Testa que close_open_opportunities agora funciona corretamente quando
+    recebe status OPEN (que é o que list_open_or_contacted_for_patient_and_procedure()
+    de fato devolve em produção). A transição OPEN -> CLOSED é agora permitida
+    na máquina de estados (Task 1, T-028: fechamento automático na venda) e o
+    serviço consegue fechar oportunidades nesse status."""
     opportunity = SimpleNamespace(
         status=ReturnOpportunityStatus.OPEN, resolved_by_sale_id=None
     )
     opp_repo = FakeOpportunityRepository(open_or_contacted=[opportunity])
     svc = RetentionService(opp_repo, FakeSessionRepository([]))
+    sale_id = uuid.uuid4()
 
-    with pytest.raises(InvalidReturnOpportunityTransitionError):
-        svc.close_open_opportunities(
-            patient_id=uuid.uuid4(),
-            procedure_id=uuid.uuid4(),
-            resolved_by_sale_id=uuid.uuid4(),
-        )
+    # Agora deve executar sem exceção
+    svc.close_open_opportunities(
+        patient_id=uuid.uuid4(),
+        procedure_id=uuid.uuid4(),
+        resolved_by_sale_id=sale_id,
+    )
+    # Verificar que a oportunidade foi fechada
+    assert opportunity.status == ReturnOpportunityStatus.CLOSED
+    assert opportunity.resolved_by_sale_id == sale_id

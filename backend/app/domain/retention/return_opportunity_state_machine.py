@@ -10,10 +10,13 @@ persistido — ver app.domain.retention.window):
 
     OPEN --> CONTACTED
     OPEN --> DISMISSED
+    OPEN --> CLOSED : fechamento automático na venda (T-028)
     CONTACTED --> BOOKED
     CONTACTED --> DECLINED
     CONTACTED --> NO_RESPONSE
+    CONTACTED --> CLOSED : fechamento automático na venda (T-028)
     NO_RESPONSE --> CONTACTED : nova tentativa
+    NO_RESPONSE --> CLOSED : fechamento automático na venda (T-028)
     BOOKED --> CLOSED
     DECLINED --> CLOSED
     DISMISSED --> [*]
@@ -42,6 +45,7 @@ RETURN_OPPORTUNITY_TRANSITIONS: MappingProxyType[
             {
                 ReturnOpportunityStatus.CONTACTED,
                 ReturnOpportunityStatus.DISMISSED,
+                ReturnOpportunityStatus.CLOSED,  # fechamento automático na venda (T-028)
             }
         ),
         ReturnOpportunityStatus.CONTACTED: frozenset(
@@ -49,11 +53,13 @@ RETURN_OPPORTUNITY_TRANSITIONS: MappingProxyType[
                 ReturnOpportunityStatus.BOOKED,
                 ReturnOpportunityStatus.DECLINED,
                 ReturnOpportunityStatus.NO_RESPONSE,
+                ReturnOpportunityStatus.CLOSED,  # fechamento automático na venda (T-028)
             }
         ),
         ReturnOpportunityStatus.NO_RESPONSE: frozenset(
             {
                 ReturnOpportunityStatus.CONTACTED,
+                ReturnOpportunityStatus.CLOSED,  # fechamento automático na venda (T-028)
             }
         ),
         ReturnOpportunityStatus.BOOKED: frozenset({ReturnOpportunityStatus.CLOSED}),

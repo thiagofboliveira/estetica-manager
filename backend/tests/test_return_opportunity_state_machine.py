@@ -17,10 +17,13 @@ def test_todo_status_esta_na_tabela():
     [
         (ReturnOpportunityStatus.OPEN, ReturnOpportunityStatus.CONTACTED),
         (ReturnOpportunityStatus.OPEN, ReturnOpportunityStatus.DISMISSED),
+        (ReturnOpportunityStatus.OPEN, ReturnOpportunityStatus.CLOSED),
         (ReturnOpportunityStatus.CONTACTED, ReturnOpportunityStatus.BOOKED),
         (ReturnOpportunityStatus.CONTACTED, ReturnOpportunityStatus.DECLINED),
         (ReturnOpportunityStatus.CONTACTED, ReturnOpportunityStatus.NO_RESPONSE),
+        (ReturnOpportunityStatus.CONTACTED, ReturnOpportunityStatus.CLOSED),
         (ReturnOpportunityStatus.NO_RESPONSE, ReturnOpportunityStatus.CONTACTED),
+        (ReturnOpportunityStatus.NO_RESPONSE, ReturnOpportunityStatus.CLOSED),
         (ReturnOpportunityStatus.BOOKED, ReturnOpportunityStatus.CLOSED),
         (ReturnOpportunityStatus.DECLINED, ReturnOpportunityStatus.CLOSED),
     ],
@@ -33,7 +36,6 @@ def test_transicoes_validas_nao_levantam(current, target):
     "current,target",
     [
         (ReturnOpportunityStatus.OPEN, ReturnOpportunityStatus.BOOKED),
-        (ReturnOpportunityStatus.OPEN, ReturnOpportunityStatus.CLOSED),
         (ReturnOpportunityStatus.CLOSED, ReturnOpportunityStatus.OPEN),
         (ReturnOpportunityStatus.DISMISSED, ReturnOpportunityStatus.OPEN),
         (ReturnOpportunityStatus.BOOKED, ReturnOpportunityStatus.CONTACTED),
