@@ -122,6 +122,12 @@ def get_retention_service(
     )
 
 
+def get_professional_timezone(
+    session: DbSession, professional_id: CurrentProfessional
+) -> str:
+    return ProfessionalRepository(session, professional_id).get_current().timezone
+
+
 def get_session_service(
     session: DbSession, professional_id: CurrentProfessional
 ) -> SessionService:
@@ -151,3 +157,4 @@ ProcedureRankingSvc = Annotated[
 ]
 RetentionSvc = Annotated[RetentionService, Depends(get_retention_service)]
 SessionSvc = Annotated[SessionService, Depends(get_session_service)]
+ProfessionalTimezone = Annotated[str, Depends(get_professional_timezone)]

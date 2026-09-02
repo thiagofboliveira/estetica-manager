@@ -5,6 +5,8 @@ from uuid import UUID
 from app.domain.retention.return_opportunity_state_machine import (
     ReturnOpportunityStatus,
 )
+from app.models.patient import Patient
+from app.models.procedure import Procedure
 from app.models.return_opportunity import ReturnOpportunity
 from app.repositories.base import TenantRepository
 
@@ -50,3 +52,20 @@ class ReturnOpportunityRepository(TenantRepository[ReturnOpportunity]):
             ReturnOpportunity.status.in_(_NON_TERMINAL)
         )
         return list(self._session.scalars(stmt))
+
+    def list_non_terminal_with_details(
+        self,
+    ) -> list[tuple[ReturnOpportunity, Patient, Procedure]]:
+        """Junta patient/procedure para a tela de reativação (T-029/030)
+        — evita N+1 queries do lado do service."""
+        stmt = (
+            self._scoped()
+            .where(ReturnOpportunity.status.in_(_NON_TERMINAL))
+            .join(Patient, Patient.id == ReturnOpportunity.patient_id)
+            .join(Procedure, Procedure.id == ReturnOpportunity.procedure_id)
+            .add_columns(Patient, Procedure)
+        )
+        return [
+            (opp, patient, procedure)
+            for opp, patient, procedure in self._session.execute(stmt).all()
+        ]

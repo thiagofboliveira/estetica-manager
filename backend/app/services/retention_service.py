@@ -6,16 +6,23 @@ reais, chama o domínio puro (window.calculate_due_date) e persiste. O
 CÁLCULO da data em si vive em domain/ — testável sem banco.
 """
 
+from datetime import date
 from uuid import UUID
 from zoneinfo import ZoneInfo
 
+from app.core.tz import now_in_timezone
+from app.domain.retention.grouping import (
+    OpportunityForGrouping,
+    PatientRetentionGroup,
+    group_by_patient,
+)
 from app.domain.retention.return_opportunity_state_machine import (
     ReturnOpportunityStatus,
     validate_transition,
 )
 from app.domain.retention.window import calculate_due_date
 from app.domain.sales.session_state_machine import SessionStatus
-from app.models.return_opportunity import ReturnOpportunity
+from app.models.return_opportunity import ContactChannel, ReturnOpportunity
 from app.models.sale_item import SaleItem
 from app.repositories.return_opportunity import ReturnOpportunityRepository
 from app.repositories.session import SessionRepository
@@ -25,6 +32,10 @@ _NON_EXHAUSTING_STATUSES = (
     SessionStatus.SCHEDULED,
     SessionStatus.CONFIRMED,
 )
+
+
+class ReturnOpportunityNotFoundError(Exception):
+    pass
 
 
 class RetentionService:
@@ -100,3 +111,54 @@ class RetentionService:
             opportunity.status = ReturnOpportunityStatus.CLOSED
             opportunity.resolved_by_sale_id = resolved_by_sale_id
         self._opportunities.flush()
+
+    def get(self, opportunity_id: UUID) -> ReturnOpportunity:
+        opportunity = self._opportunities.get(opportunity_id)
+        if opportunity is None:
+            raise ReturnOpportunityNotFoundError()
+        return opportunity
+
+    def list_for_reactivation_screen(
+        self, *, today: date, professional_timezone: str
+    ) -> list[PatientRetentionGroup]:
+        """Base de GET /retention/opportunities (T-029/T-030) — junta
+        patient/procedure no repositório, corta para o dataclass estreito
+        de app.domain.retention.grouping e delega todo o agrupamento e
+        supressão ao domínio puro (testável sem banco)."""
+        rows = self._opportunities.list_non_terminal_with_details()
+        cuts = [
+            OpportunityForGrouping(
+                id=str(opp.id),
+                patient_id=str(patient.id),
+                patient_name=patient.name,
+                patient_phone=patient.phone,
+                consent_whatsapp=patient.consent_whatsapp,
+                opted_out_at=patient.opted_out_at,
+                last_contacted_at=opp.contacted_at,
+                procedure_name=procedure.name,
+                due_date=opp.due_date,
+                status=opp.status.value,
+                potential_value=str(opp.potential_value),
+            )
+            for opp, patient, procedure in rows
+        ]
+        return group_by_patient(cuts, today=today)
+
+    def update_status(
+        self,
+        opportunity_id: UUID,
+        new_status: ReturnOpportunityStatus,
+        contact_channel: ContactChannel | None = None,
+        *,
+        professional_timezone: str = "UTC",
+    ) -> ReturnOpportunity:
+        opportunity = self.get(opportunity_id)
+        validate_transition(opportunity.status, new_status)
+        opportunity.status = new_status
+        if new_status == ReturnOpportunityStatus.CONTACTED:
+            opportunity.contacted_at = now_in_timezone(professional_timezone)
+            opportunity.contact_channel = contact_channel
+        elif new_status == ReturnOpportunityStatus.DISMISSED:
+            opportunity.dismissed_at = now_in_timezone(professional_timezone)
+        self._opportunities.flush()
+        return opportunity

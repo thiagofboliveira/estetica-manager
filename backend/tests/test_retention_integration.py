@@ -2,38 +2,25 @@
 retorno, testado contra Postgres real (mesmo padrão de
 test_sales_integration.py).
 
-Nota (Task 7): `GET`/`PATCH /api/v1/retention/opportunities` só existem
-a partir da Task 8 (T-029/T-030) — os três testes abaixo (transcritos
-do plano) FALHAM aqui com 404 nessas duas rotas, e é esperado: o que
-esta task cobre é o fechamento automático de oportunidades em
-SaleService.create() (T-028), não a listagem/edição. A esse fim, há um
-quarto teste (`test_close_open_opportunities_via_nova_venda_stopgap`)
-que verifica o fechamento direto no banco, sem depender das rotas
-ainda não implementadas — ver comentário nele.
+Nota (Task 8): `GET`/`PATCH /api/v1/retention/opportunities` foram
+implementadas nesta task (T-029/T-030) — os testes abaixo agora exercitam
+o ciclo completo via HTTP (listar -> contatar -> nova venda fecha). O
+teste stopgap da Task 7 (`test_close_open_opportunities_via_nova_venda_stopgap`,
+que verificava o fechamento direto no banco sem depender destas rotas)
+foi removido: `test_ciclo_completo_venda_completa_lista_contata_nova_venda_fecha`
+abaixo cobre o mesmo caminho (fechamento automático em SaleService.create,
+T-028) e também a listagem/edição via API, tornando-o redundante.
 """
-
-from uuid import UUID
 
 import pytest
 from fastapi.testclient import TestClient
-from sqlalchemy import select
 
 from app.core.config import settings
-from app.db.session import SessionLocal, _set_tenant
-from app.domain.retention.return_opportunity_state_machine import (
-    ReturnOpportunityStatus,
-)
 from app.main import app
-from app.models.return_opportunity import ReturnOpportunity
 
 pytestmark = pytest.mark.skipif(
     not settings.DEV_AUTH_SECRET, reason="requer DEV_AUTH_SECRET + Postgres real"
 )
-
-# Mesmo UUID fixo emitido por POST /dev/login (app/main.py) — usado
-# aqui só para abrir uma sessão de verificação direta no banco (RLS
-# exige o tenant setado mesmo para uma query de leitura simples).
-_DEV_PROFESSIONAL_ID = UUID("00000000-0000-0000-0000-000000000001")
 
 
 @pytest.fixture
@@ -193,49 +180,3 @@ def test_pacote_de_dez_sessoes_gera_uma_unica_oportunidade(
     target = next(p for p in list_resp.json() if p["patient_id"] == patient_id)
     assert len(target["opportunities"]) == 1
     assert target["opportunities"][0]["potential_value"] == "10000.00"
-
-
-def test_close_open_opportunities_via_nova_venda_stopgap(
-    client, auth_headers, patient_id
-):
-    """STOPGAP (Task 7): prova que SaleService.create() fecha a
-    oportunidade de retorno ao registrar uma nova venda do mesmo
-    (paciente, procedimento) — T-028 — SEM depender de
-    GET/PATCH /api/v1/retention/opportunities, que só existem a partir
-    da Task 8. Verifica o resultado consultando `return_opportunities`
-    diretamente via SQLAlchemy. Substituir pelo teste de ciclo completo
-    (via API) acima quando as rotas da Task 8 estiverem prontas — este
-    teste pode então ser removido.
-    """
-    procedure_id = _create_procedure(client, auth_headers, interval_days=1)
-    _sell_and_complete_single(client, auth_headers, patient_id, procedure_id)
-
-    new_sale_resp = client.post(
-        "/api/v1/sales",
-        json={
-            "patient_id": patient_id,
-            "type": "SINGLE",
-            "items": [{"procedure_id": procedure_id, "quantity": 1}],
-            "payment_method": "PIX",
-        },
-        headers=auth_headers,
-    )
-    assert new_sale_resp.status_code == 201, new_sale_resp.text
-    new_sale_id = new_sale_resp.json()["id"]
-
-    session = SessionLocal()
-    try:
-        with session.begin():
-            _set_tenant(session, _DEV_PROFESSIONAL_ID)
-            stmt = select(ReturnOpportunity).where(
-                ReturnOpportunity.patient_id == UUID(patient_id),
-                ReturnOpportunity.procedure_id == UUID(procedure_id),
-            )
-            opportunities = list(session.scalars(stmt))
-    finally:
-        session.close()
-
-    assert len(opportunities) == 1
-    opportunity = opportunities[0]
-    assert opportunity.status == ReturnOpportunityStatus.CLOSED
-    assert str(opportunity.resolved_by_sale_id) == new_sale_id
