@@ -12,7 +12,9 @@ from app.api.v1 import (
     payment_fee_rules,
     procedures,
     reports,
+    retention,
     sales,
+    sessions,
 )
 from app.core.config import settings
 
@@ -68,3 +70,5 @@ app.include_router(sales.router, prefix="/api/v1")
 app.include_router(fixed_expenses.router, prefix="/api/v1")
 app.include_router(dashboard.router, prefix="/api/v1")
 app.include_router(reports.router, prefix="/api/v1")
+app.include_router(sessions.router, prefix="/api/v1")
+app.include_router(retention.router, prefix="/api/v1")
