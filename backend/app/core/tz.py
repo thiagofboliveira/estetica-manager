@@ -23,3 +23,10 @@ def utc_to_local_date(moment: datetime, tz_name: str) -> date:
     if moment.tzinfo is None:
         moment = moment.replace(tzinfo=UTC)
     return moment.astimezone(ZoneInfo(tz_name)).date()
+
+
+def now_in_timezone(tz_name: str) -> datetime:
+    """O instante "agora" no fuso da profissional, aware — usar para
+    carimbar completed_at/contacted_at, nunca datetime.now(UTC) direto
+    (mesma disciplina de today_in_timezone, invariante I4)."""
+    return datetime.now(ZoneInfo(tz_name))
