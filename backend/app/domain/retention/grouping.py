@@ -99,13 +99,14 @@ def group_by_patient(
         ]
         total = sum((Decimal(o.potential_value) for o in patient_opps), Decimal("0.00"))
         first = patient_opps[0]
+        reason = _cannot_contact_reason(first)
         groups.append(
             PatientRetentionGroup(
                 patient_id=patient_id,
                 patient_name=first.patient_name,
                 patient_phone=first.patient_phone,
-                can_contact=all(_cannot_contact_reason(o) is None for o in patient_opps),
-                cannot_contact_reason=_cannot_contact_reason(first),
+                can_contact=reason is None,
+                cannot_contact_reason=reason,
                 total_potential_value=str(total.quantize(Decimal("0.01"))),
                 opportunities=lines,
             )

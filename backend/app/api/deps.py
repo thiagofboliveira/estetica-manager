@@ -131,13 +131,17 @@ def get_professional_timezone(
 def get_session_service(
     session: DbSession, professional_id: CurrentProfessional
 ) -> SessionService:
-    professional = ProfessionalRepository(session, professional_id).get_current()
+    # Chamada direta (não via Depends()) porque get_session_service é uma
+    # factory function comum sendo chamada por outro Depends(), não um
+    # route handler — reaproveita get_professional_timezone em vez de
+    # duplicar o lookup via ProfessionalRepository(...).get_current().
+    timezone = get_professional_timezone(session, professional_id)
     return SessionService(
         SessionRepository(session, professional_id),
         SaleItemRepository(session, professional_id),
         SaleRepository(session, professional_id),
         get_retention_service(session, professional_id),
-        professional.timezone,
+        timezone,
     )
 
 

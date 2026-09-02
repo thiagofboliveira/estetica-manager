@@ -12,11 +12,17 @@ abaixo cobre o mesmo caminho (fechamento automático em SaleService.create,
 T-028) e também a listagem/edição via API, tornando-o redundante.
 """
 
+import uuid
+
 import pytest
 from fastapi.testclient import TestClient
 
 from app.core.config import settings
+from app.db.session import get_tenant_session
 from app.main import app
+from app.models.return_opportunity import ReturnOpportunity
+
+_DEV_PROFESSIONAL_ID = uuid.UUID("00000000-0000-0000-0000-000000000001")
 
 pytestmark = pytest.mark.skipif(
     not settings.DEV_AUTH_SECRET, reason="requer DEV_AUTH_SECRET + Postgres real"
@@ -115,6 +121,83 @@ def test_ciclo_completo_venda_completa_lista_contata_nova_venda_fecha(
     )
     remaining_patients = list_resp_after.json()
     assert not any(p["patient_id"] == patient_id for p in remaining_patients)
+
+
+def test_ciclo_completo_com_booked_fecha_na_nova_venda(
+    client, auth_headers, patient_id
+):
+    """Regressão da revisão final de branch (Finding 1): uma oportunidade
+    que avança até BOOKED (paciente concordou em voltar — o caminho de
+    sucesso) precisa continuar visível para
+    list_open_or_contacted_for_patient_and_procedure() e ser fechada
+    quando a venda correspondente de fato acontece. Antes do fix, a
+    query de fechamento só considerava OPEN/CONTACTED/NO_RESPONSE, então
+    uma oportunidade BOOKED ficava presa para sempre (sem
+    resolved_by_sale_id), bloqueando o índice parcial único de permitir
+    nova oportunidade para o mesmo item de venda. Este teste falha antes
+    do fix (a oportunidade continua BOOKED, resolved_by_sale_id None) e
+    passa depois (CLOSED, resolved_by_sale_id == id da nova venda)."""
+    procedure_id = _create_procedure(client, auth_headers, interval_days=1)
+    _sell_and_complete_single(client, auth_headers, patient_id, procedure_id)
+
+    list_resp = client.get("/api/v1/retention/opportunities", headers=auth_headers)
+    target = next(
+        p for p in list_resp.json() if p["patient_id"] == patient_id
+    )
+    opportunity_id = target["opportunities"][0]["id"]
+    assert target["opportunities"][0]["status"] == "OPEN"
+
+    contact_resp = client.patch(
+        f"/api/v1/retention/opportunities/{opportunity_id}",
+        json={"status": "CONTACTED", "contact_channel": "WHATSAPP"},
+        headers=auth_headers,
+    )
+    assert contact_resp.status_code == 200
+    assert contact_resp.json()["status"] == "CONTACTED"
+
+    booked_resp = client.patch(
+        f"/api/v1/retention/opportunities/{opportunity_id}",
+        json={"status": "BOOKED"},
+        headers=auth_headers,
+    )
+    assert booked_resp.status_code == 200
+    assert booked_resp.json()["status"] == "BOOKED"
+
+    # BOOKED não aparece mais na tela de reativação (já tem resposta da
+    # paciente) — isso é esperado e distinto do fechamento pela venda.
+    list_resp_booked = client.get(
+        "/api/v1/retention/opportunities", headers=auth_headers
+    )
+    assert not any(
+        p["patient_id"] == patient_id for p in list_resp_booked.json()
+    )
+
+    new_sale_resp = client.post(
+        "/api/v1/sales",
+        json={
+            "patient_id": patient_id,
+            "type": "SINGLE",
+            "items": [{"procedure_id": procedure_id, "quantity": 1}],
+            "payment_method": "PIX",
+        },
+        headers=auth_headers,
+    )
+    assert new_sale_resp.status_code == 201
+    new_sale_id = uuid.UUID(new_sale_resp.json()["id"])
+
+    # Não há GET /retention/opportunities/{id}; a tela de reativação só
+    # lista status não-terminais e BOOKED/DECLINED já não aparecem nela
+    # (ver list_non_terminal_with_details), então a única forma de
+    # confirmar o fechamento é consultar a linha diretamente no banco.
+    gen = get_tenant_session(_DEV_PROFESSIONAL_ID)
+    session = next(gen)
+    try:
+        opportunity = session.get(ReturnOpportunity, uuid.UUID(opportunity_id))
+        assert opportunity is not None
+        assert opportunity.status.value == "CLOSED"
+        assert opportunity.resolved_by_sale_id == new_sale_id
+    finally:
+        gen.close()
 
 
 def test_pacote_com_sessao_pending_nao_aparece_na_lista(

@@ -1,6 +1,8 @@
 from datetime import date, datetime
 from uuid import UUID
 
+from pydantic import model_validator
+
 from app.models.return_opportunity import ContactChannel, ReturnOpportunityStatus
 from app.schemas.base import InputSchema, OutputSchema
 from app.schemas.types import MoneyOut
@@ -28,6 +30,21 @@ class PatientRetentionOut(OutputSchema):
 class ReturnOpportunityUpdate(InputSchema):
     status: ReturnOpportunityStatus
     contact_channel: ContactChannel | None = None
+
+    @model_validator(mode="after")
+    def _contact_channel_obrigatorio_para_contacted(self) -> "ReturnOpportunityUpdate":
+        """Spec (design doc, ~linha 158): 'contact_channel obrigatório
+        apenas quando status in (CONTACTED, ...)'. Sem isso, um PATCH para
+        CONTACTED sem canal carimbava contacted_at (disparando a supressão
+        de 14 dias) sem nenhum registro de como a paciente foi contatada."""
+        if (
+            self.status == ReturnOpportunityStatus.CONTACTED
+            and self.contact_channel is None
+        ):
+            raise ValueError(
+                "contact_channel é obrigatório ao transicionar para CONTACTED"
+            )
+        return self
 
 
 class ReturnOpportunityOut(OutputSchema):

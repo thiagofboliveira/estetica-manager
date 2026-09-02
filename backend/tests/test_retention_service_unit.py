@@ -180,15 +180,11 @@ def test_ja_existe_oportunidade_ativa_nao_duplica():
 
 
 def test_close_open_opportunities_fecha_e_carimba_resolved_by_sale_id():
-    """NOTA: usa status=BOOKED, não OPEN, porque a tabela de transições
-    atual (app/domain/retention/return_opportunity_state_machine.py,
-    Task 1) só permite BOOKED/DECLINED -> CLOSED. O design doc
-    (docs/superpowers/specs/2026-09-01-motor-de-retencao-design.md,
-    seção "Fechamento automático por venda (T-028)") descreve o
-    fechamento automático como uma transição OPEN/CONTACTED -> CLOSED,
-    o que hoje não está na tabela de transições da Task 1 — ver o teste
-    seguinte, que documenta essa lacuna pré-existente. Este teste cobre
-    o caminho que a máquina de estados atual de fato permite."""
+    """Cobre o caminho BOOKED -> CLOSED: a máquina de estados
+    (app/domain/retention/return_opportunity_state_machine.py) permite
+    OPEN/CONTACTED/NO_RESPONSE/BOOKED/DECLINED -> CLOSED, todos usados
+    pelo fechamento automático na venda (T-028). Este teste verifica o
+    caminho BOOKED especificamente; o teste seguinte cobre OPEN."""
     opportunity = SimpleNamespace(
         status=ReturnOpportunityStatus.BOOKED, resolved_by_sale_id=None
     )
@@ -215,16 +211,12 @@ def test_close_open_opportunities_fecha_e_carimba_resolved_by_sale_id():
 def test_close_open_opportunities_chama_validate_transition_antes_do_update():
     """Prova que close_open_opportunities NÃO confia no chamador: delega
     100% da validação a validate_transition, sem short-circuit próprio.
-    Usa DISMISSED (estado terminal) para provar isso de forma
-    inequívoca — mas o mesmo mecanismo é o que hoje bloqueia
-    OPEN/CONTACTED -> CLOSED (ver nota no teste anterior), que é o caso
-    realista de T-028 ("Regra de fechamento", backend/BACKLOG.md linha
-    186: "Fecha na venda, não na sessão"). Ou seja: com os dados reais
-    que list_open_or_contacted_for_patient_and_procedure() devolve
-    (status OPEN/CONTACTED/NO_RESPONSE), close_open_opportunities()
-    levanta InvalidReturnOpportunityTransitionError sempre — bug
-    pré-existente na máquina de estados da Task 1, fora do escopo desta
-    task (ver task-5-report.md)."""
+    Usa DISMISSED (estado terminal, sem transição válida para CLOSED)
+    para provar isso de forma inequívoca — o mesmo mecanismo é o que
+    protege os status reais que list_open_or_contacted_for_patient_and_procedure()
+    devolve em produção (OPEN/CONTACTED/NO_RESPONSE/BOOKED/DECLINED),
+    todos com transição válida para CLOSED (T-028, "Fecha na venda, não
+    na sessão", backend/BACKLOG.md)."""
     opportunity = SimpleNamespace(
         status=ReturnOpportunityStatus.DISMISSED, resolved_by_sale_id=None
     )
@@ -239,12 +231,13 @@ def test_close_open_opportunities_chama_validate_transition_antes_do_update():
         )
 
 
-def test_close_open_opportunities_com_status_open_real_levanta_bug_conhecido():
-    """Testa que close_open_opportunities agora funciona corretamente quando
-    recebe status OPEN (que é o que list_open_or_contacted_for_patient_and_procedure()
-    de fato devolve em produção). A transição OPEN -> CLOSED é agora permitida
-    na máquina de estados (Task 1, T-028: fechamento automático na venda) e o
-    serviço consegue fechar oportunidades nesse status."""
+def test_close_open_opportunities_com_status_open_fecha_com_sucesso():
+    """Testa que close_open_opportunities funciona corretamente quando
+    recebe status OPEN (que é um dos status que
+    list_open_or_contacted_for_patient_and_procedure() de fato devolve em
+    produção). A transição OPEN -> CLOSED é permitida na máquina de
+    estados (T-028: fechamento automático na venda) e o serviço consegue
+    fechar oportunidades nesse status."""
     opportunity = SimpleNamespace(
         status=ReturnOpportunityStatus.OPEN, resolved_by_sale_id=None
     )
@@ -252,12 +245,11 @@ def test_close_open_opportunities_com_status_open_real_levanta_bug_conhecido():
     svc = RetentionService(opp_repo, FakeSessionRepository([]))
     sale_id = uuid.uuid4()
 
-    # Agora deve executar sem exceção
     svc.close_open_opportunities(
         patient_id=uuid.uuid4(),
         procedure_id=uuid.uuid4(),
         resolved_by_sale_id=sale_id,
     )
-    # Verificar que a oportunidade foi fechada
+
     assert opportunity.status == ReturnOpportunityStatus.CLOSED
     assert opportunity.resolved_by_sale_id == sale_id

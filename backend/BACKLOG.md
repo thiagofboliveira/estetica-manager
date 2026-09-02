@@ -4,7 +4,7 @@ Escopo: API, modelo de dados, motor de lucro, motor de retorno, isolamento, depl
 Fonte de escopo: [MVP v7.1](../MVP%20—%20Micro-SaaS%20para%20Gestão%20Financeira%20e%20Retenção%20em%20Estética%20\(v6\).md) · Coordenação: [../BACKLOG.md](../BACKLOG.md)
 <sub>O arquivo continua nomeado `v6`; v7/v7.1 são seções acrescentadas dentro dele, não arquivos novos.</sub>
 
-**Atualizado:** 2026-09-01 · **Progresso:** 65/86 (76%) · nenhuma bloqueada — motor de retorno + dashboard financeiro + ranking de procedimentos implementados e validados contra Postgres real + 178 testes passando (`.venv/bin/pytest -q`), ruff limpo (`.venv/bin/ruff check .`)
+**Atualizado:** 2026-09-02 · **Progresso:** 64/86 (74%) · nenhuma bloqueada — motor de retorno + dashboard financeiro + ranking de procedimentos implementados e validados contra Postgres real (T-045b revertido para `[ ]`: evidência anterior citava o teste errado; atribuição de 21d é T-090, fora de escopo desta branch) — 178 testes passando (`.venv/bin/pytest -q`), ruff limpo (`.venv/bin/ruff check .`)
 
 ---
 
@@ -208,7 +208,7 @@ Fonte de escopo: [MVP v7.1](../MVP%20—%20Micro-SaaS%20para%20Gestão%20Finance
 |---|---|:--:|---|---|
 | T-045 | Testes de integração | `[x]` | T-028 | Ciclo completo de retorno (venda → oportunidade → contacto → fechamento). Testado em `tests/test_retention_integration.py` — 178/178 testes passando |
 | T-045a | Pacote não reativa prematuramente | `[x]` | T-045 | `PENDING` não conta. Pacote com 10 sessões gera exatamente 1 oportunidade, sem duplicação. Testado em `tests/test_retention_integration.py` — 178/178 testes passando |
-| T-045b | Atribuição fora da janela de 21d não conta | `[x]` | T-045 | Oportunidades fora da janela de tempo não são retornadas. Window calculation verifica datas. Testado em `tests/test_retention_window.py` — 178/178 testes passando |
+| T-045b | Atribuição fora da janela de 21d não conta | `[ ]` | T-045 | Bloqueado em T-090 (`GET /impact`, atribuição de 21d) — fora do escopo desta branch, adiado para Fase 5+. `tests/test_retention_window.py` testa apenas a classificação de timing (±7d UPCOMING/DUE/OVERDUE), não a janela de atribuição de 21d — evidência anterior estava incorreta |
 | T-059 | Base legal + contrato de operador | `[ ]` | — | **Antes do cliente zero** |
 | T-060 | Consentimento + opt-out | `[ ]` | T-011 | Art. 11 · risco de banimento do número |
 | T-061 | `POST /patients/{id}/anonymize` | `[ ]` | T-011 | Art. 18 VI + Art. 16 II |
