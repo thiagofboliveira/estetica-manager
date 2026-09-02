@@ -5,15 +5,20 @@
 | Projeto | Backlog | Tasks | Progresso |
 |---|---|---:|---:|
 | Backend (FastAPI) | [backend/BACKLOG.md](backend/BACKLOG.md) | 86 | 54/86 (63%) |
-| Frontend (React) | [frontend/BACKLOG.md](frontend/BACKLOG.md) | 36 | 12/36 (33%) · 2 em `[~]` |
+| Frontend (React) | [frontend/BACKLOG.md](frontend/BACKLOG.md) | 36 | 17/36 (47%) · 2 em `[~]` |
 | Produto / validação | §Produto abaixo | 5 | 1/5 (20%) |
-| | **Total MVP** | **127** | **53%** |
+| | **Total MVP** | **127** | **56%** |
+| 🆕 Negócio (pós-MVP) | §Negócio abaixo | ~65 | 0 |
+
+> 🆕 **Fase de negócio adicionada em 2026-09-01** — ver [REVISAO-PRODUTO.md](REVISAO-PRODUTO.md). São tasks **fora do MVP v7.1**, nascidas da mudança de ambição de "validar com cliente zero" para "revender como SaaS". Não entram na contagem do MVP e **nada nelas começa antes do motor de retenção estar `[x]`**.
 
 **Guias de engenharia:** [ENGENHARIA.md](ENGENHARIA.md) (invariantes) · [backend](backend/ENGENHARIA.md) · [frontend](frontend/ENGENHARIA.md)
 
+**Revisão de produto:** [REVISAO-PRODUTO.md](REVISAO-PRODUTO.md) — análise competitiva, lacunas de negócio e priorização (2026-09-01)
+
 **Fonte de escopo:** [MVP v7](MVP%20—%20Micro-SaaS%20para%20Gestão%20Financeira%20e%20Retenção%20em%20Estética%20\(v6\).md) — mudança de escopo vai lá primeiro; os backlogs refletem, não decidem. (Arquivo continua nomeado `v6` — a v7 é a seção §12.5 adicionada dentro dele, não um novo arquivo.)
 
-**Atualizado:** 2026-08-29
+**Atualizado:** 2026-09-01
 
 ---
 
@@ -131,6 +136,45 @@ Cortar escopo, nunca comprimir prazo.
 | 4 | F-014b tela de pacote (manter migrations) | Pacote entra depois **sem migration nova** |
 
 **Nunca cortáveis:** tipo monetário, timezone, RLS, snapshot congelado, `return_opportunities`, edição de venda, modelo Venda/Item/Sessão.
+
+---
+
+## Negócio (pós-MVP) 🆕
+
+Derivado de [REVISAO-PRODUTO.md](REVISAO-PRODUTO.md). **Índice apenas** — as tasks vivem nos backlogs dos projetos, seção "FASE 5+ — Negócio".
+
+| Épico | Backend | Frontend | Prioridade |
+|---|---|---|:--:|
+| Correções de escopo repriorizadas | T-017, T-022b, T-024a, T-047, T-059..062 | F-030, F-031, F-013b, F-014d, F-014e | 🔴 |
+| **EPIC-23** — Monetização e self-serve | T-070..T-077 | F-050..F-055 | 🔴 |
+| **EPIC-24** — Ativação e time-to-value | T-080..T-082b | F-060, F-060a, F-061, F-021 | 🔴 |
+| **EPIC-25** — Retenção do produto / prova de valor | T-090..T-093 | F-040, F-062..F-064 | 🟠 |
+| **EPIC-26** — Diferenciais competitivos | T-100..T-104 | F-070..F-073, F-042 | 🟢 |
+| **EPIC-27** — Aquisição | — | F-080, F-080a | 🟠 |
+
+### As três lacunas que bloqueiam "revender"
+
+| # | Lacuna | Estado hoje |
+|---|---|---|
+| L-1 | **Sem cobrança e sem signup** | `professionals` nasce de `INSERT` manual com UUID fixo. Não há `subscriptions`, plano, trial nem gate. Cada cliente novo é trabalho manual |
+| L-2 | **Sem funil de ativação medido** | Não há eventos. Não se sabe onde a 2ª cliente desistiu |
+| L-3 | **Sem migração do caderno** | Só entrada manual. A fila de reativação nasce vazia e fica ~90 dias sem valor |
+
+### A porta de saída, literal
+
+```text
+RETENÇÃO (T-025..031 + F-015..c)   ← metade do produto, hoje inexistente
+        ↓
+IMPORT CSV (T-080/080a + F-060/060a) + IMPACTO (T-090 + F-040)
+        ↓
+30 dias de uso real (T-051)
+        ↓
+   receita atribuível > mensalidade?
+        ├── NÃO → PARE. Reformule (§33 do MVP). Não construa billing
+        └── SIM → EPIC-23 (billing) + F-080 (landing)
+```
+
+> 🔴 **Nada da fase de negócio começa antes do motor de retenção estar `[x]`.** O dashboard financeiro vende a demo; a lista de reativação paga a mensalidade. Construir cobrança para um produto cuja hipótese não foi testada é construir na ordem errada.
 
 ---
 

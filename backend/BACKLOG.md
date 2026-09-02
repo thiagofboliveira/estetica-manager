@@ -253,3 +253,95 @@ Mudanças nestes pontos **quebram o front** — avise antes (ver [../BACKLOG.md]
 | `GET/POST/PATCH/DELETE /fixed-expenses` | T-021b | F-012b |
 
 > **Valores monetários trafegam como string no JSON**, nunca como `number` — `number` em JS é float64 e reintroduz o erro de arredondamento.
+
+---
+
+# FASE 5+ — Negócio 🆕 (derivado de [../REVISAO-PRODUTO.md](../REVISAO-PRODUTO.md))
+
+> 📋 **Origem:** revisão de produto de 2026-09-01. Estas tasks **não estão no MVP v7.1** — nasceram da mudança de ambição de "validar com cliente zero" para "revender como SaaS".
+>
+> 🔴 **Regra de sequência que atravessa esta fase inteira:** nada aqui começa antes de **T-025..T-031 (motor de retenção) estarem `[x]`**. Sem o segundo pilar, a hipótese não é testável, e construir cobrança para um produto não validado é construir na ordem errada.
+
+## Correções de escopo — sobem de prioridade (já existiam)
+
+Não são tasks novas; são repriorizações justificadas na §4 da revisão.
+
+> ⚠️ **IDs repetidos são deliberados.** As tasks desta subseção **já existem** mais acima no arquivo, na fase original. A linha de lá continua sendo a fonte do status (`[ ]`/`[x]`); a linha aqui só registra a **repriorização** e o motivo. Ao concluir, marque `[x]` **nos dois lugares** — ou mova a task para cá de vez, se preferir consolidar.
+
+
+| ID | Task | Status | Depende | Nota |
+|---|---|:--:|---|---|
+| T-017 | `PATCH /sales/{id}` + `sale_audit` | `[ ]` | T-015 | 🔴 **Sobe para P0** (A-02). Estava "fora do escopo desta entrega", mas a §27 do MVP lista "venda registrada errada pode ser corrigida" como critério de aceite **e** como não-cortável. O front já reportou a lacuna. Recalcular com a config **do momento original** (I3), nunca com a de hoje |
+| T-024a | Erro em parcelas fora da faixa de `payment_fee_rules` | `[ ]` | T-008 | 🔴 A-06. Hoje a venda passa **silenciosamente** com taxa possivelmente zerada — viola I7 e o corolário "número errado é pior que nenhum número". Retornar 422 com mensagem explícita, ou aplicar a faixa mais próxima **e** marcar como estimada |
+| T-022b | `has_provisional_profit` no `GET /dashboard` | `[ ]` | T-022 | 🟠 A-07. Booleano no agregado: existe alguma venda no período com sessão `PENDING`? Desbloqueia F-013b (badge "lucro provisório"), exigido por I7. Sem isso o front não tem como saber, porque o endpoint é agregado |
+| T-059..T-062 | LGPD (base legal, consentimento, anonimização, retenção) | `[ ]` | — | 🔴 A-08. Já existiam na Fase 4. **Reforço:** com cliente pagante você deixa de ser controlador dos seus dados e passa a ser **operador** de dado sensível de terceiros. Contrato de operador não é formalidade |
+| T-047 | Deploy + observabilidade + **restore testado** | `[ ]` | T-022 | 🔴 A-10. Backup não restaurado não é backup. Perder dado financeiro de cliente pagante é evento de extinção. Exigir evidência de um restore real, não da configuração do backup |
+
+## EPIC-23 — Monetização e self-serve 🔴
+
+Bloqueia o negócio inteiro. Hoje `professionals` nasce de `INSERT` manual com UUID fixo — cada cliente novo é trabalho manual.
+
+| ID | Task | Status | Depende | Nota |
+|---|---|:--:|---|---|
+| T-070 | `POST /signup` — provisionamento de tenant | `[ ]` | T-006, T-004 | Numa **única transação**: `user` + `professional` (com `timezone`) + `financial_settings` com defaults de mercado (§8.1) + `subscription` TRIALING. Falha parcial não pode deixar tenant meio-criado |
+| T-070a | Idempotência do signup | `[ ]` | T-070 | Mesma receita do T-015a. Duplo-submit no cadastro não pode gerar dois tenants para o mesmo e-mail |
+| T-071 | Tabela `plans` | `[ ]` | T-002 | `code`, `name`, `price_amount` (`NUMERIC(12,2)` — I1 vale aqui também), `max_active_patients` (NULL = ilimitado), `features` JSONB. Seed: essencial/profissional/clinica (§6 da revisão) |
+| T-072 | Tabela `subscriptions` | `[ ]` | T-071, T-004 | `professional_id`, `plan_id`, `status` (`TRIALING\|ACTIVE\|PAST_DUE\|CANCELED\|EXPIRED`), `trial_ends_at`, `current_period_end`, `provider_customer_id`, `provider_subscription_id`. RLS + `active_from`/`active_to` para histórico |
+| T-072a | Máquina de estados da assinatura | `[ ]` | T-072 | Mesmo padrão de `session_state_machine.py`: transições válidas explícitas + `validate_transition()`. `CANCELED → ACTIVE` só via nova assinatura, não por UPDATE |
+| T-073 | **Escolher provedor de pagamento** | `[ ]` | — | ⛔ **Decisão antes de codar T-074.** Stripe (recorrência madura, Pix+cartão, webhook confiável, ~3,99%+R$0,39) vs Asaas (mais barato em Pix/boleto BR, API simples, menos maduro em recorrência). Recomendação da revisão: **Stripe** se o pagamento for majoritariamente cartão; **Asaas** se for Pix. Registrar o motivo |
+| T-074 | Integração de cobrança recorrente | `[ ]` | T-073, T-072 | Criar customer + subscription no provedor. **Nunca** construir cobrança na mão. Valores em `Decimal`, nunca float, mesmo vindo do SDK |
+| T-074a | Webhook de pagamento (idempotente) | `[ ]` | T-074 | `POST /webhooks/billing`. Verificar **assinatura** do provedor. Guardar `provider_event_id` e ignorar repetido — provedores reentregam. Muda `subscription.status`; nunca confia no corpo sem verificar |
+| T-074b | Job de expiração de trial | `[ ]` | T-072 | `TRIALING` + `trial_ends_at` passado → `EXPIRED`. Roda no fuso da profissional (I4). **Alerta se o job falhar** (mesma lição do T-047a) |
+| T-075 | Middleware de gate por status | `[ ]` | T-072a | `TRIALING\|ACTIVE` → libera. `PAST_DUE` → libera + flag de aviso na resposta. `CANCELED\|EXPIRED` → **read-only**, `GET` e export continuam 200, escrita retorna 402 |
+| T-075a | Enforcement de limite do plano | `[ ]` | T-075, T-071 | Contar pacientes **ativas** contra `max_active_patients`. ⚠️ **Nunca limitar registro de venda** — limitar a venda destrói o dado que gera o ROI que justifica a assinatura (§6 da revisão) |
+| T-076 | `GET/PATCH /subscription` | `[ ]` | T-072 | Estado da assinatura, plano, dias de trial restantes, próxima cobrança. `PATCH` para upgrade/downgrade e cancelamento self-serve |
+| T-077 | Tabela `referrals` + cupom | `[ ]` | T-072 | Canal declarado na entrevista é **boca a boca entre colegas**. `code`, `referred_by`, `reward_applied_at` |
+
+> 🔴 **Regra de produto que vira regra de código:** cliente cancelado **nunca** perde acesso de leitura nem exportação. Além de ser o comportamento correto comercialmente (§3 L-1 da revisão), a LGPD Art. 18 V exige portabilidade independente de status de pagamento.
+
+## EPIC-24 — Ativação e time-to-value 🔴
+
+| ID | Task | Status | Depende | Nota |
+|---|---|:--:|---|---|
+| T-080 | **`POST /patients/import` (CSV)** | `[ ]` | T-011 | 🟢 **Melhor esforço/impacto de toda a revisão** (§3 L-3). Colunas: nome, telefone, último procedimento, **data do último atendimento**, observação. Normaliza E.164 (T-011a), reporta linha a linha o que entrou e o que falhou — nunca falha o lote inteiro por uma linha ruim |
+| T-080a | Import gera `return_opportunities` retroativas | `[ ]` | T-080, T-026 | 🔴 **É isto que dá valor no dia 1.** Sem esta task o import é só cadastro e a fila de reativação continua vazia por ~90 dias. Com ela, a profissional vê "12 pacientes para chamar" na primeira sessão. ⚠️ Marcar a origem (`source=IMPORT`) — oportunidade importada **não** conta como receita atribuível ao sistema (§18.1, atribuição conservadora) |
+| T-081 | Catálogo de procedimentos pré-carregado | `[ ]` | T-009 | Seed opcional no signup: limpeza de pele, peeling, botox, acne, microagulhamento, revitalização — com preço/custo/intervalo de **mercado** (§8.1), marcados como estimativa (I7). Ela ajusta em vez de criar do zero |
+| T-082 | Tabela `events` (append-only) | `[ ]` | T-004 | `professional_id`, `event`, `payload` JSONB, `occurred_at` TIMESTAMPTZ. Sem UPDATE, sem DELETE. É o funil de ativação sem comprar ferramenta |
+| T-082a | Emitir eventos de ativação | `[ ]` | T-082 | `signed_up`, `first_procedure_created`, `first_sale_recorded`, `first_profit_viewed`, `first_reactivation_sent`, `first_reactivation_converted`. **Meta: signup → primeiro lucro na tela em < 10 min** |
+| T-082b | `GET /admin/funnel` | `[ ]` | T-082a | Funil e cohort por semana de signup. Rota administrativa, fora do RLS de tenant — **exige role separada**, não é endpoint de profissional |
+
+## EPIC-25 — Retenção do produto e prova de valor 🟠
+
+| ID | Task | Status | Depende | Nota |
+|---|---|:--:|---|---|
+| T-090 | `GET /impact` — receita atribuível e ROI | `[ ]` | T-029, T-031 | 🟠 A-04. Sai de P1 para **P0 comercial**: é a resposta a "por que eu pago isso?" no dia da renovação. Dados já são registrados desde o dia 1 por decisão da §19. Atribuição **conservadora** da §18.1 — janela de 21d, exclui origem `IMPORT` |
+| T-091 | Resumo semanal — geração | `[ ]` | T-022, T-029 | §3 L-5: nada retém a **profissional** hoje. "Semana passada: R$ 1.240 faturado, R$ 680 de lucro, 3 pacientes para chamar". Job semanal no fuso dela |
+| T-091a | Envio do resumo (WhatsApp/e-mail) | `[ ]` | T-091 | Opt-in explícito + link de descadastro. Reaproveita a disciplina de consentimento do T-060 |
+| T-092 | Alerta de margem negativa por procedimento | `[ ]` | T-024 | "Peeling está no vermelho: R$ 12 de prejuízo por sessão". **Este é o insight que faz ela contar para as colegas** — é aquisição disfarçada de feature |
+| T-093 | Comparativo mês vs. mês anterior no dashboard | `[ ]` | T-022 | R$ 800 de lucro é bom ou ruim? Sem contexto, número não gera decisão |
+
+## EPIC-26 — Diferenciais competitivos 🟢
+
+Nenhum concorrente do quadro da §2 faz isto. É onde o motor de lucro deixa de ser relatório e vira ferramenta de decisão.
+
+| ID | Task | Status | Depende | Nota |
+|---|---|:--:|---|---|
+| T-100 | `POST /simulate/price` — simulador | `[ ]` | T-018 | "Se eu cobrar R$ 320 na limpeza, meu lucro vira quanto?" Reusa `calculate_sale()` **puro**, sem persistir nada. Barato de construir, alto valor percebido |
+| T-100a | Sugestão de preço mínimo para margem-alvo | `[ ]` | T-100 | Inverte o cálculo: dada margem-alvo, qual preço? Ataca o problema real — ela nunca calculou preço (`requisitos.md`) |
+| T-101 | Histórico de no-show por paciente | `[ ]` | T-014a | Entrevista: ~20% faltam sem avisar. "Esta paciente faltou 3 de 5 vezes — peça sinal". Deriva de `sessions` com status `NO_SHOW`, sem tabela nova |
+| T-102 | Canal de aquisição por paciente | `[ ]` | T-011 | `acquisition_channel` em `patients` (Instagram/Google/indicação/outro) + custo por canal. Entrevista: impulsionamento subiu de R$ 11 para R$ 50 e parou de converter — ninguém no mercado ajuda com isso |
+| T-103 | Templates de mensagem de reativação | `[ ]` | T-029 | Editáveis, com variáveis (nome, procedimento, dias desde a última). Mensagem robótica queima o canal de WhatsApp |
+| T-104 | `GET /export/csv` | `[ ]` | T-012 | LGPD Art. 18 V + tira o medo de "ficar preso no sistema". Vendas, pacientes, sessões |
+
+## Sequência recomendada desta fase
+
+```text
+1. RETENÇÃO (T-025..031)          ← já no backlog, Fase 3. NADA daqui começa antes
+2. T-017, T-024a, T-022b          ← correções que o front já reportou
+3. T-080 + T-080a                 ← time-to-value de 90 dias para 1 dia
+4. T-059..062, T-047              ← antes de qualquer cliente pagante
+5. T-090                          ← prova de valor, para a decisão de continuar
+   ▸ PORTA: receita atribuível > mensalidade? Se não, PARE (§33 do MVP)
+6. T-070..T-077                   ← só depois do sinal verde
+7. T-082, T-100..104              ← escala
+```
