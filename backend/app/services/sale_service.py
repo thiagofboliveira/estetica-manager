@@ -75,6 +75,19 @@ class SaleNotFoundError(Exception):
     pass
 
 
+class NoFeeRuleForInstallmentsError(Exception):
+    """T-024a: nenhuma payment_fee_rule cobre a quantidade de parcelas
+    pedida — sem isso, a taxa seria silenciosamente zerada (viola I7,
+    "número errado é pior que nenhum número")."""
+
+    def __init__(self, payment_method: object, installments: int) -> None:
+        self.payment_method = payment_method
+        self.installments = installments
+        super().__init__(
+            f"nenhuma regra de taxa cobre {installments}x para {payment_method}"
+        )
+
+
 class IdempotencyKeyConflictError(Exception):
     """Mesma chave, corpo diferente — a intenção mudou, não é o mesmo
     clique duplicado. 409, nunca silenciosamente ignorado."""
@@ -150,6 +163,11 @@ class SaleService:
             for r in self._payment_fee_rules.list_all()
             if r.payment_method == dto.payment_method
         ]
+        if not any(
+            r.installments_min <= dto.installments <= r.installments_max
+            for r in fee_rules
+        ):
+            raise NoFeeRuleForInstallmentsError(dto.payment_method, dto.installments)
 
         calc_items = [
             CalcLineItem(

@@ -9,6 +9,7 @@ from app.models.session import Session as SessionModel
 from app.schemas.sale import SaleCreate, SaleItemOut, SaleOut, SessionOut
 from app.services.sale_service import (
     IdempotencyKeyConflictError,
+    NoFeeRuleForInstallmentsError,
     PatientNotFoundForSaleError,
     ProcedureNotFoundForSaleError,
     SaleNotFoundError,
@@ -55,6 +56,12 @@ def create_sale(
         raise HTTPException(
             status.HTTP_409_CONFLICT,
             "Idempotency-Key já usada com um corpo diferente",
+        ) from exc
+    except NoFeeRuleForInstallmentsError as exc:
+        raise HTTPException(
+            status.HTTP_422_UNPROCESSABLE_ENTITY,
+            f"Nenhuma regra de taxa cobre {exc.installments}x para "
+            f"{exc.payment_method} — cadastre uma faixa em /payment-fee-rules",
         ) from exc
     response.status_code = (
         status.HTTP_200_OK if was_existing else status.HTTP_201_CREATED

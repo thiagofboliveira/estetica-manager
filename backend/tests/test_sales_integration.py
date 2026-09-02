@@ -226,3 +226,24 @@ class TestValidacaoDeVenda:
         body = _sale_body(patient_id, str(uuid.uuid4()))
         resp = client.post("/api/v1/sales", json=body, headers=auth_headers)
         assert resp.status_code == 404
+
+    def test_parcela_fora_da_faixa_de_payment_fee_rules_retorna_422(
+        self,
+        client: TestClient,
+        auth_headers: dict[str, str],
+        patient_id: str,
+        procedure_id: str,
+    ) -> None:
+        """T-024a: sem isso, a venda passaria com taxa silenciosamente
+        zerada (I7) — número errado é pior que nenhum número."""
+        # Faixa alta e nunca usada por outros testes/seeds compartilhando o
+        # mesmo banco de dev — não confiar em "nenhuma regra CREDIT existe",
+        # já que outros testes podem ter seedado 1x/2-6x/7-12x antes.
+        body = _sale_body(patient_id, procedure_id)
+        body["payment_method"] = "CREDIT"
+        body["installments"] = 37
+
+        resp = client.post("/api/v1/sales", json=body, headers=auth_headers)
+
+        assert resp.status_code == 422, resp.text
+        assert "regra de taxa" in resp.json()["detail"].lower()
