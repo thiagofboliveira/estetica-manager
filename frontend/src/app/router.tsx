@@ -17,6 +17,7 @@ import { ExpenseDetailPage } from "@/features/expenses/ExpenseDetailPage";
 import { SettingsPage } from "@/features/settings/SettingsPage";
 import { FinancialSettingsPage } from "@/features/settings/FinancialSettingsPage";
 import { PlaceholderPage } from "@/ui/PlaceholderPage";
+import { RetentionPage } from "@/features/retention/RetentionPage";
 
 export const router = createBrowserRouter([
   { path: "/login", element: <LoginPage /> },
@@ -26,7 +27,7 @@ export const router = createBrowserRouter([
     children: [
       { index: true, element: <DashboardPage /> }, // F-013
       { path: "relatorios/procedimentos", element: <ProcedureRankingPage /> }, // F-013c
-      { path: "retornos", element: <PlaceholderPage title="Quem devo chamar hoje?" /> }, // F-015
+      { path: "retornos", element: <RetentionPage /> }, // F-015
       { path: "pacientes", element: <PatientsPage /> }, // F-011
       { path: "pacientes/novo", element: <NewPatientPage /> }, // F-011
       { path: "pacientes/:id", element: <PatientDetailPage /> }, // F-011

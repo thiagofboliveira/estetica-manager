@@ -11,9 +11,10 @@ export const qk = {
     [...qk.financial(), "dashboard", params] as const,
   proceduresRanking: (params: { period: string; date_from?: string; date_to?: string }) =>
     [...qk.financial(), "procedures-ranking", params] as const,
+  // GET /retention/opportunities não tem query params — o backend já
+  // agrupa/ordena/suprime tudo. Sem filtros no client-side por enquanto.
   retention: () => [...qk.financial(), "retention"] as const,
-  retentionList: (filters?: { minValue?: string }) =>
-    [...qk.retention(), "list", filters ?? {}] as const,
+  retentionList: () => [...qk.retention(), "list"] as const,
   packages: () => [...qk.financial(), "packages"] as const,
   packagesOpen: () => [...qk.packages(), "open"] as const,
   sessions: () => [...qk.financial(), "sessions"] as const,

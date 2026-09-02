@@ -20,6 +20,13 @@ export async function invalidateAfterSettingsChange() {
   await queryClient.invalidateQueries({ queryKey: qk.settings() });
 }
 
+/** Mudar status de uma oportunidade de retorno (F-015c) só afeta a
+ * própria lista de retenção — não o dashboard, vendas, pacotes ou
+ * sessões, que não dependem desse estado. */
+export async function invalidateAfterRetentionChange() {
+  await queryClient.invalidateQueries({ queryKey: qk.retention() });
+}
+
 /** Agendar sessão de pacote: PENDING -> SCHEDULED. Dashboard NÃO muda
  * (agendar não gera receita) — não invalide o que não mudou. */
 export async function invalidateAfterScheduling() {

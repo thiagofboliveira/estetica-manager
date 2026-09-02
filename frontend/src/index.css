@@ -365,6 +365,51 @@ fieldset.form__field label {
   color: var(--text-h);
 }
 
+/* F-015: retenção — um card por paciente. */
+.retention-card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+
+.retention-card__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.retention-card__value {
+  font-weight: 600;
+  color: var(--text-h);
+}
+
+.retention-card__opportunities {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  font-size: 13px;
+  color: var(--text);
+}
+
+.retention-card__opportunity + .retention-card__opportunity {
+  margin-top: 2px;
+}
+
+.retention-card a.submit {
+  text-decoration: none;
+  text-align: center;
+}
+
+.retention-card__blocked {
+  font-size: 13px;
+  color: var(--text);
+  margin: 0;
+}
+
 /* Tabelas (ranking de procedimentos): rolagem horizontal própria,
    nunca o body inteiro rolando de lado. */
 .ranking-table {

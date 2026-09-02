@@ -4,7 +4,7 @@ Escopo: todas as telas, estado, integração com a API.
 Fonte de escopo: [MVP v7.1](../MVP%20—%20Micro-SaaS%20para%20Gestão%20Financeira%20e%20Retenção%20em%20Estética%20\(v6\).md) · Coordenação: [../BACKLOG.md](../BACKLOG.md)
 <sub>O arquivo continua nomeado `v6`; v7/v7.1 são seções acrescentadas dentro dele, não arquivos novos.</sub>
 
-**Atualizado:** 2026-09-02 · **Progresso:** 23/36 (64%) · F-012a/F-012b/F-012c/F-013c/F-030/F-031 verificados no navegador contra API+Postgres reais e marcados `[x]` · F-016 `[!]` bloqueada (ver nota) · **restante do backlog acionável bloqueado por endpoints ausentes no backend**
+**Atualizado:** 2026-09-02 · **Progresso:** 27/36 (75%) · F-012a/F-012b/F-012c/F-013c/F-030/F-031/F-015/F-015a/F-015b/F-015c verificados no navegador contra API+Postgres reais e marcados `[x]` · T-029 (motor de retenção) mergeada por sessão paralela, desbloqueando F-015 · F-016 `[!]` ainda bloqueada (ver nota)
 
 ---
 
@@ -57,9 +57,9 @@ Ambiente subido de novo (Postgres 5435 — 5434 estava ocupada por container de 
 | 0 — Fundação | 5 | 5 |
 | 1 — Cadastros | 8 | 8 |
 | 2 — Venda + Dashboard | 9 | 7 |
-| 3 — Retenção + Agenda + Onboarding | 12 | 0 |
+| 3 — Retenção + Agenda + Onboarding | 12 | 4 |
 | 4 — Polimento | 2 | 2 |
-| **Total** | **36** | **23** |
+| **Total** | **36** | **27** |
 
 ---
 
@@ -100,7 +100,7 @@ O frontend **não tinha tempo alocado em nenhuma fase** do plano original. São 
 |---|---|:--:|---|---|
 | F-011 | Lista + form de pacientes | `[x]` | T-011 | `features/patients/` — CRUD completo **verificado no navegador** contra API+Postgres reais em 2026-08-29: criar (`POST 201`), editar (`PATCH`) e listar (`GET`), todos confirmados no banco |
 | F-011a | Busca com debounce | `[x]` | F-011 | `lib/hooks/useDebouncedValue.ts`, 300ms — busca ainda é client→API, sem paginação de scroll |
-| F-011b | Campo de consentimento WhatsApp | `[x]` | F-011 | Checkbox em `PatientForm.tsx`, persiste `consent_whatsapp` — gate real fica em F-015b |
+| F-011b | Campo de consentimento WhatsApp | `[x]` | F-011 | Checkbox em `PatientForm.tsx`. **Corrigido em 2026-09-02** (achado ao verificar F-015b): no fluxo de *criação*, o valor nunca persistia — `POST /patients` não aceita `consent_whatsapp` no schema do backend, só `PATCH` aceita, e `NewPatientPage.tsx` não fazia o PATCH complementar. Corrigido com um `PATCH` automático logo após o `POST` quando o checkbox vem marcado. No fluxo de *edição* (`PatientDetailPage`) sempre funcionou, porque já usa `PATCH` diretamente |
 | F-011c | Feedback visual de "salvo com sucesso" 🆕 | `[x]` | F-011 | Achado no teste manual 2026-08-29: PATCH funcionava mas a tela não dava nenhum retorno, parecia travada. `PatientForm`/`ProcedureForm` ganharam mensagem "Salvo com sucesso", invalidada por `watch()` a qualquer edição |
 | F-012 | Lista + form de procedimentos | `[x]` | T-010 | `features/procedures/` — CRUD completo **verificado no navegador** contra API+Postgres reais em 2026-08-29: criou "Limpeza de pele" (`POST 201`), confirmado no banco com `CurrencyInput` gravando os valores corretamente |
 | F-012a | Form de configurações financeiras | `[x]` | T-007 | **Verificado no navegador contra API+Postgres reais em 2026-09-02** (Playwright headless). `features/settings/` (api/hooks/`FinancialSettingsForm`/`FinancialSettingsPage`), rota `/configuracoes/financeiro`. Linguagem natural nas duas decisões binárias (F-021a): "A taxa da máquina de cartão sai do seu bolso ou a clínica cobre?" (`fee_payer`) e "O repasse da clínica é calculado sobre o valor total ou depois de descontar a taxa do cartão?" (`split_base`) — nunca `<select>` com enum cru. Percentuais (`split_clinic_percentage`/`pix_fee_percentage`/`debit_card_fee_percentage`) chegam do backend como `MoneyOut` (string, 2 casas), não `RateOut` — criei `ui/PercentInput.tsx` (mesma máscara de dígitos do `CurrencyInput`, sufixo "%" em vez de prefixo "R$") em vez de reusar o input de moeda, que mostraria "R$" errado. Form carrega pré-preenchido com dado real (o `GET` sempre resolve — backend cria o singleton com defaults na primeira leitura, sem estado "não configurado"). Editei todos os 6 campos, "Salvo com sucesso." apareceu, `PATCH` confirmado com `SELECT` direto em `financial_settings`, e um reload da página trouxe os valores novos do `GET` — depois restaurei os valores originais via `PATCH` pra não alterar o estado do ambiente. |
@@ -137,18 +137,9 @@ O frontend **não tinha tempo alocado em nenhuma fase** do plano original. São 
 
 **F-031 auditado/corrigido e F-030 implementado em 2026-09-02** (ver seções próprias) — Fase 4 (Polimento) está 100% completa.
 
-**🟡 T-029 pronta, ainda não mergeada (2026-09-02).** Outra sessão implementou o motor de retenção completo (T-016, T-025, T-026, T-028, T-029, T-030, T-031) num branch separado (`feature/motor-retencao`, worktree em `.worktrees/motor-retencao/`), ainda não mergeado em `main`. **Contrato já levantado por leitura direta do código nesse worktree** (não implementar contra ele — só main quando mergear):
+**🟢 T-029 mergeada e F-015/F-015a/F-015b/F-015c integradas em 2026-09-02.** Outra sessão implementou o motor de retenção completo (T-016, T-025, T-026, T-028, T-029, T-030, T-031) num branch separado (`feature/motor-retencao`) e mesclou em `fix/f012b-f012c-review-fixes` (commit `ef1daf1`) — coordenado entre as duas sessões via mensagens diretas. O contrato tinha sido levantado por leitura de código *antes* do merge (ver histórico), o que permitiu implementar `features/retention/` assim que o endpoint apareceu no branch principal, sem nova investigação. Migration `0005` trouxe a tabela `return_opportunities`; o merge também trouxe `PATCH /sessions/{id}` (rota nova, não existia antes — usada só para viabilizar o teste manual, não faz parte do escopo de F-015).
 
-- `GET /api/v1/retention/opportunities` — **sem query params**, sem paginação (a nota do `backend/BACKLOG.md` "com filtragem e paginação" está desatualizada/incorreta). Retorna `list[PatientRetentionOut]`: um card por paciente (não por oportunidade, confirma F-015), com `patient_id`, `patient_name`, `patient_phone`, `can_contact: bool`, `cannot_contact_reason: string|null`, `total_potential_value` (string, `MoneyOut`), `opportunities: [{id, procedure, due_date, timing: UPCOMING|DUE|OVERDUE, status, potential_value}]`. **Já vem ordenado por `total_potential_value` decrescente** (F-015a de graça) e oportunidades por `due_date` crescente dentro do card. Supressão de 14 dias e status visível (`OPEN|CONTACTED|NO_RESPONSE`) já aplicados no servidor — `BOOKED/DECLINED/DISMISSED/CLOSED` nunca aparecem. **Não filtra por consentimento** — pacientes sem consentimento aparecem com `can_contact=false` e o motivo em `cannot_contact_reason`; o front decide desabilitar a ação (isso *é* o F-015b).
-- `PATCH /api/v1/retention/opportunities/{opportunity_id}` (não é `/retention/{id}`) — payload `{status, contact_channel?}`, **nunca `contacted_at`** (setado automaticamente pelo backend ao ir para `CONTACTED`). Máquina de estados: `OPEN→CONTACTED|DISMISSED`, `CONTACTED→BOOKED|DECLINED|NO_RESPONSE`, `NO_RESPONSE→CONTACTED`; 409 se transição inválida.
-- `total_potential_value`/`potential_value` são **strings** (`MoneyOut`), nunca number — mesmo cuidado de sempre.
-- **Achado real da revisão**: uma venda de retorno fecha automaticamente as oportunidades do par paciente+procedimento (`CLOSED`) na mesma transação — o paciente some da lista no próximo `GET`, então F-015c ("registrar contato") não precisa de lógica extra de "resolver" a oportunidade, só o clique do WhatsApp + o `PATCH status=CONTACTED`.
-
-Assim que o merge acontecer, F-015/F-015a/F-015b/F-015c ficam desbloqueadas sem precisar de nova investigação — só implementar contra o contrato acima e verificar no navegador.
-
-**Restam bloqueadas por endpoint inexistente:** F-015 (T-029), F-017 (T-032), F-018 (T-034), F-019/F-019a (T-034a/b), F-016 (`GET /sales` lista), F-013b (T-022b), F-014d (T-017), F-014e (T-024a) — todas conferidas em 2026-09-02. **Não há mais task acionável no backlog do frontend sem depender de trabalho novo no backend** — o gate "🔴 Nada aqui começa antes de F-015..F-015c" (Fase 5+) também impede seguir para EPIC-23..27 a partir daqui. Próximo passo é acompanhar `backend/BACKLOG.md` até alguma dessas dependências virar `[x]`.
-
-**Ainda faltando no backend:** `GET /retention/opportunities` (T-029, para F-015), agenda/`bookings` (T-032..T-034b, para F-017/F-018/F-019). Não integrar essas contra mock.
+**Restam bloqueadas por endpoint inexistente:** F-017 (T-032), F-018 (T-034), F-019/F-019a (T-034a/b), F-016 (`GET /sales` lista), F-013b (T-022b), F-014d (T-017), F-014e (T-024a) — conferidas em 2026-09-02. O gate "🔴 Nada aqui começa antes de F-015..F-015c" (Fase 5+) **está satisfeito agora** — EPIC-23..27 podem começar assim que suas próprias dependências de backend (T-070+, T-080+, T-090+) existirem, nenhuma delas existe hoje.
 
 **Estrutura de `features/sales/` (integrado, sem prototypeMath):**
 - `api.ts` / `hooks.ts` — `salesApi.create()`, `useCreateSale()` (idempotency-key + invalidação via `invalidateAfterSale`)
@@ -194,10 +185,10 @@ Assim que o merge acontecer, F-015/F-015a/F-015b/F-015c ficam desbloqueadas sem 
 
 | ID | Task | Status | Depende | Nota |
 |---|---|:--:|---|---|
-| F-015 | Tela "Quem devo chamar hoje?" | `[ ]` | T-029 | **Um card por paciente**, não por oportunidade |
-| F-015a | Ordenar por valor potencial | `[ ]` | F-015 | Tempo dela é limitado |
-| F-015b | Botão WhatsApp (wa.me) | `[ ]` | F-015, T-011a | Desabilitado sem telefone/consentimento, **com motivo visível** |
-| F-015c | Registrar contato ao clicar | `[ ]` | F-015b | |
+| F-015 | Tela "Quem devo chamar hoje?" | `[x]` | T-029 | **Integrada com `GET /retention/opportunities` real em 2026-09-02** (`features/retention/`, rota `/retornos`, substituiu o `PlaceholderPage`). T-029 foi mergeada por outra sessão em paralelo (`feature/motor-retencao` → `ef1daf1`) — contrato levantado por leitura do código antes do merge, implementação começou assim que o endpoint existiu no branch principal. **Um card por paciente** (o backend já agrupa, não precisou de lógica no cliente). **Verificado no navegador**: 58 cards reais renderizados, nenhum erro de console |
+| F-015a | Ordenar por valor potencial | `[x]` | F-015 | De graça do backend — `GET /retention/opportunities` já retorna ordenado por `total_potential_value` decrescente, sem reordenar no cliente |
+| F-015b | Botão WhatsApp (wa.me) | `[x]` | F-015, T-011a | Link `https://wa.me/<E.164 sem +>`. Desabilitado (substituído por mensagem) quando `can_contact=false`, sempre com `cannot_contact_reason` do backend visível ("Paciente sem telefone cadastrado" / "não deu consentimento" / "optou por não receber mensagens") — nunca só cinza sem explicação. **Verificado no navegador**: criei paciente com telefone+consentimento via UI, venda real, marquei a sessão como `COMPLETED` via `PATCH /sessions/{id}` (rota nova, trazida pelo mesmo merge) para gerar a oportunidade, cliquei em "Chamar no WhatsApp" e o popup abriu em `https://api.whatsapp.com/send/?phone=5511988887777...` — telefone batendo exato. **Bug real encontrado e corrigido nesta verificação**: `NewPatientPage.tsx` montava o payload do `POST /patients` sem `consent_whatsapp` — o backend (`PatientCreate`) nem aceita esse campo na criação, só no `PATCH`. O checkbox "Autorizou receber mensagem no WhatsApp" do form de cadastro aparecia mas nunca persistia (F-011b estava, na prática, quebrado desde que foi implementado — a nota antiga "persiste `consent_whatsapp`" era falsa para o fluxo de criação, só funcionava editando depois). Corrigido: `NewPatientPage` agora faz um `PATCH` imediato após o `POST` quando o checkbox vem marcado |
+| F-015c | Registrar contato ao clicar | `[x]` | F-015b | O clique no WhatsApp dispara `PATCH /retention/opportunities/{id}` com `{status: "CONTACTED", contact_channel: "WHATSAPP"}` — `contacted_at` é setado automaticamente pelo servidor, nunca enviado pelo cliente. **Verificado no navegador**: `SELECT` no Postgres confirmou `status=CONTACTED`, `contact_channel=WHATSAPP`, `contacted_at` preenchido, após o clique real |
 
 ## Agenda
 
@@ -258,7 +249,7 @@ Nenhuma task de front começa antes do endpoint existir — exceto com mock expl
 | T-015 | F-014 | ✅ (2026-08-29 — T-012..T-015 completos, ver `../backend/BACKLOG.md`) |
 | T-022 | F-013 | ✅ (2026-08-29) |
 | T-024 | F-013c | ✅ (2026-08-29) |
-| T-029 | F-015 | ❌ |
+| T-029 | F-015 | ✅ (2026-09-02) |
 | T-032 | F-017 | ❌ |
 | T-034 | F-018 | ❌ |
 | T-034a, T-034b | F-019, F-019a | ❌ |
