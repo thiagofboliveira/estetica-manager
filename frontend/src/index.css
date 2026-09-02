@@ -51,15 +51,10 @@
 }
 
 #root {
-  width: 1126px;
-  max-width: 100%;
-  margin: 0 auto;
-  text-align: center;
-  border-inline: 1px solid var(--border);
+  width: 100%;
   min-height: 100svh;
   display: flex;
   flex-direction: column;
-  box-sizing: border-box;
 }
 
 body {
@@ -108,4 +103,441 @@ code {
   line-height: 135%;
   padding: 4px 8px;
   background: var(--code-bg);
+}
+
+/**
+ * F-030: mobile é o meio de acesso principal (ela trabalha em pé, com
+ * o celular na mão — MVP §16, entrevista). Layout mobile-first, sem
+ * breakpoint fixo para "desktop" porque não há um design desktop
+ * dedicado ainda — só um max-width central pra não esticar em telas
+ * grandes.
+ */
+
+* {
+  box-sizing: border-box;
+}
+
+.app-layout {
+  display: flex;
+  flex-direction: column;
+  min-height: 100svh;
+  width: 100%;
+  max-width: 640px;
+  margin: 0 auto;
+}
+
+.app-layout__nav {
+  display: flex;
+  gap: 4px;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border);
+  position: sticky;
+  top: 0;
+  background: var(--bg);
+  z-index: 10;
+}
+
+.app-layout__nav a {
+  flex: 0 0 auto;
+  color: var(--text);
+  text-decoration: none;
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-size: 14px;
+  white-space: nowrap;
+}
+
+.app-layout__nav a.active {
+  color: var(--text-h);
+  background: var(--accent-bg);
+  font-weight: 600;
+}
+
+.app-layout__main {
+  flex: 1;
+  padding: 0 16px 32px;
+}
+
+.page {
+  text-align: left;
+}
+
+.page__header {
+  padding: 16px 0 8px;
+}
+
+.page__header h1 {
+  font-size: 22px;
+  margin: 0;
+  text-align: left;
+}
+
+/* Botões e links tocáveis: alvo mínimo de 44px (WCAG 2.5.5 / apple HIG),
+   ela usa uma mão só, em pé. */
+.tap-target,
+button,
+.list__item-btn {
+  min-height: 44px;
+  font: inherit;
+  font-size: 15px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text-h);
+  padding: 10px 14px;
+  cursor: pointer;
+}
+
+button[type="submit"],
+.submit {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+  font-weight: 600;
+  width: 100%;
+}
+
+button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+button.danger {
+  background: var(--bg);
+  color: #c0392b;
+  border-color: #c0392b;
+}
+
+/* Formulários: empilhado, um campo por linha — é como funciona bem
+   numa tela de 375px, sem grid multi-coluna. */
+.form,
+.login-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  max-width: 480px;
+}
+
+.form__field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.form__field span,
+.form__field legend {
+  font-size: 13px;
+  color: var(--text);
+}
+
+.form__field input[type="text"],
+.form__field input[type="email"],
+.form__field input[type="date"],
+.form__field input[type="number"],
+.form__field input:not([type]) {
+  min-height: 44px;
+  font-size: 16px; /* >=16px evita zoom automático no iOS ao focar */
+  padding: 8px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg);
+  color: var(--text-h);
+  width: 100%;
+}
+
+.form__field--checkbox {
+  flex-direction: row;
+  align-items: center;
+}
+
+fieldset.form__field {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 12px;
+}
+
+fieldset.form__field label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 40px;
+}
+
+.form__error,
+.login-form__error {
+  color: #c0392b;
+  font-size: 14px;
+}
+
+.form__success {
+  color: #1e824c;
+  font-size: 14px;
+}
+
+/* Inputs de dinheiro/percentual: mesma altura de toque dos demais. */
+.currency-input,
+.percent-input {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0 12px;
+  min-height: 44px;
+}
+
+.currency-input input,
+.percent-input input {
+  border: none;
+  background: transparent;
+  font-size: 16px;
+  color: var(--text-h);
+  width: 100%;
+  min-height: 44px;
+  text-align: right;
+}
+
+.currency-input__prefix,
+.percent-input__suffix {
+  color: var(--text);
+  font-size: 14px;
+}
+
+.page__search input {
+  min-height: 44px;
+  font-size: 16px;
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+
+/* Listas de cadastro (pacientes, procedimentos, despesas): um cartão
+   por linha, nunca uma tabela apertada em 375px. */
+.list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.list__item-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  width: 100%;
+  text-align: left;
+  text-decoration: none;
+}
+
+.list__item-title {
+  font-weight: 600;
+  color: var(--text-h);
+}
+
+.list__item-sub,
+.list__item-tag {
+  font-size: 13px;
+  color: var(--text);
+}
+
+.list__item-tag {
+  display: inline-block;
+  background: var(--code-bg);
+  border-radius: 4px;
+  padding: 1px 6px;
+  margin-top: 2px;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 13px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--accent-bg);
+  color: var(--text-h);
+}
+
+/* Tabelas (ranking de procedimentos): rolagem horizontal própria,
+   nunca o body inteiro rolando de lado. */
+.ranking-table {
+  display: block;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.ranking-table th,
+.ranking-table td {
+  padding: 8px 12px;
+  text-align: left;
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+}
+
+.ranking-table__note {
+  font-size: 12px;
+  color: var(--text);
+  margin-top: 8px;
+}
+
+/* Dashboard e filtro de período. */
+.dashboard__period {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  padding: 8px 0;
+}
+
+.dashboard__custom-range {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 8px 0;
+}
+
+.dashboard__custom-range label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 13px;
+}
+
+.dashboard__metrics {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+  margin: 16px 0;
+}
+
+.dashboard__metric {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px 12px;
+}
+
+.dashboard__metric--wide {
+  grid-column: 1 / -1;
+}
+
+.dashboard__metric dt {
+  font-size: 12px;
+  color: var(--text);
+}
+
+.dashboard__metric dd {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--text-h);
+}
+
+.dashboard__metric-note {
+  display: block;
+  font-size: 11px;
+  font-weight: 400;
+  color: var(--text);
+}
+
+.dashboard__ranking-link {
+  margin-top: 16px;
+}
+
+/* Estados de carregamento/erro/vazio. */
+.state {
+  padding: 24px 16px;
+  text-align: center;
+}
+
+.state--error {
+  color: #c0392b;
+}
+
+.empty-state {
+  padding: 32px 16px;
+  text-align: center;
+  border: 1px dashed var(--border);
+  border-radius: 8px;
+}
+
+.empty-state__title {
+  font-weight: 600;
+  color: var(--text-h);
+  margin-bottom: 4px;
+}
+
+.empty-state__body {
+  font-size: 14px;
+  color: var(--text);
+}
+
+.refetch-bar {
+  height: 2px;
+  background: var(--accent);
+  animation: refetch-pulse 1s ease-in-out infinite;
+}
+
+@keyframes refetch-pulse {
+  0%,
+  100% {
+    opacity: 0.3;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+/* Vendas: linhas de item de pacote, resumo de confirmação. */
+.sale-form__selected {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.sale-form__line {
+  display: flex;
+  gap: 8px;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.sale-form__qty {
+  width: 64px;
+  min-height: 44px;
+  font-size: 16px;
+  padding: 8px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+
+.sale-form__line-discounts,
+.sale-form__preview,
+.sale-confirm {
+  font-size: 14px;
+}
+
+.sale-form__procedure-price,
+.sale-form__package-link {
+  font-size: 13px;
+  color: var(--text);
+}
+
+/* Telas mais largas: um pouco de respiro, sem virar layout de duas
+   colunas — não existe versão desktop dedicada ainda. */
+@media (min-width: 480px) {
+  .dashboard__metrics {
+    grid-template-columns: repeat(3, 1fr);
+  }
 }

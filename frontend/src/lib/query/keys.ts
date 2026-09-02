@@ -9,6 +9,8 @@ export const qk = {
   financial: () => [...qk.all, "financial"] as const,
   dashboard: (params: { period: string; date_from?: string; date_to?: string }) =>
     [...qk.financial(), "dashboard", params] as const,
+  proceduresRanking: (params: { period: string; date_from?: string; date_to?: string }) =>
+    [...qk.financial(), "procedures-ranking", params] as const,
   retention: () => [...qk.financial(), "retention"] as const,
   retentionList: (filters?: { minValue?: string }) =>
     [...qk.retention(), "list", filters ?? {}] as const,

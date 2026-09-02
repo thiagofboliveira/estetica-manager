@@ -1,12 +1,7 @@
 import { api } from "@/lib/http/client";
+import type { PeriodParams } from "@/lib/period/period";
 
-export type DashboardPeriod = "today" | "last_7_days" | "this_month" | "last_month" | "custom";
-
-export type DashboardParams = {
-  period: DashboardPeriod;
-  date_from?: string;
-  date_to?: string;
-};
+export type DashboardParams = PeriodParams;
 
 export type Dashboard = {
   period: string;

@@ -4,7 +4,7 @@ Escopo: todas as telas, estado, integração com a API.
 Fonte de escopo: [MVP v7.1](../MVP%20—%20Micro-SaaS%20para%20Gestão%20Financeira%20e%20Retenção%20em%20Estética%20\(v6\).md) · Coordenação: [../BACKLOG.md](../BACKLOG.md)
 <sub>O arquivo continua nomeado `v6`; v7/v7.1 são seções acrescentadas dentro dele, não arquivos novos.</sub>
 
-**Atualizado:** 2026-08-29 · **Progresso:** 17/36 (47%, +2 em `[~]` não contam ainda) · F-012b/F-012c com código pronto, aguardando verificação em navegador
+**Atualizado:** 2026-09-02 · **Progresso:** 23/36 (64%) · F-012a/F-012b/F-012c/F-013c/F-030/F-031 verificados no navegador contra API+Postgres reais e marcados `[x]` · F-016 `[!]` bloqueada (ver nota) · **restante do backlog acionável bloqueado por endpoints ausentes no backend**
 
 ---
 
@@ -44,17 +44,9 @@ Só marque `[x]` quando o dado aparecer no banco a partir de um clique real — 
 
 ---
 
-## 🧪 Ambiente deixado no ar (handoff 2026-08-29) — só falta clicar
+## ✅ F-012b/F-012c verificados no navegador (2026-09-01)
 
-Postgres, backend e frontend estão **rodando agora mesmo** neste sandbox, com F-012b e F-012c já implementados esperando o teste manual:
-
-- Postgres 16 local, banco `estetica`, migrations `0001`→`0004` aplicadas, seed do profissional dev (`00000000-0000-0000-0000-000000000001`) inserido
-- Backend: `http://localhost:8010` (`.venv` já com todas as deps + `email-validator`, que faltava no `pyproject.toml` — considerar adicionar lá)
-- Frontend: `http://localhost:5173`, `.env.local` com `VITE_DEV_AUTH=true` apontando pro backend acima
-
-**Falta só:** abrir `http://localhost:5173`, entrar como "Cliente Zero (dev)", ir em Procedimentos → criar um com modalidade Videochamada (F-012c), e em Configurações → Despesas fixas → criar/editar/encerrar uma despesa (F-012b). Se bater o esperado, marcar `[x]` nas duas linhas do painel abaixo.
-
-**Por que não fiz esse clique eu mesma:** este ambiente de execução não tem navegador; tentei instalar o Chromium do Playwright para simular, mas o download é bloqueado pela allowlist de rede daqui (`cdn.playwright.dev`). Tudo que dava pra validar sem navegador — API real, Postgres real, `tsc -b`, `vite build` — está feito (ver notas de F-012b/F-012c na Fase 1).
+Ambiente subido de novo (Postgres 5435 — 5434 estava ocupada por container de outro projeto neste host, `docker-compose.dev.yml`/`.env` atualizados; backend 8010; frontend 5173) e dirigido via Chromium headless (Playwright). Fluxo completo clicado de verdade: criar/editar ("Salvo com sucesso.")/encerrar despesa fixa, e criar procedimento com modalidade Videochamada (ícone 📹 + texto "Vídeo" na lista). Tudo confirmado com `SELECT` direto no Postgres. Dados de teste (`%teste E2E%`) removidos após a verificação. Ver notas de F-012b/F-012c na Fase 1.
 
 ---
 
@@ -63,11 +55,11 @@ Postgres, backend e frontend estão **rodando agora mesmo** neste sandbox, com F
 | Fase | Tasks | Feito |
 |---|---:|---:|
 | 0 — Fundação | 5 | 5 |
-| 1 — Cadastros | 8 | 5 |
-| 2 — Venda + Dashboard | 9 | 6 |
+| 1 — Cadastros | 8 | 8 |
+| 2 — Venda + Dashboard | 9 | 7 |
 | 3 — Retenção + Agenda + Onboarding | 12 | 0 |
-| 4 — Polimento | 2 | 0 |
-| **Total** | **36** | **17** |
+| 4 — Polimento | 2 | 2 |
+| **Total** | **36** | **23** |
 
 ---
 
@@ -111,9 +103,9 @@ O frontend **não tinha tempo alocado em nenhuma fase** do plano original. São 
 | F-011b | Campo de consentimento WhatsApp | `[x]` | F-011 | Checkbox em `PatientForm.tsx`, persiste `consent_whatsapp` — gate real fica em F-015b |
 | F-011c | Feedback visual de "salvo com sucesso" 🆕 | `[x]` | F-011 | Achado no teste manual 2026-08-29: PATCH funcionava mas a tela não dava nenhum retorno, parecia travada. `PatientForm`/`ProcedureForm` ganharam mensagem "Salvo com sucesso", invalidada por `watch()` a qualquer edição |
 | F-012 | Lista + form de procedimentos | `[x]` | T-010 | `features/procedures/` — CRUD completo **verificado no navegador** contra API+Postgres reais em 2026-08-29: criou "Limpeza de pele" (`POST 201`), confirmado no banco com `CurrencyInput` gravando os valores corretamente |
-| F-012a | Form de configurações financeiras | `[ ]` | T-007 | ✅ **T-007 já existe** — `GET/PATCH /financial-settings` testado contra API real (backend). Desbloqueada. Ver F-021 para a linguagem |
-| F-012b | CRUD de despesas fixas 🆕 | `[~]` | T-021b | **Código completo, verificado contra API+Postgres reais via curl (2026-08-29), falta clique no navegador.** `features/expenses/` (api/hooks/form/mapper + 3 páginas), rotas em `/configuracoes/despesas`. `POST`/`PATCH`/`DELETE` testados um a um contra o backend real na porta 8010 com Postgres local: criar, editar valor, arquivar (`active_to`, não hard-delete) — todos confirmados com `SELECT` direto em `fixed_expenses`. Confirmei também que arquivar reflete em `GET /dashboard` (`fixed_expenses_total` foi a zero), o que valida a invalidação de `qk.financial()` inteiro nas mutations. **Não marcar `[x]`:** não houve teste de clique real no formulário (máscara do `CurrencyInput`, mensagem "Salvo com sucesso", refetch automático da lista) — sandbox sem navegador disponível, Playwright não pôde baixar o Chromium (rede bloqueada). `tsc -b`/`vite build` passam limpos |
-| F-012c | Campo modalidade no form de procedimento 🆕 | `[~]` | T-010a | **Código completo, verificado contra API real via curl, falta clique no navegador.** `default_modality` (Presencial/Videochamada) adicionado a `Procedure`, `ProcedureForm` (radio) e `ProceduresPage` (ícone 📹 na lista quando remoto). `POST /procedures` com `default_modality: REMOTE` testado contra Postgres real, persistiu certo. Mesma ressalva do F-012b: falta clicar no radio de verdade e ver o form salvar |
+| F-012a | Form de configurações financeiras | `[x]` | T-007 | **Verificado no navegador contra API+Postgres reais em 2026-09-02** (Playwright headless). `features/settings/` (api/hooks/`FinancialSettingsForm`/`FinancialSettingsPage`), rota `/configuracoes/financeiro`. Linguagem natural nas duas decisões binárias (F-021a): "A taxa da máquina de cartão sai do seu bolso ou a clínica cobre?" (`fee_payer`) e "O repasse da clínica é calculado sobre o valor total ou depois de descontar a taxa do cartão?" (`split_base`) — nunca `<select>` com enum cru. Percentuais (`split_clinic_percentage`/`pix_fee_percentage`/`debit_card_fee_percentage`) chegam do backend como `MoneyOut` (string, 2 casas), não `RateOut` — criei `ui/PercentInput.tsx` (mesma máscara de dígitos do `CurrencyInput`, sufixo "%" em vez de prefixo "R$") em vez de reusar o input de moeda, que mostraria "R$" errado. Form carrega pré-preenchido com dado real (o `GET` sempre resolve — backend cria o singleton com defaults na primeira leitura, sem estado "não configurado"). Editei todos os 6 campos, "Salvo com sucesso." apareceu, `PATCH` confirmado com `SELECT` direto em `financial_settings`, e um reload da página trouxe os valores novos do `GET` — depois restaurei os valores originais via `PATCH` pra não alterar o estado do ambiente. |
+| F-012b | CRUD de despesas fixas 🆕 | `[x]` | T-021b | **Verificado no navegador contra API+Postgres reais em 2026-09-01** (Playwright headless): criar despesa (nome/categoria/valor/periodicidade) confirmou `CurrencyInput` mascarando corretamente ("19999" → "199,99"), `POST` persistiu em `fixed_expenses`; editar valor mostrou "Salvo com sucesso." e `PATCH` refletiu no banco (R$199,99→R$250,00); "Encerrar despesa" setou `active_to` (soft-archive, não hard-delete) e a lista parou de exibir o item. `features/expenses/` (api/hooks/form/mapper + 3 páginas), rotas em `/configuracoes/despesas` |
+| F-012c | Campo modalidade no form de procedimento 🆕 | `[x]` | T-010a | **Verificado no navegador contra API+Postgres reais em 2026-09-01** (Playwright headless): radio "Videochamada" em `ProcedureForm` selecionou `default_modality=REMOTE`, `POST /procedures` persistiu certo (confirmado com `SELECT`), e `ProceduresPage` exibiu ícone 📹 + texto "Vídeo" ao lado do procedimento remoto na lista — ícone+texto, nunca só cor, como exigido |
 
 **Saída:** ela cadastra paciente e procedimento sem ajuda.
 
@@ -139,12 +131,22 @@ O frontend **não tinha tempo alocado em nenhuma fase** do plano original. São 
 
 **F-013b (badge "lucro provisório") ficou de fora por razão de contrato, não de UI:** `GET /dashboard` é um agregado do período — não indica se alguma venda por trás tem sessões `PENDING` (pacote com saldo não realizado, MVP §12.1). Precisaria de um campo novo do backend, ou buscar vendas individualmente (foge do escopo de um endpoint agregado). Registrado como pendência.
 
-**Isso ainda desbloqueia (não peguei ainda):**
-- **F-013c** (ranking de procedimentos): `GET /reports/procedures?period=...`, mesmos filtros do dashboard (mesmo hook `qk`/período pode ser reaproveitado). Retorna linhas ordenadas por faturamento decrescente
-- **F-012a** (config financeira): `GET/PATCH /financial-settings` real
-- **F-012b** (despesas fixas): `GET/POST/PATCH/DELETE /fixed-expenses` real
-- **F-012c** (modalidade no procedimento): `default_modality` já exposto em `/procedures`
-- **F-016** (paciente + histórico): depende só de T-011 (existe), histórico de vendas não tem endpoint dedicado ainda mas dá pra buscar por paciente via lista de sales se existir esse filtro — conferir `backend/BACKLOG.md`
+**F-012a, F-012b, F-012c, F-013c e F-030 verificados no navegador em 2026-09-01/02** (ver seções próprias) — marcados `[x]`. Fase 1 (Cadastros) está 100% completa.
+
+**F-016 investigada e bloqueada em 2026-09-02** (ver nota na linha F-016, Fase 2): `GET /sales` (lista) não existe no backend — não é "falta o filtro `patient_id`", o endpoint de listagem em si não existe. Precisa virar task no `backend/BACKLOG.md` antes de qualquer trabalho de frontend aqui.
+
+**F-031 auditado/corrigido e F-030 implementado em 2026-09-02** (ver seções próprias) — Fase 4 (Polimento) está 100% completa.
+
+**🟡 T-029 pronta, ainda não mergeada (2026-09-02).** Outra sessão implementou o motor de retenção completo (T-016, T-025, T-026, T-028, T-029, T-030, T-031) num branch separado (`feature/motor-retencao`, worktree em `.worktrees/motor-retencao/`), ainda não mergeado em `main`. **Contrato já levantado por leitura direta do código nesse worktree** (não implementar contra ele — só main quando mergear):
+
+- `GET /api/v1/retention/opportunities` — **sem query params**, sem paginação (a nota do `backend/BACKLOG.md` "com filtragem e paginação" está desatualizada/incorreta). Retorna `list[PatientRetentionOut]`: um card por paciente (não por oportunidade, confirma F-015), com `patient_id`, `patient_name`, `patient_phone`, `can_contact: bool`, `cannot_contact_reason: string|null`, `total_potential_value` (string, `MoneyOut`), `opportunities: [{id, procedure, due_date, timing: UPCOMING|DUE|OVERDUE, status, potential_value}]`. **Já vem ordenado por `total_potential_value` decrescente** (F-015a de graça) e oportunidades por `due_date` crescente dentro do card. Supressão de 14 dias e status visível (`OPEN|CONTACTED|NO_RESPONSE`) já aplicados no servidor — `BOOKED/DECLINED/DISMISSED/CLOSED` nunca aparecem. **Não filtra por consentimento** — pacientes sem consentimento aparecem com `can_contact=false` e o motivo em `cannot_contact_reason`; o front decide desabilitar a ação (isso *é* o F-015b).
+- `PATCH /api/v1/retention/opportunities/{opportunity_id}` (não é `/retention/{id}`) — payload `{status, contact_channel?}`, **nunca `contacted_at`** (setado automaticamente pelo backend ao ir para `CONTACTED`). Máquina de estados: `OPEN→CONTACTED|DISMISSED`, `CONTACTED→BOOKED|DECLINED|NO_RESPONSE`, `NO_RESPONSE→CONTACTED`; 409 se transição inválida.
+- `total_potential_value`/`potential_value` são **strings** (`MoneyOut`), nunca number — mesmo cuidado de sempre.
+- **Achado real da revisão**: uma venda de retorno fecha automaticamente as oportunidades do par paciente+procedimento (`CLOSED`) na mesma transação — o paciente some da lista no próximo `GET`, então F-015c ("registrar contato") não precisa de lógica extra de "resolver" a oportunidade, só o clique do WhatsApp + o `PATCH status=CONTACTED`.
+
+Assim que o merge acontecer, F-015/F-015a/F-015b/F-015c ficam desbloqueadas sem precisar de nova investigação — só implementar contra o contrato acima e verificar no navegador.
+
+**Restam bloqueadas por endpoint inexistente:** F-015 (T-029), F-017 (T-032), F-018 (T-034), F-019/F-019a (T-034a/b), F-016 (`GET /sales` lista), F-013b (T-022b), F-014d (T-017), F-014e (T-024a) — todas conferidas em 2026-09-02. **Não há mais task acionável no backlog do frontend sem depender de trabalho novo no backend** — o gate "🔴 Nada aqui começa antes de F-015..F-015c" (Fase 5+) também impede seguir para EPIC-23..27 a partir daqui. Próximo passo é acompanhar `backend/BACKLOG.md` até alguma dessas dependências virar `[x]`.
 
 **Ainda faltando no backend:** `GET /retention/opportunities` (T-029, para F-015), agenda/`bookings` (T-032..T-034b, para F-017/F-018/F-019). Não integrar essas contra mock.
 
@@ -177,8 +179,8 @@ O frontend **não tinha tempo alocado em nenhuma fase** do plano original. São 
 | F-013 | Dashboard | `[x]` | T-022 | **Integrado com `GET /dashboard` real em 2026-08-29** (`features/dashboard/`, rota `/`). Filtro de período (Hoje/Últimos 7 dias/Este mês/Mês anterior/Personalizado), métricas: faturamento, lucro real, lucro real do mês (só quando não-null), a receber, margem média, ticket médio, vendas+atendimentos. **Verificado no navegador contra API+Postgres reais**: valores batem exatos com a resposta da API em todos os períodos testados. Bug encontrado e corrigido durante o teste: trocar para "Personalizado" antes de escolher as datas deixava a tela presa em "Carregando…" para sempre (query `enabled: false` nunca resolve `isPending`) — agora mostra "Escolha as duas datas" em vez do boundary. |
 | F-013a | Rótulos venda-vs-sessão | `[x]` | F-013 | "X vendas, Y atendimentos" implementado com singular/plural corretos, ver `DashboardMetrics` |
 | F-013b | Badge "lucro provisório" e "taxa estimada" | `[ ]` | F-013 | **Ainda não dá para implementar direito**: `GET /dashboard` retorna só o agregado do período, sem indicar se alguma venda por trás tem sessões pendentes (pacote ainda não totalmente realizado, MVP §12.1) — precisaria de um campo novo do backend (ex: `has_provisional_profit`) ou de buscar vendas individualmente, o que foge do escopo de um endpoint agregado. Registrar como pendência de contrato de API, não de UI |
-| F-013c | Ranking de procedimentos 🆕 | `[ ]` | T-024 | ✅ **T-024 já existe** — `GET /reports/procedures?period=...` testado contra API real. Tabela: procedimento / faturamento / lucro / margem, ordenado por faturamento. ⚠️ Rotular como estimativa se E4/E5 não confirmados pela profissional (MVP §13, TASK-024) |
-| F-016 | Tela de paciente + histórico | `[ ]` | T-011 | Total gasto, próximo retorno |
+| F-013c | Ranking de procedimentos 🆕 | `[x]` | T-024 | **Integrado com `GET /reports/procedures` real em 2026-09-02** (`features/procedureRanking/`, rota `/relatorios/procedimentos`, link a partir do Dashboard). Tabela procedimento/faturamento/lucro/margem, já vem ordenada por faturamento do servidor. A API não expõe se uma linha depende de estimativa não confirmada (E4/E5, MVP §13) — não há campo no schema pra isso — então o aviso é fixo abaixo da tabela, não por linha. **Reffactor incluído**: filtro de período (5 botões + range custom, com o guard "escolha as duas datas" contra o bug do `AsyncBoundary`) extraído do Dashboard para `ui/PeriodFilter.tsx` + `lib/period/period.ts`, reusado nas duas telas. **Verificado no navegador contra API+Postgres reais**: criei uma venda real (Botox, R$1.000/lucro R$400) via `/vendas/nova` e conferi que apareceu na tabela com margem 40% calculada certa; troquei os 5 filtros de período, inclusive o guard de "Personalizado" sem datas. `tsc -b` limpo |
+| F-016 | Tela de paciente + histórico | `[!]` | T-011 | 🔴 **Bloqueada, e é mais grave do que a nota original dizia.** Investigado em 2026-09-02: `GET /sales` (lista) **não existe** — só há `POST /sales` e `GET /sales/{id}` (por id). Não é "falta o filtro `patient_id`", é que o endpoint de listagem em si não existe, então não há como buscar as vendas de um paciente de jeito nenhum. Também não existe endpoint de resumo/agregado do paciente (total gasto, próximo retorno) — nem no `patients.py`, nem em outro lugar. "Próximo retorno" dependeria de `return_interval_applied` (congelado por item na venda, `SaleItem.return_interval_applied`) + data da venda/sessão, mas T-027 (o próprio congelamento) está `[ ]` no `backend/BACKLOG.md`, então nem essa base existe ainda de forma confirmada. **Segunda checagem em 2026-09-02** (buscando uma versão reduzida da tela): confirmado por leitura direta do código-fonte que `PatientOut` não tem nenhum campo agregado, `reports.py` só tem o endpoint de ranking (nenhum filtrável por paciente), e não existe nem arquivo de rotas de sessions (`GET /sessions` não existe em lugar nenhum, nem T-032 nem um "esquecido"). **Não há atalho nem para uma versão mínima** — os únicos dados de paciente disponíveis hoje são os campos cadastrais crus (nome/telefone/email/etc.), sem histórico de nenhum tipo. **Precisa de pelo menos:** `GET /sales?patient_id=...` (lista) no backend antes de qualquer trabalho de frontend aqui — não registrado ainda como task própria no `backend/BACKLOG.md`. |
 
 > ⚠️ **F-014 é a tela mais importante do produto.** O plano pede protótipo em papel ou Figma **antes** de implementar, e reserva tempo para as iterações que ele vai gerar. Não pule.
 
@@ -227,8 +229,8 @@ O frontend **não tinha tempo alocado em nenhuma fase** do plano original. São 
 
 | ID | Task | Status | Depende | Nota |
 |---|---|:--:|---|---|
-| F-030 | Responsivo (celular) | `[ ]` | F-014 | Ela trabalha em pé, com o celular |
-| F-031 | Estados de erro, loading e vazio | `[ ]` | todas | Primeira sessão é toda tela vazia |
+| F-030 | Responsivo (celular) | `[x]` | F-014 | **Implementado em 2026-09-02.** O app não tinha CSS real (só o boilerplate do Vite) — criado `index.css` mobile-first: nav com scroll horizontal, formulários empilhados de coluna única (inputs com `font-size:16px` pra não disparar zoom automático do iOS), botões/radios/checkboxes com alvo de toque ≥44px, tabelas (`ranking-table`) com scroll horizontal próprio (nunca a página inteira), cards de lista em vez de tabela apertada. **Verificado com Playwright em viewport 375×812** (iPhone SE/13 mini) nas 8 telas integradas — `document.documentElement.scrollWidth === window.innerWidth` (zero overflow horizontal) em todas, confirmado também visualmente por screenshot. Sem breakpoint dedicado a desktop — só um `max-width` central pra não esticar em telas grandes, já que não existe design desktop no escopo |
+| F-031 | Estados de erro, loading e vazio | `[x]` | todas | **Auditado em 2026-09-02**: a maior parte já estava correta de sessões anteriores — `PatientsPage` distingue tone `filtered` (busca sem resultado) de `first-run` (nada cadastrado), `DashboardPage` usa `has_any_data` (contrato C-2), erros já mostram a mensagem real do backend (`ApiError.message`/`body.detail`) via `AsyncBoundary`, e telas com filtro condicional (Dashboard, Ranking) já distinguem "desabilitada" de "carregando". **Gap real encontrado e corrigido**: `SaleForm`/`PackageSaleForm` mostravam só "Nenhum procedimento cadastrado." sem saída — se ela ainda não cadastrou nenhum procedimento, a tela de venda (o fluxo mais importante do produto) virava um beco sem saída. Trocado por `EmptyState` com ação "Cadastrar procedimento" linkando para `/procedimentos/novo`. Verificado sem regressão no navegador (forms continuam carregando a lista real de procedimentos normalmente) |
 
 ---
 
@@ -260,7 +262,106 @@ Nenhuma task de front começa antes do endpoint existir — exceto com mock expl
 | T-032 | F-017 | ❌ |
 | T-034 | F-018 | ❌ |
 | T-034a, T-034b | F-019, F-019a | ❌ |
+| `GET /sales` (lista, com `patient_id`) — sem task própria ainda | F-016 | ❌ (descoberto em 2026-09-02, ver nota do F-016) |
 
-> Conferir sempre `../backend/BACKLOG.md` antes de assumir — esta coluna reflete o estado em 2026-08-29 e vai mudar conforme o backend avança.
+> Conferir sempre `../backend/BACKLOG.md` antes de assumir — esta coluna reflete o estado em 2026-09-02 e vai mudar conforme o backend avança.
 
 > **Valores monetários chegam como string.** Não converta para `number` para calcular — `number` em JS é float64 e reintroduz o erro que o backend evitou com `Decimal`. Para exibir, formate a string; para somar, use `decimal.js` ou trabalhe em centavos inteiros.
+
+---
+
+# FASE 5+ — Negócio 🆕 (derivado de [../REVISAO-PRODUTO.md](../REVISAO-PRODUTO.md))
+
+> 📋 **Origem:** revisão de produto de 2026-09-01. Estas tasks **não estão no MVP v7.1** — nasceram da mudança de ambição de "validar com cliente zero" para "revender como SaaS".
+>
+> 🔴 **Nada aqui começa antes de F-015..F-015c (retenção) estarem `[x]`.** O dashboard financeiro é o que vende a demo; a lista de reativação é o que paga a mensalidade. Hoje só o primeiro existe.
+
+## Correções de escopo — sobem de prioridade (já existiam)
+
+> ⚠️ **IDs repetidos são deliberados.** As tasks desta subseção **já existem** mais acima no arquivo, na fase original. A linha de lá continua sendo a fonte do status (`[ ]`/`[x]`); a linha aqui só registra a **repriorização** e o motivo. Ao concluir, marque `[x]` **nos dois lugares** — ou mova a task para cá de vez, se preferir consolidar.
+
+
+| ID | Task | Status | Depende | Nota |
+|---|---|:--:|---|---|
+| F-030 | **Responsivo (celular)** | `[x]` | F-014 | 🔴 **A-03.** Implementado em 2026-09-02 — ver nota na linha original acima (Fase 4). Testado em viewport real 375×812 via Playwright, não só devtools |
+| F-014d | Editar venda | `[ ]` | T-017 | 🔴 A-02. O próprio handoff registrou: "erro de digitação não tem conserto". §27 do MVP lista como critério de aceite. Mostrar que o recálculo usa a config **do momento original** (I3), não a de hoje |
+| F-013b | Badge "lucro provisório" / "taxa estimada" | `[ ]` | T-022b | 🟠 A-07. **Desbloqueia quando T-022b entregar `has_provisional_profit`.** Era bloqueio de contrato, não de UI — agora tem task no backend |
+| F-014e | Erro visível em parcela fora da faixa | `[ ]` | T-024a | 🔴 A-06. Hoje a venda passa silenciosamente com taxa possivelmente zerada. Exibir o erro do backend, nunca deixar o valor errado na tela com aparência de certo (I7) |
+| F-031 | Estados de erro, loading e vazio | `[x]` | todas | 🟠 Auditado e corrigido em 2026-09-02 — ver nota na linha original acima (Fase 4) |
+
+> ⚠️ **Padrão a repetir (bug real já encontrado):** toda tela com filtro que desabilita a query condicionalmente precisa distinguir "desabilitada" de "carregando", senão o `AsyncBoundary` mente e a tela fica presa em "Carregando…". Ver nota do F-013.
+
+## EPIC-23 — Monetização e self-serve 🔴
+
+| ID | Task | Status | Depende | Nota |
+|---|---|:--:|---|---|
+| F-050 | Tela de signup self-serve | `[ ]` | T-070 | Nome, e-mail, senha, fuso. **Mínimo de campos possível** — cada campo no signup custa conversão. Perguntas de configuração ficam no onboarding (F-021), não aqui |
+| F-050a | Bloquear duplo-submit no signup | `[ ]` | F-050, T-070a | Mesma receita do F-014a (idempotency-key em `useRef`). Duplo-clique não pode criar dois tenants |
+| F-051 | Tela de planos e preço | `[ ]` | T-071 | Três degraus (§6 da revisão): Essencial R$67 / **Profissional R$127 (âncora, destacado)** / Clínica R$247. Anual com 2 meses grátis |
+| F-052 | Checkout / captura de pagamento | `[ ]` | T-074 | Usar o **componente hospedado do provedor** (Stripe Checkout / Asaas). ⛔ Nunca trafegar dado de cartão pelo nosso front — PCI é problema que não vale a pena ter |
+| F-053 | Banner de status da assinatura | `[ ]` | T-075 | Trial: "faltam N dias". `PAST_DUE`: aviso + link de atualizar pagamento. Persistente mas **não modal** — não bloquear o trabalho dela |
+| F-053a | Modo read-only (assinatura cancelada) | `[ ]` | T-075 | 🔴 Leitura e exportação continuam funcionando; só escrita bloqueia, **com o motivo visível e o caminho de reativar**. Cliente que perde o histórico não volta e reclama publicamente |
+| F-054 | Tela "Minha assinatura" | `[ ]` | T-076 | Plano atual, próxima cobrança, histórico, upgrade/downgrade e **cancelamento self-serve**. Cancelamento difícil gera chargeback e reclamação, não retenção |
+| F-054a | Aviso de limite do plano | `[ ]` | T-075a | "Você tem 94 de 100 pacientes ativas". Avisar **antes** de bater o teto, nunca no momento do erro |
+| F-055 | Tela de indicação / cupom | `[ ]` | T-077 | Canal declarado na entrevista é boca a boca entre colegas. Link compartilhável direto no WhatsApp |
+
+## EPIC-24 — Ativação e time-to-value 🔴
+
+| ID | Task | Status | Depende | Nota |
+|---|---|:--:|---|---|
+| F-060 | **Importação de pacientes por CSV** | `[ ]` | T-080 | 🟢 **Melhor esforço/impacto de toda a revisão.** Upload → **preview com mapeamento de colunas** → confirmação → relatório linha a linha do que entrou e do que falhou. Nunca falhar o lote inteiro por uma linha ruim. Aceitar planilha do jeito que ela tem, não do jeito que queremos |
+| F-060a | Mostrar a fila de reativação já cheia após o import | `[ ]` | F-060, T-080a, F-015 | 🔴 **É este o momento de "aha".** Depois de importar, levar direto para "Quem devo chamar hoje?" com 12 nomes na tela em vez de vazio. Sem isso o import é só cadastro |
+| F-061 | Seleção do catálogo pré-carregado no onboarding | `[ ]` | T-081, F-021 | Checkboxes com procedimentos comuns + preço/custo de mercado editáveis, rotulados como estimativa (I7). Ela ajusta em vez de criar do zero |
+| F-021 | Checklist de primeiro acesso | `[ ]` | F-012a | ⬆️ **Reforço da revisão:** meta explícita de **signup → primeiro lucro na tela em < 10 min**. Não bloquear o uso; toda pergunta aceita "não sei agora" → salva o default e marca como estimativa |
+| F-021a | Perguntas em linguagem natural | `[ ]` | F-021 | "A taxa sai do seu bolso ou a clínica cobre?" — nunca enum, nunca jargão |
+
+## EPIC-25 — Retenção do produto e prova de valor 🟠
+
+| ID | Task | Status | Depende | Nota |
+|---|---|:--:|---|---|
+| F-040 | **Dashboard de impacto / ROI** | `[ ]` | T-090 | 🟠 A-04: sai de `[-]` P1 e vira **P0 comercial**. "O sistema te devolveu R$ 700 este mês; ele custa R$ 97." É o ativo anti-churn mais forte que existe — nenhum concorrente prova o próprio valor. Usar **lucro**, não faturamento (§19 do MVP) |
+| F-062 | Alerta de margem negativa | `[ ]` | T-092 | Card no dashboard: "Peeling está no vermelho: R$ 12 de prejuízo por sessão". **É o insight que ela conta para as colegas** |
+| F-063 | Comparativo mês vs. mês anterior | `[ ]` | T-093 | Seta e delta ao lado de cada métrica. R$ 800 é bom ou ruim? Sem contexto não vira decisão |
+| F-064 | Preferências do resumo semanal | `[ ]` | T-091a | Opt-in, canal (WhatsApp/e-mail), dia da semana. Descadastro em um clique |
+
+## EPIC-26 — Diferenciais competitivos 🟢
+
+| ID | Task | Status | Depende | Nota |
+|---|---|:--:|---|---|
+| F-070 | **Simulador de preço** | `[ ]` | T-100 | "Se eu cobrar R$ 320 na limpeza, meu lucro vira quanto?" Slider de preço → lucro/margem ao vivo. ⚠️ Todo cálculo vem da API (T-100), **nunca** do cliente — a lição do `prototypeMath.ts` deletado |
+| F-070a | Sugestão de preço mínimo | `[ ]` | T-100a | Ela informa a margem-alvo, o sistema responde o preço. Ataca o problema real: ela nunca calculou preço |
+| F-071 | Aviso de no-show no histórico da paciente | `[ ]` | T-101, F-016 | "Faltou 3 de 5 vezes — considere pedir sinal". ⚠️ Tom de **apoio à decisão**, nunca de julgamento da paciente |
+| F-072 | Canal de aquisição no cadastro de paciente | `[ ]` | T-102 | Um select simples no `PatientForm`. Alimenta o relatório de custo por canal |
+| F-073 | Editor de templates de reativação | `[ ]` | T-103, F-015b | Preview com dado real antes de enviar. Mensagem robótica queima o canal |
+| F-042 | Exportação CSV | `[ ]` | T-104 | ⬆️ Sai de `[-]` P1. LGPD Art. 18 V + tira o medo de "ficar preso no sistema" — objeção real de venda |
+
+## EPIC-27 — Aquisição 🟠
+
+| ID | Task | Status | Depende | Nota |
+|---|---|:--:|---|---|
+| F-080 | Landing page | `[ ]` | F-051 | Uma página: proposta de valor, 3 prints reais do produto, preço, CTA de trial. **Não existe hoje** — sem ela ninguém descobre o produto. Pode ser estática, fora do app React |
+| F-080a | Prints reais do produto | `[ ]` | F-013, F-015 | Com dado plausível e **anonimizado** — nunca dado real de paciente numa página pública |
+
+## Metas de UX desta fase
+
+Somam-se às duas metas originais (venda avulsa < 30s, agenda não é a manchete):
+
+| Meta | Onde | Por quê |
+|---|---|---|
+| **Signup → primeiro lucro na tela em < 10 min** | F-050, F-021, F-061 | Micro-SaaS morre de ativação, não de feature faltando |
+| **Fila de reativação nunca nasce vazia** | F-060, F-060a | Time-to-value de 90 dias para 1 dia |
+| **Funciona no celular em pé, com uma mão** | F-030 | É o meio de acesso principal, não uma adaptação |
+| **Cancelar é fácil; perder o dado é impossível** | F-053a, F-054, F-042 | Cobrança agressiva gera reclamação pública, não receita |
+
+## Sequência recomendada desta fase
+
+```text
+1. F-015..F-015c (retenção)       ← já no backlog, Fase 3. NADA daqui começa antes
+2. F-030 + F-031                  ← celular e estados vazios
+3. F-014d, F-013b, F-014e         ← correções que o próprio handoff reportou
+4. F-060 + F-060a                 ← o momento de "aha"
+5. F-040                          ← prova de valor
+   ▸ PORTA: receita atribuível > mensalidade? Se não, PARE (§33 do MVP)
+6. F-050..F-055, F-080            ← só depois do sinal verde
+7. F-070..F-073                   ← escala
+```

@@ -10,10 +10,12 @@ import { ProcedureDetailPage } from "@/features/procedures/ProcedureDetailPage";
 import { NewSalePage } from "@/features/sales/NewSalePage";
 import { NewPackageSalePage } from "@/features/sales/NewPackageSalePage";
 import { DashboardPage } from "@/features/dashboard/DashboardPage";
+import { ProcedureRankingPage } from "@/features/procedureRanking/ProcedureRankingPage";
 import { ExpensesPage } from "@/features/expenses/ExpensesPage";
 import { NewExpensePage } from "@/features/expenses/NewExpensePage";
 import { ExpenseDetailPage } from "@/features/expenses/ExpenseDetailPage";
 import { SettingsPage } from "@/features/settings/SettingsPage";
+import { FinancialSettingsPage } from "@/features/settings/FinancialSettingsPage";
 import { PlaceholderPage } from "@/ui/PlaceholderPage";
 
 export const router = createBrowserRouter([
@@ -23,6 +25,7 @@ export const router = createBrowserRouter([
     element: <AppLayout />,
     children: [
       { index: true, element: <DashboardPage /> }, // F-013
+      { path: "relatorios/procedimentos", element: <ProcedureRankingPage /> }, // F-013c
       { path: "retornos", element: <PlaceholderPage title="Quem devo chamar hoje?" /> }, // F-015
       { path: "pacientes", element: <PatientsPage /> }, // F-011
       { path: "pacientes/novo", element: <NewPatientPage /> }, // F-011
@@ -33,7 +36,8 @@ export const router = createBrowserRouter([
       { path: "vendas/nova", element: <NewSalePage /> }, // F-014
       { path: "vendas/nova-pacote", element: <NewPackageSalePage /> }, // F-014b
       { path: "agenda", element: <PlaceholderPage title="Agenda" /> }, // F-017
-      { path: "configuracoes", element: <SettingsPage /> }, // hub mínimo p/ F-012b; F-012a segue placeholder
+      { path: "configuracoes", element: <SettingsPage /> },
+      { path: "configuracoes/financeiro", element: <FinancialSettingsPage /> }, // F-012a
       { path: "configuracoes/despesas", element: <ExpensesPage /> }, // F-012b
       { path: "configuracoes/despesas/nova", element: <NewExpensePage /> }, // F-012b
       { path: "configuracoes/despesas/:id", element: <ExpenseDetailPage /> }, // F-012b

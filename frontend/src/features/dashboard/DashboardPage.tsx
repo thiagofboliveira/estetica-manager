@@ -1,18 +1,13 @@
 import { useState } from "react";
+import { Link } from "react-router-dom";
 import { AsyncBoundary } from "@/ui/AsyncBoundary";
 import { EmptyState } from "@/ui/EmptyState";
+import { PeriodFilter } from "@/ui/PeriodFilter";
 import { formatBRL, formatRate } from "@/lib/money/format";
 import { money, rate } from "@/lib/money/money";
+import type { Period } from "@/lib/period/period";
 import { useDashboard } from "./hooks";
-import type { Dashboard, DashboardPeriod } from "./api";
-
-const PERIOD_OPTIONS: { value: DashboardPeriod; label: string }[] = [
-  { value: "today", label: "Hoje" },
-  { value: "last_7_days", label: "Últimos 7 dias" },
-  { value: "this_month", label: "Este mês" },
-  { value: "last_month", label: "Mês anterior" },
-  { value: "custom", label: "Personalizado" },
-];
+import type { Dashboard } from "./api";
 
 /**
  * F-013, dashboard principal. GET /dashboard real (T-022). Cada
@@ -23,7 +18,7 @@ const PERIOD_OPTIONS: { value: DashboardPeriod; label: string }[] = [
  * disso) — a linha some, nunca mostra "R$ 0,00" no lugar de null.
  */
 export function DashboardPage() {
-  const [period, setPeriod] = useState<DashboardPeriod>("this_month");
+  const [period, setPeriod] = useState<Period>("this_month");
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
 
@@ -39,32 +34,14 @@ export function DashboardPage() {
         <h1>Dashboard</h1>
       </header>
 
-      <div className="dashboard__period" role="group" aria-label="Período">
-        {PERIOD_OPTIONS.map((opt) => (
-          <button
-            key={opt.value}
-            type="button"
-            className="tap-target"
-            aria-pressed={period === opt.value}
-            onClick={() => setPeriod(opt.value)}
-          >
-            {opt.label}
-          </button>
-        ))}
-      </div>
-
-      {period === "custom" && (
-        <div className="dashboard__custom-range">
-          <label>
-            <span>De</span>
-            <input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} />
-          </label>
-          <label>
-            <span>Até</span>
-            <input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} />
-          </label>
-        </div>
-      )}
+      <PeriodFilter
+        period={period}
+        onPeriodChange={setPeriod}
+        dateFrom={dateFrom}
+        onDateFromChange={setDateFrom}
+        dateTo={dateTo}
+        onDateToChange={setDateTo}
+      />
 
       {period === "custom" && !(dateFrom && dateTo) ? (
         <p>Escolha as duas datas para ver o período.</p>
@@ -84,6 +61,10 @@ export function DashboardPage() {
           {(dashboard) => <DashboardMetrics dashboard={dashboard} />}
         </AsyncBoundary>
       )}
+
+      <p className="dashboard__ranking-link">
+        <Link to="/relatorios/procedimentos">Ver ranking de procedimentos →</Link>
+      </p>
     </div>
   );
 }

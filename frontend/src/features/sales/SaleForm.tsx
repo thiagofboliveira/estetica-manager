@@ -4,6 +4,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { AsyncBoundary } from "@/ui/AsyncBoundary";
+import { EmptyState } from "@/ui/EmptyState";
 import { useProcedures } from "@/features/procedures/hooks";
 import { formatBRL } from "@/lib/money/format";
 import { money } from "@/lib/money/money";
@@ -107,7 +108,18 @@ export function SaleForm() {
         <AsyncBoundary
           query={proceduresQuery}
           skeleton={<p>Carregando…</p>}
-          empty={<p>Nenhum procedimento cadastrado.</p>}
+          empty={
+            <EmptyState
+              tone="first-run"
+              title="Nenhum procedimento cadastrado ainda"
+              body="Cadastre ao menos um procedimento para poder vender."
+              action={
+                <Link to="/procedimentos/novo" className="tap-target">
+                  Cadastrar procedimento
+                </Link>
+              }
+            />
+          }
         >
           {(procedures) => {
             const selectedProcedure = procedures.find((p) => p.id === procedureId);
