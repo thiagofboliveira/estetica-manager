@@ -19,6 +19,7 @@ from app.repositories.patient import PatientRepository
 from app.repositories.payment_fee_rule import PaymentFeeRuleRepository
 from app.repositories.procedure import ProcedureRepository
 from app.repositories.professional import ProfessionalRepository
+from app.repositories.return_opportunity import ReturnOpportunityRepository
 from app.repositories.sale import SaleRepository
 from app.repositories.sale_item import SaleItemRepository
 from app.repositories.session import SessionRepository
@@ -29,7 +30,9 @@ from app.services.patient_service import PatientService
 from app.services.payment_fee_rule_service import PaymentFeeRuleService
 from app.services.procedure_ranking_service import ProcedureRankingService
 from app.services.procedure_service import ProcedureService
+from app.services.retention_service import RetentionService
 from app.services.sale_service import SaleService
+from app.services.session_service import SessionService
 
 CurrentProfessional = Annotated[UUID, Depends(get_current_professional_id)]
 
@@ -109,6 +112,28 @@ def get_sale_service(
     )
 
 
+def get_retention_service(
+    session: DbSession, professional_id: CurrentProfessional
+) -> RetentionService:
+    return RetentionService(
+        ReturnOpportunityRepository(session, professional_id),
+        SessionRepository(session, professional_id),
+    )
+
+
+def get_session_service(
+    session: DbSession, professional_id: CurrentProfessional
+) -> SessionService:
+    professional = ProfessionalRepository(session, professional_id).get_current()
+    return SessionService(
+        SessionRepository(session, professional_id),
+        SaleItemRepository(session, professional_id),
+        SaleRepository(session, professional_id),
+        get_retention_service(session, professional_id),
+        professional.timezone,
+    )
+
+
 PatientSvc = Annotated[PatientService, Depends(get_patient_service)]
 ProcedureSvc = Annotated[ProcedureService, Depends(get_procedure_service)]
 FinancialSettingsSvc = Annotated[
@@ -123,3 +148,5 @@ DashboardSvc = Annotated[DashboardService, Depends(get_dashboard_service)]
 ProcedureRankingSvc = Annotated[
     ProcedureRankingService, Depends(get_procedure_ranking_service)
 ]
+RetentionSvc = Annotated[RetentionService, Depends(get_retention_service)]
+SessionSvc = Annotated[SessionService, Depends(get_session_service)]
