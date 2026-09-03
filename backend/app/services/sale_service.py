@@ -343,4 +343,5 @@ def _snapshot_payload(result: SaleCalculationResult, settings) -> dict:
         ),
         "cost_provisioned": str(result.cost_provisioned),
         "cost_realized": str(result.cost_realized),
+        "anticipates_all": settings.anticipates_all,
     }

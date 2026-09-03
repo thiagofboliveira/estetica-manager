@@ -45,19 +45,23 @@ Este documento centraliza as tarefas do Frontend e do Backend para facilitar o a
 
 ---
 
-## 3. Sprint 2: Validação de Mercado e Go-to-Market (Concluída)
+## 3. Sprint 2: Validação de Mercado e Go-to-Market (⚠️ 20/23 — 3 ações corretivas abertas)
 
-### Backend (100% Concluído - ver `backend/BACKLOG_SPRINT2.md`)
+### Backend (features 100%, 3 fixes de code review pendentes — ver [docs/in_progress/BACKLOG_SPRINT2_backend.md](docs/in_progress/BACKLOG_SPRINT2_backend.md))
 - [x] `[BACK-S2-01]` a `[BACK-S2-05]`: **EPIC-S2-01 — Widget de ROI (Receita Recuperada pelo Sistema)**.
 - [x] `[BACK-S2-06]` a `[BACK-S2-12]`: **EPIC-S2-02 — Anti-No-Show (Lembretes D-1)**.
 - [x] `[BACK-S2-13]` a `[BACK-S2-16]`: **EPIC-S2-03 — Importação em Lote de Pacientes (Quick Start)**.
 - [x] `[BACK-S2-17]` a `[BACK-S2-20]`: **EPIC-S2-04 — Templates de Procedimentos (Onboarding Acelerado)**.
 
+### Frontend (100% Concluído — ver [docs/finished/BACKLOG_SPRINT2_frontend.md](docs/finished/BACKLOG_SPRINT2_frontend.md))
+- [x] `[FRONT-S2-01]` a `[FRONT-S2-22]`: ROI, Anti-No-Show, Importação em Lote, Templates e PWA.
+- [x] `AC-03` a `AC-06`: ações corretivas do code review — **verificadas como aplicadas em 2026-09-03**.
+
 ---
 
 ## 4. Sprint 3: Recursos Financeiros Avançados, Projeção de Caixa e Portabilidade (Concluída)
 
-### Backend (100% Concluído - ver `backend/BACKLOG_SPRINT3.md`)
+### Backend (100% Concluído - ver [docs/finished/BACKLOG_SPRINT3_backend.md](docs/finished/BACKLOG_SPRINT3_backend.md))
 - [x] `[BACK-S3-01]` a `[BACK-S3-04]`: **EPIC-S3-01 — Split por Procedimento (E6)**.
 - [x] `[BACK-S3-05]` a `[BACK-S3-08]`: **EPIC-S3-02 — Exportação de Dados em CSV (LGPD & Relatórios)**.
 - [x] `[BACK-S3-09]` a `[BACK-S3-12]`: **EPIC-S3-03 — Projeção de Recebíveis Futuros (Fluxo de Caixa)**.

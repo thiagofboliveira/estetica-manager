@@ -28,6 +28,11 @@ class DashboardOut(OutputSchema):
     no_show_count: int | None = None
     no_show_rate: RateOut | None = None
 
+    # Épico C — Ponto de equilíbrio do mês (roadmap 2026-09-02)
+    breakeven_remaining_amount: MoneyOut | None = None
+    breakeven_remaining_sessions_estimate: int | None = None
+    breakeven_alert: bool = False
+
 
 class ROIOut(OutputSchema):
     attributed_revenue: MoneyOut

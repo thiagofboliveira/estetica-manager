@@ -117,6 +117,7 @@ def test_dashboard_no_show_metrics():
         fixed_expenses=[FixedExpenseForDashboard(amount=Decimal("100.00"), periodicity="MONTHLY")],
         period_kind=PeriodKind.MONTH,
         today=today,
+        date_to=today,
         has_any_sale_ever=True,
     )
 

@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, time
 from uuid import UUID
 
 from app.domain.sales.session_state_machine import SessionStatus
@@ -56,6 +56,11 @@ class UnconfirmedSessionOut(OutputSchema):
     whatsapp_link: str | None
     consent_whatsapp: bool
     confirmed_at: datetime | None = None
+
+
+class FreeSlotsOut(OutputSchema):
+    slots: list[time]
+    message: str
 
 
 class OpenPackageOut(OutputSchema):

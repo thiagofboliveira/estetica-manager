@@ -58,6 +58,9 @@ def get_dashboard(
         average_ticket=result.average_ticket,
         no_show_count=result.no_show_count,
         no_show_rate=result.no_show_rate,
+        breakeven_remaining_amount=result.breakeven_remaining_amount,
+        breakeven_remaining_sessions_estimate=result.breakeven_remaining_sessions_estimate,
+        breakeven_alert=result.breakeven_alert,
     )
 
 

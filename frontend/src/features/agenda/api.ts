@@ -67,6 +67,11 @@ export type BookingUpdateInput = {
   status?: BookingStatus | null;
 };
 
+export type FreeSlots = {
+  slots: string[];
+  message: string;
+};
+
 export type UnconfirmedSession = {
   session_id: string;
   patient_name: string;
@@ -89,6 +94,8 @@ export const sessionsApi = {
     api.patch<void>(`/sessions/${id}`, payload),
   getUnconfirmed: () => api.get<UnconfirmedSession[]>("/sessions/unconfirmed"),
   confirmSession: (id: string) => api.post<void>(`/sessions/${id}/confirm`, {}),
+  getFreeSlots: (date: string) =>
+    api.get<FreeSlots>(`/free-slots?${new URLSearchParams({ date }).toString()}`),
 };
 
 export const bookingsApi = {

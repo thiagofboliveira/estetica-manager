@@ -3,10 +3,11 @@ from uuid import UUID
 
 from fastapi import APIRouter, HTTPException, Query, Response, status
 
-from app.api.deps import SessionSvc
+from app.api.deps import AgendaSvc, SessionSvc
 from app.domain.sales.session_state_machine import InvalidSessionTransitionError
 from app.schemas.session import (
     AgendaItemOut,
+    FreeSlotsOut,
     OpenPackageOut,
     SessionDetailOut,
     SessionUpdate,
@@ -15,6 +16,14 @@ from app.schemas.session import (
 from app.services.session_service import SessionNotFoundError
 
 router = APIRouter(prefix="", tags=["sessions"])
+
+
+@router.get("/free-slots", response_model=FreeSlotsOut)
+def get_free_slots(svc: AgendaSvc, day: date = Query(alias="date")) -> FreeSlotsOut:
+    """Épico A — "Modo Ocupado" (roadmap 2026-09-02): horários livres do
+    dia, com mensagem pronta pra colar no WhatsApp."""
+    slots, message = svc.get_free_slots(day)
+    return FreeSlotsOut(slots=slots, message=message)
 
 
 @router.get("/sessions", response_model=list[AgendaItemOut])

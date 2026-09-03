@@ -240,6 +240,7 @@ export function LandingPage() {
           <div className={styles.footerLinks}>
             <Link to="/login">Entrar</Link>
             <Link to="/dashboard">Painel</Link>
+            <Link to="/como-calculamos">Como calculamos seus números</Link>
             <a href="#recursos">Termos</a>
             <a href="#recursos">Privacidade</a>
           </div>

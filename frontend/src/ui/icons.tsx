@@ -171,3 +171,12 @@ export function IconMoon(props: SVGProps<SVGSVGElement>) {
     </svg>
   );
 }
+
+export function IconInfo(props: SVGProps<SVGSVGElement>) {
+  return (
+    <svg {...defaultProps} {...props}>
+      <circle cx="12" cy="12" r="9" />
+      <path d="M12 16v-5M12 8h.01" />
+    </svg>
+  );
+}

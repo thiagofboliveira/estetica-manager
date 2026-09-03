@@ -12,7 +12,7 @@
 | :--- | :---: | :---: | :---: | :---: |
 | **Sprint 3: EPIC-S3-01 (Split por Procedimento)** | 0 | 0 | 0 | ✅ Aprovado com Excelência |
 | **Sprint 3: EPIC-S3-02 (Exportação CSV / LGPD)** | 0 | 0 | 0 | ✅ Aprovado com Excelência |
-| **Sprint 3: EPIC-S3-03 (Projeção de Recebíveis)** | 0 | 1 | 0 | ✅ Aprovado com Observação |
+| **Sprint 3: EPIC-S3-03 (Projeção de Recebíveis)** | 0 | 0 | 0 | ✅ Corrigido em 2026-09-02 |
 | **Sprint 3: EPIC-S3-04 (Antecipação de Recebíveis)**| 0 | 0 | 0 | ✅ Aprovado com Excelência |
 | **Sprint 2: EPIC-S2-01 (Widget de ROI)** | 0 | 0 | 0 | ✅ Aprovado (`period.kind.value`) |
 | **Sprint 2: EPIC-S2-02 (Anti-No-Show)** | 0 | 1 | 0 | ⚠️ Ajuste de Regra |
@@ -38,13 +38,13 @@
 
 ---
 
-### 🟡 EPIC-S3-03: Projeção de Recebíveis Futuros (Fluxo de Caixa) — APROVADO COM OBSERVAÇÃO
-* **[OBS-BACK-S3-01] Flag `is_anticipated` fixada em `False` no `DashboardService`**
-  * **Arquivo:** `backend/app/services/dashboard_service.py` (linha 108)
-  * **Descrição:** Ao listar as vendas para projeção de fluxo de caixa em `get_receivables_projection()`, a propriedade `is_anticipated` do input é definida como `False` de forma estática.
-  * **Impacto:** Se a clínica opera com antecipação automática (`anticipates_all = True`), as parcelas de cartão são projetadas mês a mês (D+30, D+60) em vez de caírem em D+2 no mês da venda.
-  * **Correção Recomendada:**
-    Consultar `financial_settings.anticipates_all` no `DashboardService` e passar para o `SaleReceivableInput(..., is_anticipated=settings.anticipates_all)`.
+### ✅ EPIC-S3-03: Projeção de Recebíveis Futuros (Fluxo de Caixa) — CORRIGIDO EM 2026-09-02
+* **[OBS-BACK-S3-01] Flag `is_anticipated` fixada em `False` no `DashboardService`** — ✅ Corrigido
+  * **Arquivo:** `backend/app/services/dashboard_service.py`
+  * **Descrição:** Ao listar as vendas para projeção de fluxo de caixa em `get_receivables_projection()`, a propriedade `is_anticipated` do input era definida como `False` de forma estática.
+  * **Impacto:** Se a clínica opera com antecipação automática (`anticipates_all = True`), as parcelas de cartão eram projetadas mês a mês (D+30, D+60) em vez de caírem em D+2 no mês da venda.
+  * **Correção aplicada:** não lemos `financial_settings.anticipates_all` (config atual) diretamente — isso violaria a invariante I3 (snapshot congelado): uma venda antiga precisa continuar reproduzindo o comportamento vigente quando foi feita, mesmo que a profissional desligue a antecipação depois. Em vez disso, `anticipates_all` passou a ser gravado no `Sale.snapshot_payload` no momento da venda (`sale_service.py::_snapshot_payload`), e `DashboardService.get_receivables_projection()` lê esse valor congelado.
+  * **Teste:** `tests/test_dashboard_integration.py::TestReceivablesRespeitaAntecipacaoCongelada` — cria venda a crédito parcelada com antecipação ligada, desliga a configuração depois, e prova que a projeção ainda reflete D+2 (o congelado), não a config atual.
 
 ---
 

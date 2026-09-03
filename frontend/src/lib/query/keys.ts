@@ -16,6 +16,7 @@ export const qk = {
   packagesOpen: () => [...qk.packages(), "open"] as const,
   sessions: () => [...qk.financial(), "sessions"] as const,
   sessionsRange: (from: string, to: string) => [...qk.sessions(), { from, to }] as const,
+  freeSlots: (date: string) => [...qk.sessions(), "free-slots", date] as const,
   sales: () => [...qk.financial(), "sales"] as const,
 
   // Cadastros ficam FORA de financial: venda não invalida catálogo.

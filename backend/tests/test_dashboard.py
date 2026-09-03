@@ -36,6 +36,7 @@ class TestHasAnyData:
             fixed_expenses=[],
             period_kind=PeriodKind.MONTH,
             today=date(2026, 3, 15),
+            date_to=date(2026, 3, 15),
             has_any_sale_ever=False,
         )
         assert result.has_any_data is False
@@ -47,6 +48,7 @@ class TestHasAnyData:
             fixed_expenses=[],
             period_kind=PeriodKind.MONTH,
             today=date(2026, 3, 15),
+            date_to=date(2026, 3, 15),
             has_any_sale_ever=True,
         )
         assert result.has_any_data is True
@@ -65,6 +67,7 @@ class TestMetricasBasicas:
             fixed_expenses=[],
             period_kind=PeriodKind.MONTH,
             today=date(2026, 3, 15),
+            date_to=date(2026, 3, 15),
             has_any_sale_ever=True,
         )
         assert result.gross_revenue == D("3000.00")
@@ -80,6 +83,7 @@ class TestMetricasBasicas:
             fixed_expenses=[],
             period_kind=PeriodKind.MONTH,
             today=date(2026, 3, 15),
+            date_to=date(2026, 3, 15),
             has_any_sale_ever=True,
         )
         assert result.average_ticket == D("1500.00")
@@ -92,6 +96,7 @@ class TestMetricasBasicas:
             fixed_expenses=[],
             period_kind=PeriodKind.MONTH,
             today=date(2026, 3, 15),
+            date_to=date(2026, 3, 15),
             has_any_sale_ever=True,
         )
         assert result.average_margin == D("0.35")
@@ -108,6 +113,7 @@ class TestMetricasBasicas:
             fixed_expenses=[],
             period_kind=PeriodKind.MONTH,
             today=date(2026, 3, 15),
+            date_to=date(2026, 3, 15),
             has_any_sale_ever=True,
         )
         assert result.receivable_amount == D("1000.00")
@@ -125,6 +131,7 @@ class TestLucroRealDoMes:
                 fixed_expenses=expenses,
                 period_kind=kind,
                 today=date(2026, 3, 15),
+            date_to=date(2026, 3, 15),
                 has_any_sale_ever=True,
             )
             assert result.fixed_expenses_total is None, kind
@@ -138,6 +145,7 @@ class TestLucroRealDoMes:
             fixed_expenses=expenses,
             period_kind=PeriodKind.MONTH,
             today=date(2026, 3, 15),
+            date_to=date(2026, 3, 15),
             has_any_sale_ever=True,
         )
         assert result.fixed_expenses_total == D("800.00")
@@ -152,6 +160,7 @@ class TestLucroRealDoMes:
             fixed_expenses=expenses,
             period_kind=PeriodKind.MONTH,
             today=date(2026, 3, 15),
+            date_to=date(2026, 3, 15),
             has_any_sale_ever=True,
         )
         assert result.fixed_expenses_total == D("100.00")
@@ -167,6 +176,7 @@ class TestLucroRealDoMes:
             fixed_expenses=expenses,
             period_kind=PeriodKind.MONTH,
             today=date(2026, 3, 15),
+            date_to=date(2026, 3, 15),
             has_any_sale_ever=True,
         )
         assert result.fixed_expenses_total == D("900.00")

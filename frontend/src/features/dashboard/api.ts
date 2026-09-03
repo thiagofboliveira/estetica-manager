@@ -25,6 +25,10 @@ export type Dashboard = {
   sale_count: number;
   session_count: number;
   average_ticket: string | null;
+
+  breakeven_remaining_amount: string | null;
+  breakeven_remaining_sessions_estimate: number | null;
+  breakeven_alert: boolean;
 };
 
 export type ProcedureRankingRow = {

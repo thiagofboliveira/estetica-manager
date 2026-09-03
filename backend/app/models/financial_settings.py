@@ -11,9 +11,10 @@ passadas.
 """
 
 from decimal import Decimal
+from datetime import time
 from enum import StrEnum
 
-from sqlalchemy import Enum, Numeric, UniqueConstraint
+from sqlalchemy import Enum, Numeric, Time, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.models.base import TenantModel
@@ -76,3 +77,13 @@ class FinancialSettings(TenantModel):
     anticipation_rate_per_installment: Mapped[Decimal | None] = mapped_column(
         Numeric(5, 2, asdecimal=True), nullable=True
     )
+    # Épico A — "Modo Ocupado" (roadmap 2026-09-02): janela de trabalho
+    # usada para calcular horários livres a sugerir no WhatsApp.
+    work_start_time: Mapped[time] = mapped_column(
+        Time, nullable=False, default=time(8, 0)
+    )
+    work_end_time: Mapped[time] = mapped_column(
+        Time, nullable=False, default=time(18, 0)
+    )
+    slot_duration_minutes: Mapped[int] = mapped_column(nullable=False, default=30)
+    buffer_minutes: Mapped[int] = mapped_column(nullable=False, default=15)

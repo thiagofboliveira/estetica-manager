@@ -13,6 +13,7 @@ vigentes); este módulo só agrega e aplica as regras de negócio:
   - Despesa YEARLY entra ratada por 12 no cálculo mensal (v7.1 §12.5)
 """
 
+from calendar import monthrange
 from dataclasses import dataclass
 from datetime import date
 from decimal import Decimal
@@ -21,6 +22,7 @@ from enum import StrEnum
 from app.core.money import ZERO, money
 
 MONTHS_PER_YEAR = 12
+BREAKEVEN_ALERT_DAYS_BEFORE_MONTH_END = 5
 
 
 class PeriodKind(StrEnum):
@@ -66,6 +68,26 @@ class DashboardResult:
     # Anti-No-Show (EPIC-S2-02, TASK-BACK-S2-11)
     no_show_count: int | None = None
     no_show_rate: Decimal | None = None
+    # Épico C — Ponto de equilíbrio do mês (roadmap 2026-09-02). None
+    # fora de period_kind=MONTH, igual fixed_expenses_total.
+    breakeven_remaining_amount: Decimal | None = None
+    # Estimativa (I7): None sem histórico de ticket médio recente para
+    # basear a conta — não força um número sem fundamento.
+    breakeven_remaining_sessions_estimate: int | None = None
+    # True só no mês CORRENTE em andamento, a poucos dias do
+    # fechamento, sem ter batido o breakeven ainda.
+    breakeven_alert: bool = False
+
+
+def calculate_recent_average_ticket(sales: list[SaleForDashboard]) -> Decimal | None:
+    """Ticket médio de um conjunto de vendas já filtrado pelo caller
+    (tipicamente os últimos meses FECHADOS, não o mês corrente — que
+    fica enviesado nos primeiros dias). Base do §12.5-C, roadmap
+    2026-09-02: estimativa de atendimentos para bater o breakeven."""
+    if not sales:
+        return None
+    gross_revenue = money(sum((s.gross_amount for s in sales), ZERO))
+    return money(gross_revenue / len(sales))
 
 
 def _monthly_equivalent(expense: FixedExpenseForDashboard) -> Decimal:
@@ -82,7 +104,9 @@ def build_dashboard(
     fixed_expenses: list[FixedExpenseForDashboard],
     period_kind: PeriodKind,
     today: date,
+    date_to: date,
     has_any_sale_ever: bool,
+    average_ticket_recent: Decimal | None = None,
 ) -> DashboardResult:
     gross_revenue = money(sum((s.gross_amount for s in sales), ZERO))
     net_profit = money(sum((s.net_profit for s in sales), ZERO))
@@ -110,9 +134,31 @@ def build_dashboard(
 
     fixed_total = None
     net_after_fixed = None
+    breakeven_remaining = None
+    breakeven_sessions_estimate = None
+    breakeven_alert = False
     if period_kind is PeriodKind.MONTH:
         fixed_total = money(sum((_monthly_equivalent(e) for e in fixed_expenses), ZERO))
         net_after_fixed = money(net_profit - fixed_total)
+        breakeven_remaining = money(max(ZERO, fixed_total - net_profit))
+
+        if breakeven_remaining == ZERO:
+            # Já bateu a meta: são zero atendimentos que faltam,
+            # independente de haver histórico de ticket médio ou não —
+            # não é uma estimativa, é a conta exata (I7).
+            breakeven_sessions_estimate = 0
+        elif average_ticket_recent is not None and average_ticket_recent > ZERO:
+            breakeven_sessions_estimate = int(
+                (breakeven_remaining / average_ticket_recent).to_integral_value(
+                    rounding="ROUND_CEILING"
+                )
+            )
+
+        is_current_month_in_progress = date_to == today
+        if is_current_month_in_progress and breakeven_remaining > ZERO:
+            last_day_of_month = monthrange(today.year, today.month)[1]
+            days_left = last_day_of_month - today.day
+            breakeven_alert = days_left <= BREAKEVEN_ALERT_DAYS_BEFORE_MONTH_END
 
     return DashboardResult(
         has_any_data=has_any_sale_ever,
@@ -127,4 +173,7 @@ def build_dashboard(
         average_ticket=average_ticket,
         no_show_count=no_show_count,
         no_show_rate=no_show_rate,
+        breakeven_remaining_amount=breakeven_remaining,
+        breakeven_remaining_sessions_estimate=breakeven_sessions_estimate,
+        breakeven_alert=breakeven_alert,
     )

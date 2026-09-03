@@ -139,6 +139,31 @@ function DashboardMetrics({ dashboard }: { dashboard: Dashboard }) {
         </div>
       )}
 
+      {dashboard.breakeven_remaining_amount != null && (
+        <div
+          className={`dashboard__metric dashboard__metric--wide${
+            dashboard.breakeven_alert ? " dashboard__metric--alert" : ""
+          }`}
+        >
+          <dt>Ponto de equilíbrio do mês</dt>
+          <dd>
+            {Number(dashboard.breakeven_remaining_amount) > 0 ? (
+              <>
+                Faltam {formatBRL(money(dashboard.breakeven_remaining_amount))} em vendas para cobrir seus custos fixos este mês
+                {dashboard.breakeven_remaining_sessions_estimate != null && (
+                  <span className="dashboard__metric-note">
+                    ~{dashboard.breakeven_remaining_sessions_estimate}{" "}
+                    {dashboard.breakeven_remaining_sessions_estimate === 1 ? "atendimento" : "atendimentos"}, pelo seu ticket médio dos últimos meses
+                  </span>
+                )}
+              </>
+            ) : (
+              "Você já cobriu seus custos fixos este mês 🎉"
+            )}
+          </dd>
+        </div>
+      )}
+
       <div className="dashboard__metric">
         <dt>A receber</dt>
         <dd>{formatBRL(money(dashboard.receivable_amount))}</dd>

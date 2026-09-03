@@ -3,6 +3,7 @@ import { AppLayout } from "@/app/layout/AppLayout";
 import { GlobalErrorBoundary } from "@/app/layout/GlobalErrorBoundary";
 import { RequireAuth } from "@/app/layout/RequireAuth";
 import { LandingPage } from "@/features/landing/LandingPage";
+import { HowWeCalculatePage } from "@/features/landing/HowWeCalculatePage";
 import { LoginPage } from "@/features/onboarding/LoginPage";
 import { PatientsPage } from "@/features/patients/PatientsPage";
 import { NewPatientPage } from "@/features/patients/NewPatientPage";
@@ -16,6 +17,7 @@ import { NewPackageSalePage } from "@/features/sales/NewPackageSalePage";
 import { DashboardPage } from "@/features/dashboard/DashboardPage";
 import { RetentionPage } from "@/features/retention/RetentionPage";
 import { AgendaPage } from "@/features/agenda/AgendaPage";
+import { ModoOcupadoPage } from "@/features/agenda/ModoOcupadoPage";
 import { SettingsPage } from "@/features/settings/SettingsPage";
 import { SetupWizardPage } from "@/features/admin/SetupWizardPage";
 import { AdminLayout } from "@/features/admin/AdminLayout";
@@ -26,6 +28,7 @@ import { SuperAdminUsersPage } from "@/features/admin/SuperAdminUsersPage";
 
 export const router = createBrowserRouter([
   { path: "/", element: <LandingPage /> },
+  { path: "/como-calculamos", element: <HowWeCalculatePage /> },
   { path: "/login", element: <LoginPage /> },
   { path: "/setup", element: <SetupWizardPage /> },
   {
@@ -59,6 +62,7 @@ export const router = createBrowserRouter([
           { path: "/vendas/nova", element: <NewSalePage /> },
           { path: "/vendas/nova-pacote", element: <NewPackageSalePage /> },
           { path: "/agenda", element: <AgendaPage /> },
+          { path: "/agenda/rapido", element: <ModoOcupadoPage /> },
           { path: "/configuracoes", element: <SettingsPage /> },
           { path: "*", element: <Navigate to="/dashboard" replace /> },
         ],

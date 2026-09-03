@@ -491,6 +491,58 @@ button:disabled, .button:disabled {
 }
 
 /* ==========================================================================
+   Modal (overlay genérico — NewBookingModal, ScheduleSessionModal)
+   ========================================================================== */
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  z-index: 1000;
+}
+
+.modal-card {
+  background: var(--bg-card);
+  border-radius: 16px;
+  padding: 24px;
+  width: 100%;
+  max-width: 480px;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: var(--shadow-lg);
+}
+
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.modal-header h3 {
+  margin: 0;
+  color: var(--text-h);
+}
+
+.modal-close {
+  background: transparent;
+  border: none;
+  font-size: 1.1rem;
+  line-height: 1;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 4px 8px;
+}
+
+.modal-close:hover {
+  color: var(--text-h);
+}
+
+/* ==========================================================================
    Page Layout & Common Structures
    ========================================================================== */
 .page {
@@ -690,4 +742,9 @@ button:disabled, .button:disabled {
 
 .dashboard__metric--wide dd {
   font-size: 18px;
+}
+
+.dashboard__metric--alert {
+  border-color: var(--warning-border);
+  background: var(--warning-bg);
 }

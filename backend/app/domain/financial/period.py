@@ -54,3 +54,22 @@ def resolve_period(
         return ResolvedPeriod(PeriodKind.CUSTOM, custom_from, custom_to)
 
     raise ValueError(f"filtro de período desconhecido: {filter_name}")
+
+
+def last_n_closed_months_range(today: date, n: int) -> tuple[date, date]:
+    """[date_from, date_to] cobrindo os N meses FECHADOS anteriores ao
+    mês corrente de `today` — usado para a base do ticket médio recente
+    (Épico C, roadmap 2026-09-02): nunca inclui o mês em andamento, que
+    fica enviesado nos primeiros dias."""
+    first_of_this_month = today.replace(day=1)
+    date_to = first_of_this_month - timedelta(days=1)
+
+    year, month = date_to.year, date_to.month
+    for _ in range(n - 1):
+        month -= 1
+        if month == 0:
+            month = 12
+            year -= 1
+    date_from = date(year, month, 1)
+
+    return date_from, date_to

@@ -27,6 +27,7 @@ from app.repositories.sale import SaleRepository
 from app.repositories.sale_item import SaleItemRepository
 from app.repositories.session import SessionRepository
 from app.repositories.user import UserRepository
+from app.services.agenda_service import AgendaService
 from app.services.attribution_service import AttributionService
 from app.services.booking_service import BookingService
 from app.services.clinic_service import ClinicService
@@ -267,6 +268,21 @@ ProcedureRankingSvc = Annotated[
     ProcedureRankingService, Depends(get_procedure_ranking_service)
 ]
 SessionSvc = Annotated[SessionService, Depends(get_session_service)]
+
+
+def get_agenda_service(
+    session: DbSession, professional_id: CurrentProfessional
+) -> AgendaService:
+    return AgendaService(
+        session_service=get_session_service(session, professional_id),
+        financial_settings_service=get_financial_settings_service(
+            session, professional_id
+        ),
+        professional_repo=ProfessionalRepository(session, professional_id),
+    )
+
+
+AgendaSvc = Annotated[AgendaService, Depends(get_agenda_service)]
 RetentionSvc = Annotated[RetentionService, Depends(get_retention_service)]
 BookingSvc = Annotated[BookingService, Depends(get_booking_service)]
 UserSvc = Annotated[UserService, Depends(get_user_service)]

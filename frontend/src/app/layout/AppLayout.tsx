@@ -12,6 +12,7 @@ import {
   IconShield,
   IconCrown,
   IconLogout,
+  IconWhatsApp,
 } from "@/ui/icons";
 import { ThemeToggle } from "@/ui/ThemeToggle";
 import styles from "./AppLayout.module.css";
@@ -53,6 +54,15 @@ export function AppLayout() {
         </div>
 
         <div className={styles.headerRight}>
+          <Link
+            to="/agenda/rapido"
+            className={styles.btnNovaVenda}
+            title="Ver horários livres e responder rápido no WhatsApp"
+          >
+            <IconWhatsApp width="16" height="16" />
+            <span>Modo Ocupado</span>
+          </Link>
+
           <Link to="/vendas/nova" className={styles.btnNovaVenda}>
             <IconPlus width="16" height="16" />
             <span>Nova Venda</span>

@@ -56,6 +56,15 @@ export function useUpdateBooking() {
   });
 }
 
+export function useFreeSlots(date: string) {
+  return useQuery({
+    queryKey: qk.freeSlots(date),
+    queryFn: () => sessionsApi.getFreeSlots(date),
+    ...CACHE.MONEY,
+    enabled: Boolean(date),
+  });
+}
+
 export function useUnconfirmedSessions() {
   return useQuery({
     queryKey: [...qk.sessions(), "unconfirmed"],
