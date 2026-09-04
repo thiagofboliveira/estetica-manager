@@ -4,6 +4,7 @@ from uuid import UUID
 from pydantic import EmailStr, Field, field_validator
 
 from app.core.phone import InvalidPhoneError, normalize_br_phone
+from app.models.patient import Gender
 from app.schemas.base import InputSchema, OutputSchema
 
 
@@ -14,6 +15,7 @@ class PatientCreate(InputSchema):
     birth_date: date | None = None
     notes: str | None = None
     consent_whatsapp: bool = False
+    gender: Gender | None = None
 
     @field_validator("phone")
     @classmethod
@@ -33,6 +35,7 @@ class PatientUpdate(InputSchema):
     birth_date: date | None = None
     notes: str | None = None
     consent_whatsapp: bool | None = None
+    gender: Gender | None = None
 
     @field_validator("phone")
     @classmethod
@@ -55,8 +58,16 @@ class PatientOut(OutputSchema):
     consent_whatsapp: bool
     consent_at: datetime | None
     is_active: bool
+    gender: Gender | None
     created_at: datetime
     updated_at: datetime
+
+
+class PatientListOut(OutputSchema):
+    items: list[PatientOut]
+    total_count: int
+    page: int
+    page_size: int
 
 
 class PatientBatchImportItem(InputSchema):

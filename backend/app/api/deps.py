@@ -32,6 +32,7 @@ from app.services.attribution_service import AttributionService
 from app.services.booking_service import BookingService
 from app.services.clinic_service import ClinicService
 from app.services.dashboard_service import DashboardService
+from app.services.expenses_by_category_service import ExpensesByCategoryService
 from app.services.export_service import ExportService
 from app.services.financial_settings_service import FinancialSettingsService
 from app.services.fixed_expense_service import FixedExpenseService
@@ -156,6 +157,15 @@ def get_procedure_ranking_service(
         sale_item_repo=SaleItemRepository(session, professional_id),
         procedure_repo=ProcedureRepository(session, professional_id),
         professional_repo=ProfessionalRepository(session, professional_id),
+        session_repo=SessionRepository(session, professional_id),
+    )
+
+
+def get_expenses_by_category_service(
+    session: DbSession, professional_id: CurrentProfessional
+) -> ExpensesByCategoryService:
+    return ExpensesByCategoryService(
+        fixed_expense_repo=FixedExpenseRepository(session, professional_id)
     )
 
 
@@ -266,6 +276,9 @@ SaleSvc = Annotated[SaleService, Depends(get_sale_service)]
 DashboardSvc = Annotated[DashboardService, Depends(get_dashboard_service)]
 ProcedureRankingSvc = Annotated[
     ProcedureRankingService, Depends(get_procedure_ranking_service)
+]
+ExpensesByCategorySvc = Annotated[
+    ExpensesByCategoryService, Depends(get_expenses_by_category_service)
 ]
 SessionSvc = Annotated[SessionService, Depends(get_session_service)]
 

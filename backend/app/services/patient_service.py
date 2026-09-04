@@ -2,7 +2,7 @@ from datetime import UTC, datetime
 from uuid import UUID, uuid4
 
 from app.core.phone import InvalidPhoneError, normalize_br_phone
-from app.models.patient import Patient
+from app.models.patient import Gender, Patient
 from app.repositories.patient import PatientRepository
 from app.schemas.patient import (
     PatientBatchImportError,
@@ -33,6 +33,7 @@ class PatientService:
             notes=dto.notes,
             consent_whatsapp=dto.consent_whatsapp,
             consent_at=consent_at,
+            gender=dto.gender,
         )
         return self._repo.add(patient)
 
@@ -117,9 +118,38 @@ class PatientService:
         return patient
 
     def list(
-        self, *, limit: int = 50, offset: int = 0, search: str | None = None
+        self,
+        *,
+        limit: int = 50,
+        offset: int = 0,
+        search: str | None = None,
+        gender: Gender | None = None,
+        has_upcoming_booking: bool | None = None,
+        has_completed_treatment: bool | None = None,
     ) -> list[Patient]:
-        return self._repo.list(limit=limit, offset=offset, search=search)
+        return self._repo.list(
+            limit=limit,
+            offset=offset,
+            search=search,
+            gender=gender,
+            has_upcoming_booking=has_upcoming_booking,
+            has_completed_treatment=has_completed_treatment,
+        )
+
+    def count(
+        self,
+        *,
+        search: str | None = None,
+        gender: Gender | None = None,
+        has_upcoming_booking: bool | None = None,
+        has_completed_treatment: bool | None = None,
+    ) -> int:
+        return self._repo.count(
+            search=search,
+            gender=gender,
+            has_upcoming_booking=has_upcoming_booking,
+            has_completed_treatment=has_completed_treatment,
+        )
 
     def update(self, patient_id: UUID, dto: PatientUpdate) -> Patient:
         patient = self.get(patient_id)

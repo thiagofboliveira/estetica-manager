@@ -490,6 +490,65 @@ button:disabled, .button:disabled {
   background: var(--bg-subtle);
 }
 
+.pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  margin-top: 16px;
+  flex-wrap: wrap;
+}
+
+.pagination__status {
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.filters-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin: 12px 0;
+}
+
+.filters-bar select {
+  padding: 8px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--border-input);
+  background: var(--bg-card);
+  color: var(--text);
+  font-size: 13.5px;
+  min-height: 40px;
+}
+
+.filters-bar__toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 8px 14px;
+  border-radius: 9999px;
+  border: 1px solid var(--border-input);
+  background: var(--bg-card);
+  color: var(--text-muted);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  min-height: 40px;
+  transition: all 0.15s ease;
+}
+
+.filters-bar__toggle:hover {
+  border-color: var(--border-focus);
+  color: var(--text-h);
+}
+
+.filters-bar__toggle--active {
+  background: var(--accent-bg);
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
 /* ==========================================================================
    Modal (overlay genérico — NewBookingModal, ScheduleSessionModal)
    ========================================================================== */

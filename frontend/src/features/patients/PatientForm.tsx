@@ -15,6 +15,7 @@ const schema = z.object({
   birth_date: z.string().optional(),
   notes: z.string().optional(),
   consent_whatsapp: z.boolean(),
+  gender: z.enum(["", "FEMALE", "MALE", "OTHER", "UNDISCLOSED"]).optional(),
 });
 
 export type PatientFormValues = z.infer<typeof schema>;
@@ -42,6 +43,7 @@ export function PatientForm({ initial, onSubmit, submitLabel }: Props) {
       birth_date: initial?.birth_date ?? "",
       notes: initial?.notes ?? "",
       consent_whatsapp: initial?.consent_whatsapp ?? false,
+      gender: initial?.gender ?? "",
     },
   });
 
@@ -86,6 +88,17 @@ export function PatientForm({ initial, onSubmit, submitLabel }: Props) {
       <label className="form__field">
         <span>Data de nascimento</span>
         <input {...register("birth_date")} type="date" />
+      </label>
+
+      <label className="form__field">
+        <span>Sexo</span>
+        <select {...register("gender")}>
+          <option value="">Prefiro não informar</option>
+          <option value="FEMALE">Feminino</option>
+          <option value="MALE">Masculino</option>
+          <option value="OTHER">Outro</option>
+          <option value="UNDISCLOSED">Prefere não dizer</option>
+        </select>
       </label>
 
       <label className="form__field">

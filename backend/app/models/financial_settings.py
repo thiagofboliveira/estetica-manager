@@ -10,8 +10,8 @@ esta tabela é só a configuração VIGENTE, mudá-la não deve alterar vendas
 passadas.
 """
 
-from decimal import Decimal
 from datetime import time
+from decimal import Decimal
 from enum import StrEnum
 
 from sqlalchemy import Enum, Numeric, Time, UniqueConstraint

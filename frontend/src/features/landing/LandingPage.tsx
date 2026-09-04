@@ -1,5 +1,7 @@
 import { Link } from "react-router-dom";
 import styles from "./LandingPage.module.css";
+import { ThemeToggle } from "@/ui/ThemeToggle";
+import { IconSparkles } from "@/ui/icons";
 
 export function LandingPage() {
   return (
@@ -7,7 +9,9 @@ export function LandingPage() {
       {/* Header / Navbar */}
       <header className={styles.navbar}>
         <div className={styles.navBrand}>
-          <div className={styles.logoBadge}>✨</div>
+          <div className={styles.logoBadge}>
+            <IconSparkles width="18" height="18" />
+          </div>
           <span className={styles.brandTitle}>
             Lumina <span className={styles.brandSubtitle}>Estética</span>
           </span>
@@ -21,6 +25,7 @@ export function LandingPage() {
         </nav>
 
         <div className={styles.navActions}>
+          <ThemeToggle />
           <Link to="/login" className={styles.btnSecondary}>
             Entrar
           </Link>
@@ -217,7 +222,7 @@ export function LandingPage() {
             já prontas para serem contatadas.
           </p>
           <div className={styles.ctaButtons}>
-            <Link to="/login" className={styles.heroBtnMain}>
+            <Link to="/login" className={styles.ctaBtnInverse}>
               Acessar Minha Conta →
             </Link>
           </div>
@@ -228,7 +233,9 @@ export function LandingPage() {
       <footer className={styles.footer}>
         <div className={styles.footerTop}>
           <div className={styles.navBrand}>
-            <div className={styles.logoBadge}>✨</div>
+            <div className={styles.logoBadge}>
+              <IconSparkles width="18" height="18" />
+            </div>
             <span className={styles.brandTitle}>Lumina Estética</span>
           </div>
           <p className={styles.footerTagline}>

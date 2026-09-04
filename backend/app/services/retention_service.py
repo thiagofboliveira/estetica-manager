@@ -18,6 +18,8 @@ from app.repositories.return_opportunity import ReturnOpportunityRepository
 from app.schemas.retention import (
     OpportunityItemOut,
     PatientRetentionCardOut,
+    ReengagementPatientOut,
+    ReengagementResponseOut,
     ReturnOpportunityOut,
     ReturnOpportunityUpdate,
 )
@@ -189,6 +191,56 @@ class RetentionService:
                 )
             )
         return result
+
+    def list_reengagement(
+        self, inactive_days: int, *, page: int = 1, page_size: int = 20
+    ) -> ReengagementResponseOut:
+        """F4-04: seções de reengajamento ("nunca tratou" / "parado há X
+        dias") — fonte separada do motor de retorno real (I6). Pacientes
+        com oportunidade OPEN/CONTACTED/BOOKED/NO_RESPONSE já aparecem
+        no card de retorno de verdade; não duplica aqui. Página única
+        compartilhada pelas duas seções (decisão: listas moderadas, não
+        justifica dois conjuntos de query params)."""
+        opps_patient_ids = {opp.patient_id for opp in self._opps.list_active()}
+        offset = (page - 1) * page_size
+
+        never_treated = [
+            ReengagementPatientOut(
+                patient_id=p.id,
+                patient_name=p.name,
+                patient_phone=p.phone,
+                gender=p.gender,
+                consent_whatsapp=p.consent_whatsapp,
+                last_treated_at=None,
+            )
+            for p in self._patients.list_never_treated(limit=page_size, offset=offset)
+            if p.id not in opps_patient_ids
+        ]
+
+        inactive = [
+            ReengagementPatientOut(
+                patient_id=p.id,
+                patient_name=p.name,
+                patient_phone=p.phone,
+                gender=p.gender,
+                consent_whatsapp=p.consent_whatsapp,
+                last_treated_at=last_treated_at,
+            )
+            for p, last_treated_at in self._patients.list_inactive_for_days(
+                inactive_days, limit=page_size, offset=offset
+            )
+            if p.id not in opps_patient_ids
+        ]
+
+        return ReengagementResponseOut(
+            never_treated=never_treated,
+            never_treated_total_count=self._patients.count_never_treated(),
+            inactive=inactive,
+            inactive_total_count=self._patients.count_inactive_for_days(inactive_days),
+            inactive_days_threshold=inactive_days,
+            page=page,
+            page_size=page_size,
+        )
 
     def update(self, opp_id: UUID, dto: ReturnOpportunityUpdate) -> ReturnOpportunity:
         opp = self.get(opp_id)

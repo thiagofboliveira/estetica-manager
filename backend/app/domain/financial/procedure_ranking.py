@@ -48,6 +48,13 @@ class ProcedureRankingRow:
     gross_revenue: Decimal
     net_profit: Decimal
     margin: Decimal | None
+    # Preenchido pelo service (ProcedureRankingService), não por
+    # build_procedure_ranking(): "atendimento" é Sessão COMPLETED (I5),
+    # não item de venda — sessão PENDING não é atendimento realizado, e
+    # este módulo só enxerga SaleItem, nunca Session. Default 0 aqui é
+    # só para as vendas não passarem a segunda etapa nos testes puros
+    # existentes; o service sempre sobrescreve com o valor real.
+    session_count: int = 0
 
 
 def _line_total(item: ItemForRanking) -> Decimal:

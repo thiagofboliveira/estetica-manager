@@ -6,6 +6,7 @@ from app.domain.retention.enums import (
     ReturnOpportunityStatus,
     Timing,
 )
+from app.models.patient import Gender
 from app.schemas.base import InputSchema, OutputSchema
 from app.schemas.types import MoneyOut
 
@@ -42,6 +43,29 @@ class PatientRetentionCardOut(OutputSchema):
     secondary_opportunities: list[OpportunityItemOut]
     whatsapp_enabled: bool
     disabled_reason: str | None
+
+
+class ReengagementPatientOut(OutputSchema):
+    """F4-04: paciente de reengajamento (nunca tratou ou parado há X
+    dias) — fonte diferente do motor de retorno real (I6/I7), nunca
+    mistura com PatientRetentionCardOut nem com seus contadores."""
+
+    patient_id: UUID
+    patient_name: str
+    patient_phone: str | None
+    gender: Gender | None
+    consent_whatsapp: bool
+    last_treated_at: datetime | None
+
+
+class ReengagementResponseOut(OutputSchema):
+    never_treated: list[ReengagementPatientOut]
+    never_treated_total_count: int
+    inactive: list[ReengagementPatientOut]
+    inactive_total_count: int
+    inactive_days_threshold: int
+    page: int
+    page_size: int
 
 
 class ReturnOpportunityOut(OutputSchema):

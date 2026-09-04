@@ -3,10 +3,12 @@ from uuid import UUID
 from fastapi import APIRouter, HTTPException, Query, status
 
 from app.api.deps import PatientSvc
+from app.models.patient import Gender
 from app.schemas.patient import (
     PatientBatchImportRequest,
     PatientBatchImportResult,
     PatientCreate,
+    PatientListOut,
     PatientOut,
     PatientUpdate,
 )
@@ -28,15 +30,36 @@ def import_patients(
     return svc.batch_import(payload)
 
 
-@router.get("", response_model=list[PatientOut])
+@router.get("", response_model=PatientListOut)
 def list_patients(
     svc: PatientSvc,
     search: str | None = Query(default=None),
-    limit: int = Query(default=50, le=200),
-    offset: int = Query(default=0, ge=0),
-) -> list[PatientOut]:
-    patients = svc.list(limit=limit, offset=offset, search=search)
-    return [PatientOut.model_validate(p) for p in patients]
+    gender: Gender | None = Query(default=None),
+    has_upcoming_booking: bool | None = Query(default=None),
+    has_completed_treatment: bool | None = Query(default=None),
+    page: int = Query(default=1, ge=1),
+    page_size: int = Query(default=20, ge=1, le=200),
+) -> PatientListOut:
+    offset = (page - 1) * page_size
+    patients = svc.list(
+        limit=page_size,
+        offset=offset,
+        search=search,
+        gender=gender,
+        has_upcoming_booking=has_upcoming_booking,
+        has_completed_treatment=has_completed_treatment,
+    )
+    return PatientListOut(
+        items=[PatientOut.model_validate(p) for p in patients],
+        total_count=svc.count(
+            search=search,
+            gender=gender,
+            has_upcoming_booking=has_upcoming_booking,
+            has_completed_treatment=has_completed_treatment,
+        ),
+        page=page,
+        page_size=page_size,
+    )
 
 
 @router.get("/{patient_id}", response_model=PatientOut)

@@ -1,0 +1,98 @@
+.carousel {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 24px;
+}
+
+.trackWrapper {
+  display: flex;
+  align-items: stretch;
+  gap: 8px;
+}
+
+.track {
+  display: flex;
+  gap: 16px;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  flex: 1;
+  min-width: 0;
+}
+
+.track::-webkit-scrollbar {
+  display: none;
+}
+
+.slide {
+  /* N slides completos visíveis por vez, cada um com o mesmo tamanho —
+     nunca um card cortado na borda. (100% - gaps entre os N) / N. */
+  flex: 0 0 calc((100% - (var(--carousel-slides, 3) - 1) * 16px) / var(--carousel-slides, 3));
+  min-width: 0;
+  scroll-snap-align: start;
+}
+
+.navBtn {
+  flex-shrink: 0;
+  align-self: center;
+  background: var(--bg-card) !important;
+  color: var(--text-h) !important;
+  border: 1px solid var(--border-input) !important;
+  width: 36px;
+  height: 36px;
+  min-height: 36px !important;
+  border-radius: 50% !important;
+  font-size: 15px !important;
+  padding: 0 !important;
+  box-shadow: var(--shadow-sm) !important;
+  cursor: pointer;
+}
+
+.navBtn:hover:not(:disabled) {
+  background: var(--bg-subtle) !important;
+  border-color: var(--border-focus) !important;
+}
+
+.navBtn:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+.dots {
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+}
+
+.dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--border-input) !important;
+  border: none !important;
+  padding: 0 !important;
+  min-height: auto !important;
+  box-shadow: none !important;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.dotActive {
+  background: var(--accent) !important;
+  width: 18px;
+  border-radius: 4px;
+}
+
+@media (max-width: 900px) {
+  .slide {
+    /* Mobile sempre mostra 1 slide por vez, cheio — não faz sentido
+       espremer N cards numa tela de 375px de largura. */
+    flex-basis: 100%;
+  }
+
+  .navBtn {
+    display: none;
+  }
+}

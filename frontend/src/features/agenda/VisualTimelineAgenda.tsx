@@ -1,4 +1,4 @@
-﻿import { useState, useMemo } from "react";
+﻿import { useState, useMemo, useEffect } from "react";
 import type { AgendaItem, SessionStatus } from "./api";
 import { formatLocalDate } from "@/lib/format/date";
 import { IconCalendar, IconCheck, IconPlus, IconSparkles, IconAlertTriangle } from "@/ui/icons";
@@ -8,23 +8,37 @@ interface Props {
   items: AgendaItem[];
   currentDateFrom: string;
   currentDateTo: string;
+  defaultViewType?: "timeline" | "month";
+  monthCursor?: Date;
+  onNavigateMonth?: (delta: number) => void;
   onUpdateSessionStatus: (item: AgendaItem, status: SessionStatus) => void;
   onConvertBooking: (item: AgendaItem) => void;
   onBookSlot: (slotDateTimeISO: string) => void;
 }
 
 const OPERATING_HOURS = [8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20];
+const WEEKDAY_LABELS = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
 
 export function VisualTimelineAgenda({
   items,
   currentDateFrom,
   currentDateTo,
+  defaultViewType,
+  monthCursor,
+  onNavigateMonth,
   onUpdateSessionStatus,
   onConvertBooking,
   onBookSlot,
 }: Props) {
-  const [viewType, setViewType] = useState<"timeline" | "list">("timeline");
-  
+  const [viewType, setViewType] = useState<"timeline" | "list" | "month">(defaultViewType ?? "timeline");
+
+  // O controle externo (abas "Mês" / "Próximos 7 dias") define qual visão
+  // faz sentido para o range consultado; sincroniza sem apagar a escolha
+  // manual do usuário dentro do mesmo range (ex.: trocar para "Lista").
+  useEffect(() => {
+    if (defaultViewType) setViewType(defaultViewType);
+  }, [defaultViewType, currentDateFrom, currentDateTo]);
+
   // Selected day inside the view range (defaults to today or currentDateFrom)
   const todayStr = formatLocalDate(new Date());
   const [selectedDate, setSelectedDate] = useState<string>(() => {
@@ -79,6 +93,43 @@ export function VisualTimelineAgenda({
     return map;
   }, [dayAppointments]);
 
+  // Group items by day for the month grid (currentDateFrom/To already cover
+  // full weeks, padding included, when defaultViewType === "month")
+  const itemsByDate = useMemo(() => {
+    const map = new Map<string, AgendaItem[]>();
+    for (const item of items) {
+      const dateStr = formatLocalDate(new Date(item.scheduled_at));
+      const existing = map.get(dateStr) || [];
+      existing.push(item);
+      map.set(dateStr, existing);
+    }
+    for (const list of map.values()) {
+      list.sort((a, b) => a.scheduled_at.localeCompare(b.scheduled_at));
+    }
+    return map;
+  }, [items]);
+
+  const monthGridCells = useMemo(() => {
+    if (!monthCursor) return [];
+    const referenceMonth = monthCursor.getMonth();
+    const cells: { dateStr: string; dayNum: number; inCurrentMonth: boolean }[] = [];
+    const cursor = new Date(currentDateFrom + "T00:00:00");
+    const end = new Date(currentDateTo + "T00:00:00");
+    while (cursor <= end) {
+      cells.push({
+        dateStr: formatLocalDate(cursor),
+        dayNum: cursor.getDate(),
+        inCurrentMonth: cursor.getMonth() === referenceMonth,
+      });
+      cursor.setDate(cursor.getDate() + 1);
+    }
+    return cells;
+  }, [currentDateFrom, currentDateTo, monthCursor]);
+
+  const monthLabel = monthCursor
+    ? monthCursor.toLocaleDateString("pt-BR", { month: "long", year: "numeric" })
+    : "";
+
   // Calculate occupancy statistics for the selected day
   const busyHoursCount = Array.from(appointmentsByHour.values()).filter((arr) => arr.length > 0).length;
   const totalSlots = OPERATING_HOURS.length;
@@ -118,42 +169,77 @@ export function VisualTimelineAgenda({
           >
             <span>Lista Cronológica</span>
           </button>
-        </div>
-
-        <div className={styles.navigationBar}>
-          <button
-            type="button"
-            className={styles.navBtn}
-            onClick={() => handleNavigateDay(-1)}
-            title="Dia anterior"
-          >
-            ←
-          </button>
-          <span className={styles.currentDateLabel}>
-            {selectedDate === todayStr ? "Hoje, " : ""}
-            {selectedDateObj.toLocaleDateString("pt-BR", { day: "numeric", month: "short" })}
-          </span>
-          <button
-            type="button"
-            className={styles.navBtn}
-            onClick={() => handleNavigateDay(1)}
-            title="Próximo dia"
-          >
-            →
-          </button>
-          {selectedDate !== todayStr && (
+          {monthCursor && (
             <button
               type="button"
-              className={styles.navBtn}
-              onClick={() => setSelectedDate(todayStr)}
+              className={viewType === "month" ? `${styles.viewSwitchBtn} ${styles.viewSwitchBtnActive}` : styles.viewSwitchBtn}
+              onClick={() => setViewType("month")}
             >
-              Hoje
+              <IconCalendar width="15" height="15" />
+              <span>Calendário Mensal</span>
             </button>
           )}
         </div>
+
+        {viewType === "month" && monthCursor && onNavigateMonth ? (
+          <div className={styles.navigationBar}>
+            <button
+              type="button"
+              className={styles.navBtn}
+              onClick={() => onNavigateMonth(-1)}
+              title="Mês anterior"
+            >
+              ←
+            </button>
+            <span className={styles.currentDateLabel} style={{ textTransform: "capitalize" }}>
+              {monthLabel}
+            </span>
+            <button
+              type="button"
+              className={styles.navBtn}
+              onClick={() => onNavigateMonth(1)}
+              title="Próximo mês"
+            >
+              →
+            </button>
+          </div>
+        ) : (
+          <div className={styles.navigationBar}>
+            <button
+              type="button"
+              className={styles.navBtn}
+              onClick={() => handleNavigateDay(-1)}
+              title="Dia anterior"
+            >
+              ←
+            </button>
+            <span className={styles.currentDateLabel}>
+              {selectedDate === todayStr ? "Hoje, " : ""}
+              {selectedDateObj.toLocaleDateString("pt-BR", { day: "numeric", month: "short" })}
+            </span>
+            <button
+              type="button"
+              className={styles.navBtn}
+              onClick={() => handleNavigateDay(1)}
+              title="Próximo dia"
+            >
+              →
+            </button>
+            {selectedDate !== todayStr && (
+              <button
+                type="button"
+                className={styles.navBtn}
+                onClick={() => setSelectedDate(todayStr)}
+              >
+                Hoje
+              </button>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Day Selector Strip with Occupancy badges */}
+      {viewType !== "month" && (
       <div className={styles.dayStrip}>
         {daysList.map((day) => {
           const isActive = day.dateStr === selectedDate;
@@ -182,8 +268,10 @@ export function VisualTimelineAgenda({
           );
         })}
       </div>
+      )}
 
       {/* Occupancy Indicator Bar */}
+      {viewType !== "month" && (
       <div className={styles.occupancyBar}>
         <div className={styles.occupancyInfo}>
           <span className={styles.occupancyLabel}>Ocupação em {selectedDateFormatted}:</span>
@@ -228,6 +316,65 @@ export function VisualTimelineAgenda({
           </div>
         </div>
       </div>
+      )}
+
+      {/* VIEW 0: Month Calendar Grid */}
+      {viewType === "month" && (
+        <div className={styles.monthGridWrapper}>
+          <div className={styles.monthWeekdayRow}>
+            {WEEKDAY_LABELS.map((label) => (
+              <div key={label} className={styles.monthWeekdayCell}>
+                {label}
+              </div>
+            ))}
+          </div>
+          <div className={styles.monthGrid}>
+            {monthGridCells.map((cell) => {
+              const dayItems = itemsByDate.get(cell.dateStr) || [];
+              const isToday = cell.dateStr === todayStr;
+              const cellClass = [
+                styles.monthCell,
+                !cell.inCurrentMonth ? styles.monthCellOutside : "",
+                isToday ? styles.monthCellToday : "",
+              ]
+                .filter(Boolean)
+                .join(" ");
+
+              return (
+                <div
+                  key={cell.dateStr}
+                  className={cellClass}
+                  onClick={() => {
+                    setSelectedDate(cell.dateStr);
+                    setViewType("timeline");
+                  }}
+                >
+                  <span className={styles.monthCellDayNum}>{cell.dayNum}</span>
+                  <div className={styles.monthCellItems}>
+                    {dayItems.slice(0, 3).map((item) => {
+                      const dt = new Date(item.scheduled_at);
+                      const timeStr = dt.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
+                      let dotClass = styles.monthItemScheduled;
+                      if (item.status === "COMPLETED") dotClass = styles.monthItemCompleted;
+                      else if (item.status === "NO_SHOW") dotClass = styles.monthItemNoShow;
+                      else if (item.type === "BOOKING") dotClass = styles.monthItemBooking;
+
+                      return (
+                        <span key={`${item.type}-${item.id}`} className={`${styles.monthItemChip} ${dotClass}`}>
+                          {timeStr} {item.patient_name}
+                        </span>
+                      );
+                    })}
+                    {dayItems.length > 3 && (
+                      <span className={styles.monthMoreLabel}>+{dayItems.length - 3} mais</span>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {/* VIEW 1: Visual Hourly Timeline Grid */}
       {viewType === "timeline" && (

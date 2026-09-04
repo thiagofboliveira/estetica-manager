@@ -58,7 +58,7 @@ export function OnboardingChecklist({ hasAnySale }: Props) {
       id: "settings",
       label: "Ajustar taxas e despesas fixas da clínica",
       done: hasConfiguredSettings,
-      link: "/configuracoes",
+      link: "/financeiro",
       actionText: "Ver configurações",
     },
   ];

@@ -45,6 +45,7 @@ def health() -> dict[str, str]:
 
 
 from pydantic import BaseModel
+
 from app.db.session import unsafe_session_without_tenant
 from app.repositories.user import UserRepository
 
@@ -89,11 +90,11 @@ if settings.ENV == "development":
         return {"access_token": token}
 
     from uuid import UUID as _UUID
-    from app.api.deps import GlobalSuperAdminUser as _SuperAdminDep
-    from app.db.session import get_tenant_session as _get_tenant_session
-    from app.core.security import get_current_professional_id as _get_prof_id
+
     from fastapi import Depends as _Depends
-    from fastapi.security import HTTPBearer as _HTTPBearer, HTTPAuthorizationCredentials as _HTTPCreds
+    from fastapi.security import HTTPAuthorizationCredentials as _HTTPCreds
+    from fastapi.security import HTTPBearer as _HTTPBearer
+
 
     @app.post("/dev/impersonate/{user_id}", tags=["dev"])
     def dev_impersonate(
@@ -104,9 +105,11 @@ if settings.ENV == "development":
         Exige que o chamador seja um Super Admin autenticado.
         SOMENTE disponível em ENV=development.
         """
+        from fastapi import HTTPException as _HTTPEx
+        from fastapi import status as _status
+
         from app.core.security import _decode as _sec_decode
         from app.db.session import unsafe_session_without_tenant as _unsafe_sess
-        from fastapi import HTTPException as _HTTPEx, status as _status
 
         # Valida que quem chama é superadmin
         claims = _sec_decode(creds.credentials)

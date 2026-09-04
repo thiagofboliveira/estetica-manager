@@ -51,6 +51,13 @@ class SaleForDashboard:
 class FixedExpenseForDashboard:
     amount: Decimal
     periodicity: str  # "MONTHLY" | "YEARLY" — evita import de app.models aqui
+    # category/label: não usados pelo cálculo do dashboard (por isso têm
+    # default), só carregados por quem monta o objeto para reaproveitar
+    # esta mesma dataclass em app/domain/financial/expenses_by_category.py
+    # — uma despesa e o jeito de somá-la por mês não deveriam ter dois
+    # dataclasses paralelos.
+    category: str | None = None
+    label: str | None = None
 
 
 @dataclass(frozen=True)
@@ -90,7 +97,11 @@ def calculate_recent_average_ticket(sales: list[SaleForDashboard]) -> Decimal | 
     return money(gross_revenue / len(sales))
 
 
-def _monthly_equivalent(expense: FixedExpenseForDashboard) -> Decimal:
+def monthly_equivalent(expense: FixedExpenseForDashboard) -> Decimal:
+    """Despesa YEARLY entra ratada por 12; MONTHLY entra pelo valor cheio.
+
+    Compartilhada com expenses_by_category.py — a regra de rateio vive
+    num único lugar, nunca duplicada."""
     if expense.periodicity == "YEARLY":
         return money(expense.amount / MONTHS_PER_YEAR)
     return money(expense.amount)
@@ -138,7 +149,7 @@ def build_dashboard(
     breakeven_sessions_estimate = None
     breakeven_alert = False
     if period_kind is PeriodKind.MONTH:
-        fixed_total = money(sum((_monthly_equivalent(e) for e in fixed_expenses), ZERO))
+        fixed_total = money(sum((monthly_equivalent(e) for e in fixed_expenses), ZERO))
         net_after_fixed = money(net_profit - fixed_total)
         breakeven_remaining = money(max(ZERO, fixed_total - net_profit))
 

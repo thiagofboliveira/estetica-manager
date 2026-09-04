@@ -1,5 +1,7 @@
 import { api } from "@/lib/http/client";
 
+export type Gender = "FEMALE" | "MALE" | "OTHER" | "UNDISCLOSED";
+
 export type Patient = {
   id: string;
   name: string;
@@ -10,6 +12,7 @@ export type Patient = {
   consent_whatsapp: boolean;
   consent_at: string | null;
   is_active: boolean;
+  gender: Gender | null;
   created_at: string;
   updated_at: string;
 };
@@ -21,6 +24,7 @@ export type PatientCreateInput = {
   birth_date?: string | null;
   notes?: string | null;
   consent_whatsapp?: boolean;
+  gender?: Gender | null;
 };
 
 export type PatientUpdateInput = Partial<PatientCreateInput> & {
@@ -34,14 +38,37 @@ export type BatchImportResult = {
   patients: Patient[];
 };
 
+export type PatientList = {
+  items: Patient[];
+  total_count: number;
+  page: number;
+  page_size: number;
+};
+
+export type PatientListParams = {
+  search?: string;
+  gender?: Gender;
+  has_upcoming_booking?: boolean;
+  has_completed_treatment?: boolean;
+  page?: number;
+  page_size?: number;
+};
+
 export const patientsApi = {
-  list: (params: { search?: string; limit?: number; offset?: number } = {}) => {
+  list: (params: PatientListParams = {}) => {
     const qs = new URLSearchParams();
     if (params.search) qs.set("search", params.search);
-    if (params.limit) qs.set("limit", String(params.limit));
-    if (params.offset) qs.set("offset", String(params.offset));
+    if (params.gender) qs.set("gender", params.gender);
+    if (params.has_upcoming_booking != null) {
+      qs.set("has_upcoming_booking", String(params.has_upcoming_booking));
+    }
+    if (params.has_completed_treatment != null) {
+      qs.set("has_completed_treatment", String(params.has_completed_treatment));
+    }
+    if (params.page) qs.set("page", String(params.page));
+    if (params.page_size) qs.set("page_size", String(params.page_size));
     const suffix = qs.toString() ? `?${qs.toString()}` : "";
-    return api.get<Patient[]>(`/patients${suffix}`);
+    return api.get<PatientList>(`/patients${suffix}`);
   },
   get: (id: string) => api.get<Patient>(`/patients/${id}`),
   create: (payload: PatientCreateInput) => api.post<Patient>("/patients", payload),

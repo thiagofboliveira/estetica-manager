@@ -21,6 +21,16 @@ class ProcedureType(StrEnum):
     PRODUCT = "PRODUCT"
 
 
+class SessionPlan(StrEnum):
+    """Rótulo informativo do catálogo — "este serviço normalmente é
+    feito em uma ou várias sessões". Deliberadamente desacoplado do
+    número real de sessões vendido (SaleItem/pacote): são conceitos
+    diferentes, ver docs/pending/BACKLOG_FILTROS_E_LAYOUT.md (E2)."""
+
+    SINGLE = "SINGLE"
+    MULTIPLE = "MULTIPLE"
+
+
 class Modality(StrEnum):
     """IN_PERSON | REMOTE (MVP v7.1 §9, T-009a).
 
@@ -58,3 +68,9 @@ class Procedure(TenantModel):
         Numeric(5, 2, asdecimal=True), nullable=True
     )
     is_active: Mapped[bool] = mapped_column(default=True, nullable=False)
+    is_invasive: Mapped[bool] = mapped_column(default=False, nullable=False)
+    session_plan: Mapped[SessionPlan] = mapped_column(
+        Enum(SessionPlan, name="procedure_session_plan", native_enum=False),
+        default=SessionPlan.SINGLE,
+        nullable=False,
+    )

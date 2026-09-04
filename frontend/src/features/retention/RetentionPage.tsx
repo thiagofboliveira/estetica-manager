@@ -3,6 +3,7 @@ import { AsyncBoundary } from "@/ui/AsyncBoundary";
 import { EmptyState } from "@/ui/EmptyState";
 import { useRetentionCards } from "./hooks";
 import { RetentionCard } from "./RetentionCard";
+import { ReengagementSection } from "./ReengagementSection";
 
 export function RetentionPage() {
   const query = useRetentionCards();
@@ -45,6 +46,8 @@ export function RetentionPage() {
           );
         }}
       </AsyncBoundary>
+
+      <ReengagementSection />
     </div>
   );
 }

@@ -3,7 +3,7 @@ from uuid import UUID
 
 from pydantic import Field, model_validator
 
-from app.models.procedure import Modality, ProcedureType
+from app.models.procedure import Modality, ProcedureType, SessionPlan
 from app.schemas.base import InputSchema, OutputSchema
 from app.schemas.types import MoneyOut
 
@@ -18,6 +18,8 @@ class ProcedureCreate(InputSchema):
     split_override: str | None = Field(
         default=None, description="Percentual de comissão customizado, ex: '30.00' (E6 / P1)"
     )
+    is_invasive: bool = False
+    session_plan: SessionPlan = SessionPlan.SINGLE
 
     @model_validator(mode="after")
     def _produto_sem_intervalo_de_retorno(self) -> "ProcedureCreate":
@@ -36,6 +38,8 @@ class ProcedureUpdate(InputSchema):
     default_modality: Modality | None = None
     split_override: str | None = None
     is_active: bool | None = None
+    is_invasive: bool | None = None
+    session_plan: SessionPlan | None = None
 
 
 class ProcedureOut(OutputSchema):
@@ -48,8 +52,17 @@ class ProcedureOut(OutputSchema):
     default_modality: Modality
     split_override: MoneyOut | None = None
     is_active: bool
+    is_invasive: bool
+    session_plan: SessionPlan
     created_at: datetime
     updated_at: datetime
+
+
+class ProcedureListOut(OutputSchema):
+    items: list[ProcedureOut]
+    total_count: int
+    page: int
+    page_size: int
 
 
 class ProcedureTemplateOut(OutputSchema):

@@ -7,7 +7,23 @@ import { useAgenda, useScheduleSession } from "./hooks";
 import { VisualTimelineAgenda } from "./VisualTimelineAgenda";
 import { NewBookingModal } from "./NewBookingModal";
 
-type ViewMode = "today" | "week" | "custom";
+type ViewMode = "today" | "week" | "month" | "custom";
+
+// Grade do calendário mensal mostra semanas completas, então o range
+// consultado precisa incluir os dias de padding do mês anterior/seguinte
+// que aparecem na mesma semana do dia 1 e do último dia do mês.
+function getMonthGridRange(reference: Date): { from: string; to: string } {
+  const firstOfMonth = new Date(reference.getFullYear(), reference.getMonth(), 1);
+  const lastOfMonth = new Date(reference.getFullYear(), reference.getMonth() + 1, 0);
+
+  const gridStart = new Date(firstOfMonth);
+  gridStart.setDate(gridStart.getDate() - gridStart.getDay());
+
+  const gridEnd = new Date(lastOfMonth);
+  gridEnd.setDate(gridEnd.getDate() + (6 - gridEnd.getDay()));
+
+  return { from: formatLocalDate(gridStart), to: formatLocalDate(gridEnd) };
+}
 
 export function AgendaView() {
   const navigate = useNavigate();
@@ -15,6 +31,7 @@ export function AgendaView() {
 
   const [mode, setMode] = useState<ViewMode>("week");
   const [slotToBook, setSlotToBook] = useState<string | null>(null);
+  const [monthCursor, setMonthCursor] = useState(() => new Date());
 
   const todayStr = formatLocalDate(new Date());
   const next7Days = new Date();
@@ -24,8 +41,12 @@ export function AgendaView() {
   const [customFrom, setCustomFrom] = useState(todayStr);
   const [customTo, setCustomTo] = useState(next7DaysStr);
 
-  const dateFrom = mode === "today" ? todayStr : mode === "week" ? todayStr : customFrom;
-  const dateTo = mode === "today" ? todayStr : mode === "week" ? next7DaysStr : customTo;
+  const monthGridRange = getMonthGridRange(monthCursor);
+
+  const dateFrom =
+    mode === "today" ? todayStr : mode === "week" ? todayStr : mode === "month" ? monthGridRange.from : customFrom;
+  const dateTo =
+    mode === "today" ? todayStr : mode === "week" ? next7DaysStr : mode === "month" ? monthGridRange.to : customTo;
 
   const query = useAgenda(dateFrom, dateTo);
 
@@ -71,6 +92,17 @@ export function AgendaView() {
           <button
             type="button"
             className="tab-button tap-target"
+            aria-selected={mode === "month"}
+            onClick={() => {
+              setMonthCursor(new Date());
+              setMode("month");
+            }}
+          >
+            Mês
+          </button>
+          <button
+            type="button"
+            className="tab-button tap-target"
             aria-selected={mode === "custom"}
             onClick={() => setMode("custom")}
           >
@@ -103,6 +135,11 @@ export function AgendaView() {
             items={items}
             currentDateFrom={dateFrom}
             currentDateTo={dateTo}
+            defaultViewType={mode === "month" ? "month" : "timeline"}
+            monthCursor={mode === "month" ? monthCursor : undefined}
+            onNavigateMonth={(delta) => {
+              setMonthCursor((prev) => new Date(prev.getFullYear(), prev.getMonth() + delta, 1));
+            }}
             onUpdateSessionStatus={handleUpdateSessionStatus}
             onConvertBooking={handleConvertBooking}
             onBookSlot={(slotDateTimeISO) => setSlotToBook(slotDateTimeISO)}

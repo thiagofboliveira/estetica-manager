@@ -4,6 +4,7 @@ from uuid import UUID
 from sqlalchemy import func, select
 
 from app.domain.sales.session_state_machine import SessionStatus
+from app.models.sale_item import SaleItem
 from app.models.session import Session
 from app.repositories.base import TenantRepository
 
@@ -94,6 +95,26 @@ class SessionRepository(TenantRepository[Session]):
             .where(local_date <= date_to)
         )
         return int(self._session.scalar(stmt) or 0)
+
+    def count_completed_by_procedure_in_period(
+        self, date_from: date, date_to: date, timezone_name: str
+    ) -> dict[UUID, int]:
+        """Nº de sessões COMPLETED por procedure_id — base de "atendimento"
+        (I5: nº de atendimentos é Sessão, não Sale/Item). Usado pelo
+        ranking de procedimentos para não confundir "sessão vendida"
+        (SaleItem.quantity, inclui PENDING) com "sessão realizada"."""
+        local_date = func.date(Session.completed_at.op("AT TIME ZONE")(timezone_name))
+        stmt = (
+            select(SaleItem.procedure_id, func.count())
+            .select_from(Session)
+            .join(SaleItem, SaleItem.id == Session.sale_item_id)
+            .where(Session.professional_id == self._professional_id)
+            .where(Session.status == SessionStatus.COMPLETED)
+            .where(local_date >= date_from)
+            .where(local_date <= date_to)
+            .group_by(SaleItem.procedure_id)
+        )
+        return dict(self._session.execute(stmt).all())
 
     def count_no_show_in_period(
         self, date_from: date, date_to: date, timezone_name: str

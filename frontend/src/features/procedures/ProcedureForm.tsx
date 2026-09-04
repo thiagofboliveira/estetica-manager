@@ -15,6 +15,8 @@ const schema = z.object({
   estimated_cost: z.string(),
   return_interval_days: z.string().optional(),
   default_modality: z.enum(["IN_PERSON", "REMOTE"]),
+  is_invasive: z.boolean(),
+  session_plan: z.enum(["SINGLE", "MULTIPLE"]),
 });
 
 export type ProcedureFormValues = z.infer<typeof schema>;
@@ -43,6 +45,8 @@ export function ProcedureForm({ initial, onSubmit, submitLabel }: Props) {
       estimated_cost: initial?.estimated_cost ?? ZERO,
       return_interval_days: initial?.return_interval_days?.toString() ?? "",
       default_modality: (initial?.default_modality ?? "IN_PERSON") as Modality,
+      is_invasive: initial?.is_invasive ?? false,
+      session_plan: initial?.session_plan ?? "SINGLE",
     },
   });
 
@@ -114,6 +118,21 @@ export function ProcedureForm({ initial, onSubmit, submitLabel }: Props) {
             />
           )}
         />
+      </label>
+
+      <fieldset className="form__field">
+        <legend>Sessões</legend>
+        <label>
+          <input type="radio" value="SINGLE" {...register("session_plan")} /> Sessão única
+        </label>
+        <label>
+          <input type="radio" value="MULTIPLE" {...register("session_plan")} /> Múltiplas sessões
+        </label>
+      </fieldset>
+
+      <label className="form__field" style={{ flexDirection: "row", alignItems: "center", gap: "8px" }}>
+        <input type="checkbox" {...register("is_invasive")} />
+        <span>⚠️ Procedimento invasivo</span>
       </label>
 
       {type === "SERVICE" && (

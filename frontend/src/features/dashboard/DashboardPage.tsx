@@ -1,14 +1,18 @@
 import { useState } from "react";
 import { AsyncBoundary } from "@/ui/AsyncBoundary";
 import { EmptyState } from "@/ui/EmptyState";
+import { Carousel } from "@/ui/Carousel";
 import { formatBRL, formatRate } from "@/lib/money/format";
 import { money, rate } from "@/lib/money/money";
 import { useDashboard } from "./hooks";
 import type { Dashboard, DashboardParams, DashboardPeriod } from "./api";
 
 import { ProcedureRankingTable } from "./ProcedureRankingTable";
+import { ProfitByServiceChart, AppointmentsByServiceChart } from "./ProcedureChartsSection";
+import { ExpensesByCategoryChart } from "./ExpensesByCategoryChart";
 import { OnboardingChecklist } from "@/features/onboarding/OnboardingChecklist";
 import { ROICard } from "./ROICard";
+import { MetricCard } from "./MetricCard";
 
 const PERIOD_OPTIONS: { value: DashboardPeriod; label: string }[] = [
   { value: "today", label: "Hoje" },
@@ -26,7 +30,9 @@ const PERIOD_OPTIONS: { value: DashboardPeriod; label: string }[] = [
  * (fixed_expenses_total/net_profit_after_fixed_expenses vêm null fora
  * disso) — a linha some, nunca mostra "R$ 0,00" no lugar de null.
  * F-013b: Badges de estimativa/lucro provisório (I7).
- * F-013c: Ranking de procedimentos por faturamento e lucro real.
+ * F-013c: Ranking de procedimentos por faturamento e lucro real,
+ * paginado (10/página) + gráficos de lucro e atendimentos (top 10) e
+ * despesas fixas por categoria (GET /reports/expenses-by-category).
  * F-021: Checklist de primeiro acesso não-bloqueante.
  */
 export function DashboardPage() {
@@ -101,7 +107,16 @@ export function DashboardPage() {
           {(dashboard) => (
             <>
               <ROICard params={params} />
-              <DashboardMetrics dashboard={dashboard} />
+              <Carousel ariaLabel="Métricas do período" slidesPerView={3}>
+                {buildMetricSlides(dashboard)}
+              </Carousel>
+              <Carousel ariaLabel="Gráficos financeiros" slidesPerView={1}>
+                {[
+                  <ExpensesByCategoryChart key="expenses" />,
+                  <ProfitByServiceChart key="profit" params={params} />,
+                  <AppointmentsByServiceChart key="appointments" params={params} />,
+                ]}
+              </Carousel>
               <ProcedureRankingTable params={params} />
             </>
           )}
@@ -111,81 +126,77 @@ export function DashboardPage() {
   );
 }
 
-function DashboardMetrics({ dashboard }: { dashboard: Dashboard }) {
+// F5-02: cada métrica virou um slide do carrossel — mesma lógica
+// condicional que existia no <dl> de grid (lucro do mês só com period
+// this_month|last_month, ponto de equilíbrio só quando aplicável).
+function buildMetricSlides(dashboard: Dashboard) {
   const { fixed_expenses_total, net_profit_after_fixed_expenses } = dashboard;
   const showFixedExpenses = fixed_expenses_total != null && net_profit_after_fixed_expenses != null;
 
-  return (
-    <dl className="dashboard__metrics">
-      <div className="dashboard__metric">
-        <dt>Faturamento</dt>
-        <dd>{formatBRL(money(dashboard.gross_revenue))}</dd>
-      </div>
+  const slides = [
+    <MetricCard key="revenue" label="Faturamento" value={formatBRL(money(dashboard.gross_revenue))} />,
+    <MetricCard key="profit" label="Lucro real" value={formatBRL(money(dashboard.net_profit))} />,
+  ];
 
-      <div className="dashboard__metric">
-        <dt>Lucro real</dt>
-        <dd>{formatBRL(money(dashboard.net_profit))}</dd>
-      </div>
+  if (showFixedExpenses) {
+    slides.push(
+      <MetricCard
+        key="profit-month"
+        label="Lucro real do mês"
+        value={formatBRL(money(net_profit_after_fixed_expenses))}
+        note={`(após despesas fixas de ${formatBRL(money(fixed_expenses_total))})`}
+      />,
+    );
+  }
 
-      {showFixedExpenses && (
-        <div className="dashboard__metric">
-          <dt>Lucro real do mês</dt>
-          <dd>
-            {formatBRL(money(net_profit_after_fixed_expenses))}
-            <span className="dashboard__metric-note">
-              (após despesas fixas de {formatBRL(money(fixed_expenses_total))})
-            </span>
-          </dd>
-        </div>
-      )}
+  if (dashboard.breakeven_remaining_amount != null) {
+    const covered = !(Number(dashboard.breakeven_remaining_amount) > 0);
+    slides.push(
+      <MetricCard
+        key="breakeven"
+        label="Ponto de equilíbrio do mês"
+        alert={dashboard.breakeven_alert}
+        value={
+          covered ? (
+            "Você já cobriu seus custos fixos este mês 🎉"
+          ) : (
+            <>Faltam {formatBRL(money(dashboard.breakeven_remaining_amount))} em vendas para cobrir seus custos fixos este mês</>
+          )
+        }
+        note={
+          !covered && dashboard.breakeven_remaining_sessions_estimate != null
+            ? `~${dashboard.breakeven_remaining_sessions_estimate} ${
+                dashboard.breakeven_remaining_sessions_estimate === 1 ? "atendimento" : "atendimentos"
+              }, pelo seu ticket médio dos últimos meses`
+            : undefined
+        }
+      />,
+    );
+  }
 
-      {dashboard.breakeven_remaining_amount != null && (
-        <div
-          className={`dashboard__metric dashboard__metric--wide${
-            dashboard.breakeven_alert ? " dashboard__metric--alert" : ""
-          }`}
-        >
-          <dt>Ponto de equilíbrio do mês</dt>
-          <dd>
-            {Number(dashboard.breakeven_remaining_amount) > 0 ? (
-              <>
-                Faltam {formatBRL(money(dashboard.breakeven_remaining_amount))} em vendas para cobrir seus custos fixos este mês
-                {dashboard.breakeven_remaining_sessions_estimate != null && (
-                  <span className="dashboard__metric-note">
-                    ~{dashboard.breakeven_remaining_sessions_estimate}{" "}
-                    {dashboard.breakeven_remaining_sessions_estimate === 1 ? "atendimento" : "atendimentos"}, pelo seu ticket médio dos últimos meses
-                  </span>
-                )}
-              </>
-            ) : (
-              "Você já cobriu seus custos fixos este mês 🎉"
-            )}
-          </dd>
-        </div>
-      )}
-
-      <div className="dashboard__metric">
-        <dt>A receber</dt>
-        <dd>{formatBRL(money(dashboard.receivable_amount))}</dd>
-      </div>
-
-      <div className="dashboard__metric">
-        <dt>Margem média</dt>
-        <dd>{dashboard.average_margin != null ? formatRate(rate(dashboard.average_margin)) : "—"}</dd>
-      </div>
-
-      <div className="dashboard__metric">
-        <dt>Ticket médio</dt>
-        <dd>{dashboard.average_ticket != null ? formatBRL(money(dashboard.average_ticket)) : "—"}</dd>
-      </div>
-
-      <div className="dashboard__metric dashboard__metric--wide">
-        <dt>Vendas e atendimentos</dt>
-        <dd>
+  slides.push(
+    <MetricCard key="receivable" label="A receber" value={formatBRL(money(dashboard.receivable_amount))} />,
+    <MetricCard
+      key="margin"
+      label="Margem média"
+      value={dashboard.average_margin != null ? formatRate(rate(dashboard.average_margin)) : "—"}
+    />,
+    <MetricCard
+      key="ticket"
+      label="Ticket médio"
+      value={dashboard.average_ticket != null ? formatBRL(money(dashboard.average_ticket)) : "—"}
+    />,
+    <MetricCard
+      key="sales-sessions"
+      label="Vendas e atendimentos"
+      value={
+        <>
           {dashboard.sale_count} {dashboard.sale_count === 1 ? "venda" : "vendas"}, {dashboard.session_count}{" "}
           {dashboard.session_count === 1 ? "atendimento" : "atendimentos"}
-        </dd>
-      </div>
-    </dl>
+        </>
+      }
+    />,
   );
+
+  return slides;
 }

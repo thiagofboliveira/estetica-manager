@@ -5,7 +5,7 @@ from app.domain.catalog.procedure_templates import (
     find_procedure_template,
     list_procedure_templates,
 )
-from app.models.procedure import Procedure, ProcedureType
+from app.models.procedure import Procedure, ProcedureType, SessionPlan
 from app.repositories.procedure import ProcedureRepository
 from app.schemas.procedure import (
     ProcedureCreate,
@@ -36,6 +36,8 @@ class ProcedureService:
             return_interval_days=dto.return_interval_days,
             default_modality=dto.default_modality,
             split_override=money(dto.split_override) if dto.split_override is not None else None,
+            is_invasive=dto.is_invasive,
+            session_plan=dto.session_plan,
         )
         return self._repo.add(procedure)
 
@@ -96,8 +98,22 @@ class ProcedureService:
             raise ProcedureNotFoundError()
         return procedure
 
-    def list(self, *, limit: int = 50, offset: int = 0) -> list[Procedure]:
-        return self._repo.list(limit=limit, offset=offset)
+    def list(
+        self,
+        *,
+        limit: int = 50,
+        offset: int = 0,
+        is_invasive: bool | None = None,
+        session_plan: SessionPlan | None = None,
+    ) -> list[Procedure]:
+        return self._repo.list(
+            limit=limit, offset=offset, is_invasive=is_invasive, session_plan=session_plan
+        )
+
+    def count(
+        self, *, is_invasive: bool | None = None, session_plan: SessionPlan | None = None
+    ) -> int:
+        return self._repo.count(is_invasive=is_invasive, session_plan=session_plan)
 
     def update(self, procedure_id: UUID, dto: ProcedureUpdate) -> Procedure:
         procedure = self.get(procedure_id)

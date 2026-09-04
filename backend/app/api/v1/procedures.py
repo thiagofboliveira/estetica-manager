@@ -3,9 +3,11 @@ from uuid import UUID
 from fastapi import APIRouter, HTTPException, Query, status
 
 from app.api.deps import ProcedureSvc
+from app.models.procedure import SessionPlan
 from app.schemas.procedure import (
     ProcedureCreate,
     ProcedureFromTemplateCreate,
+    ProcedureListOut,
     ProcedureOut,
     ProcedureTemplateOut,
     ProcedureUpdate,
@@ -43,15 +45,24 @@ def create_procedure_from_template(
         raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, str(exc)) from exc
 
 
-@router.get("", response_model=list[ProcedureOut])
+@router.get("", response_model=ProcedureListOut)
 def list_procedures(
     svc: ProcedureSvc,
-    limit: int = Query(default=50, le=200),
-    offset: int = Query(default=0, ge=0),
-) -> list[ProcedureOut]:
-    return [
-        ProcedureOut.model_validate(p) for p in svc.list(limit=limit, offset=offset)
-    ]
+    is_invasive: bool | None = Query(default=None),
+    session_plan: SessionPlan | None = Query(default=None),
+    page: int = Query(default=1, ge=1),
+    page_size: int = Query(default=20, ge=1, le=200),
+) -> ProcedureListOut:
+    offset = (page - 1) * page_size
+    items = svc.list(
+        limit=page_size, offset=offset, is_invasive=is_invasive, session_plan=session_plan
+    )
+    return ProcedureListOut(
+        items=[ProcedureOut.model_validate(p) for p in items],
+        total_count=svc.count(is_invasive=is_invasive, session_plan=session_plan),
+        page=page,
+        page_size=page_size,
+    )
 
 
 @router.get("/{procedure_id}", response_model=ProcedureOut)

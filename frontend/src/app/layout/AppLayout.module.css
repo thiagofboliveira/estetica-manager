@@ -1,10 +1,9 @@
-﻿/* ==========================================================================
-   AppLayout Styles — Quiet Luxury Aesthetics with Dual-Theme Support
+/* ==========================================================================
+   AppLayout Styles — Sidebar lateral fixa (F6) com drawer retrátil mobile
    ========================================================================== */
 
 .appLayout {
   display: flex;
-  flex-direction: column;
   min-height: 100vh;
   min-height: 100dvh;
   background-color: var(--bg);
@@ -14,31 +13,28 @@
   padding: 0;
 }
 
-/* Top Header */
-.topHeader {
+/* Sidebar rail — fixa à esquerda no desktop */
+.sidebarRail {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 12px 32px;
+  flex-direction: column;
+  width: 248px;
+  flex-shrink: 0;
   background: var(--bg-card);
-  border-bottom: 1px solid var(--border);
+  border-right: 1px solid var(--border);
   position: sticky;
   top: 0;
-  z-index: 40;
-  box-shadow: var(--shadow-sm);
+  height: 100vh;
+  height: 100dvh;
+  z-index: 50;
   transition: background-color 0.2s ease, border-color 0.2s ease;
 }
 
-@media (max-width: 768px) {
-  .topHeader {
-    padding: 10px 16px;
-  }
-}
-
-.headerLeft {
+.sidebarHeader {
   display: flex;
   align-items: center;
-  gap: 20px;
+  justify-content: space-between;
+  padding: 16px 16px 12px;
+  border-bottom: 1px solid var(--border);
 }
 
 .brandLogo {
@@ -58,6 +54,7 @@
   align-items: center;
   justify-content: center;
   box-shadow: 0 2px 6px rgba(15, 118, 110, 0.2);
+  flex-shrink: 0;
 }
 
 .brandText {
@@ -66,7 +63,7 @@
 }
 
 .brandName {
-  font-size: 17px;
+  font-size: 16px;
   font-weight: 700;
   color: var(--text-h);
   letter-spacing: -0.02em;
@@ -74,36 +71,132 @@
 }
 
 .brandSub {
-  font-size: 11px;
+  font-size: 10.5px;
   font-weight: 600;
   color: var(--accent);
   letter-spacing: 0.02em;
 }
 
-.clinicSelector {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  background: var(--bg-subtle);
-  padding: 5px 12px;
-  border-radius: 9999px;
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--text);
-  border: 1px solid var(--border);
+.drawerCloseBtn {
+  display: none;
+  background: transparent !important;
+  border: none !important;
+  color: var(--text-muted) !important;
+  padding: 4px !important;
+  min-height: auto !important;
+  box-shadow: none !important;
 }
 
-.statusDot {
-  width: 7px;
-  height: 7px;
+.sidebarFooter {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 16px;
+  border-top: 1px solid var(--border);
+}
+
+.sidebarFooterInfo {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  flex: 1;
+}
+
+.sidebarFooterName {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-h);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sidebarFooterClinic {
+  font-size: 11.5px;
+  color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.userAvatar {
+  width: 34px;
+  height: 34px;
   border-radius: 50%;
-  background: #10b981;
+  background: var(--bg-subtle);
+  color: var(--text-h);
+  border: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.btnLogout {
+  background: transparent !important;
+  color: var(--text-muted) !important;
+  border: 1px solid transparent !important;
+  padding: 8px !important;
+  min-height: 40px !important;
+  min-width: 40px !important;
+  box-shadow: none !important;
+  border-radius: 8px !important;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.btnLogout:hover {
+  background: var(--bg-subtle) !important;
+  color: var(--danger) !important;
+  transform: none !important;
+}
+
+.drawerOverlay {
+  display: none;
+}
+
+/* Content column — tudo à direita da sidebar */
+.contentColumn {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+}
+
+/* Top bar fina */
+.topHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 28px;
+  background: var(--bg-card);
+  border-bottom: 1px solid var(--border);
+  position: sticky;
+  top: 0;
+  z-index: 30;
+  box-shadow: var(--shadow-sm);
+  transition: background-color 0.2s ease, border-color 0.2s ease;
+}
+
+.hamburgerBtn {
+  display: none;
+  background: transparent !important;
+  border: none !important;
+  color: var(--text-h) !important;
+  padding: 4px !important;
+  min-height: auto !important;
+  box-shadow: none !important;
 }
 
 .headerRight {
   display: flex;
   align-items: center;
   gap: 12px;
+  margin-left: auto;
 }
 
 .btnNovaVenda {
@@ -124,12 +217,6 @@
 .btnNovaVenda:hover {
   background: var(--accent-hover);
   transform: translateY(-1px);
-}
-
-.userMenu {
-  display: flex;
-  align-items: center;
-  gap: 8px;
 }
 
 .adminLink, .superAdminLink {
@@ -167,104 +254,78 @@
   border-color: var(--accent);
 }
 
-.userAvatar {
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  background: var(--bg-subtle);
-  color: var(--text-h);
-  border: 1px solid var(--border);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 13px;
-  font-weight: 700;
-}
-
-.btnLogout {
-  background: transparent !important;
-  color: var(--text-muted) !important;
-  border: 1px solid transparent !important;
-  padding: 6px 10px !important;
-  font-size: 13px !important;
-  font-weight: 500 !important;
-  min-height: auto !important;
-  box-shadow: none !important;
-  border-radius: 6px !important;
-}
-
-.btnLogout:hover {
-  background: var(--bg-subtle) !important;
-  color: var(--danger) !important;
-  transform: none !important;
-}
-
-/* Main Navigation Bar */
-.mainNav {
-  background: var(--bg-card);
-  border-bottom: 1px solid var(--border);
-  padding: 0 32px;
-  overflow-x: auto;
-  -webkit-overflow-scrolling: touch;
-  transition: background-color 0.2s ease, border-color 0.2s ease;
-}
-
-@media (max-width: 768px) {
-  .mainNav {
-    padding: 0 16px;
-  }
-}
-
-.navInner {
-  display: flex;
-  gap: 4px;
-  max-width: 1200px;
-  margin: 0 auto;
-}
-
-.navItem {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 12px 16px;
-  color: var(--text-muted);
-  text-decoration: none;
-  font-size: 13.5px;
-  font-weight: 500;
-  border-bottom: 2px solid transparent;
-  transition: all 0.15s ease;
-  white-space: nowrap;
-}
-
-.navItem:hover {
-  color: var(--text-h);
-}
-
-.navItemActive {
-  color: var(--accent);
-  font-weight: 600;
-  border-bottom-color: var(--accent);
-}
-
-.navIcon {
-  display: flex;
-  align-items: center;
-}
-
 /* Main Content Area */
 .mainContent {
   flex: 1;
   padding: 28px 32px;
 }
 
-@media (max-width: 768px) {
-  .mainContent {
-    padding: 20px 16px;
-  }
-}
-
 .contentContainer {
   max-width: 1200px;
   margin: 0 auto;
   width: 100%;
+}
+
+/* Mobile: sidebar vira drawer retrátil (F6-04) */
+@media (max-width: 900px) {
+  .sidebarRail {
+    position: fixed;
+    left: 0;
+    top: 0;
+    transform: translateX(-100%);
+    box-shadow: none;
+    transition: transform 0.2s ease;
+  }
+
+  .sidebarRailOpen {
+    transform: translateX(0);
+    box-shadow: var(--shadow-md);
+  }
+
+  .drawerCloseBtn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .drawerOverlay {
+    display: block;
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.4);
+    z-index: 45;
+  }
+
+  .hamburgerBtn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .topHeader {
+    padding: 10px 16px;
+    gap: 10px;
+  }
+
+  .headerRight {
+    gap: 8px;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+  }
+
+  .btnNovaVenda span {
+    display: none;
+  }
+
+  .btnNovaVenda {
+    padding: 8px;
+  }
+
+  .adminLink span, .superAdminLink span {
+    display: none;
+  }
+
+  .mainContent {
+    padding: 20px 16px;
+  }
 }

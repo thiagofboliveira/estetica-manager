@@ -18,7 +18,8 @@ import { DashboardPage } from "@/features/dashboard/DashboardPage";
 import { RetentionPage } from "@/features/retention/RetentionPage";
 import { AgendaPage } from "@/features/agenda/AgendaPage";
 import { ModoOcupadoPage } from "@/features/agenda/ModoOcupadoPage";
-import { SettingsPage } from "@/features/settings/SettingsPage";
+import { FinancialSettingsPage } from "@/features/settings/FinancialSettingsPage";
+import { FixedExpensesPage } from "@/features/fixed-expenses/FixedExpensesPage";
 import { SetupWizardPage } from "@/features/admin/SetupWizardPage";
 import { AdminLayout } from "@/features/admin/AdminLayout";
 import { AdminUsersPage } from "@/features/admin/AdminUsersPage";
@@ -63,7 +64,8 @@ export const router = createBrowserRouter([
           { path: "/vendas/nova-pacote", element: <NewPackageSalePage /> },
           { path: "/agenda", element: <AgendaPage /> },
           { path: "/agenda/rapido", element: <ModoOcupadoPage /> },
-          { path: "/configuracoes", element: <SettingsPage /> },
+          { path: "/financeiro", element: <FinancialSettingsPage /> },
+          { path: "/despesas-fixas", element: <FixedExpensesPage /> },
           { path: "*", element: <Navigate to="/dashboard" replace /> },
         ],
       },

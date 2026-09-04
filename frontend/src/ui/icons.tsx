@@ -180,3 +180,38 @@ export function IconInfo(props: SVGProps<SVGSVGElement>) {
     </svg>
   );
 }
+
+export function IconWallet(props: SVGProps<SVGSVGElement>) {
+  return (
+    <svg {...defaultProps} {...props}>
+      <path d="M19 7V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-2" />
+      <path d="M3 9h18v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z" />
+      <circle cx="16" cy="13" r="1.4" fill="currentColor" stroke="none" />
+    </svg>
+  );
+}
+
+export function IconReceipt(props: SVGProps<SVGSVGElement>) {
+  return (
+    <svg {...defaultProps} {...props}>
+      <path d="M5 3v18l3-2 3 2 3-2 3 2 3-2V3l-3 2-3-2-3 2-3-2-3 2Z" />
+      <path d="M8 9h8M8 13h8M8 17h4" />
+    </svg>
+  );
+}
+
+export function IconMenu(props: SVGProps<SVGSVGElement>) {
+  return (
+    <svg {...defaultProps} {...props}>
+      <path d="M3 6h18M3 12h18M3 18h18" />
+    </svg>
+  );
+}
+
+export function IconX(props: SVGProps<SVGSVGElement>) {
+  return (
+    <svg {...defaultProps} {...props}>
+      <path d="M18 6 6 18M6 6l12 12" />
+    </svg>
+  );
+}

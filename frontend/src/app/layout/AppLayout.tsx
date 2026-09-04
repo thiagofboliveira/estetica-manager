@@ -1,43 +1,35 @@
-import { Link, NavLink, Outlet } from "react-router-dom";
+import { useState } from "react";
+import { Link, Outlet } from "react-router-dom";
 import { useAuth } from "@/lib/auth/AuthContext";
 import { ImpersonationBanner } from "./ImpersonationBanner";
+import { Sidebar } from "./Sidebar";
 import {
-  IconDashboard,
-  IconTarget,
-  IconCalendar,
-  IconUsers,
   IconSparkles,
-  IconSettings,
   IconPlus,
   IconShield,
   IconCrown,
   IconLogout,
   IconWhatsApp,
+  IconMenu,
+  IconX,
 } from "@/ui/icons";
 import { ThemeToggle } from "@/ui/ThemeToggle";
 import styles from "./AppLayout.module.css";
-
-const NAV_ITEMS = [
-  { to: "/dashboard", label: "Dashboard", Icon: IconDashboard, end: true },
-  { to: "/retornos", label: "Quem chamar hoje?", Icon: IconTarget, end: false },
-  { to: "/agenda", label: "Agenda", Icon: IconCalendar, end: false },
-  { to: "/pacientes", label: "Pacientes", Icon: IconUsers, end: false },
-  { to: "/procedimentos", label: "Procedimentos", Icon: IconSparkles, end: false },
-  { to: "/configuracoes", label: "Configurações", Icon: IconSettings, end: false },
-];
 
 export function AppLayout() {
   const { user, logout } = useAuth();
   const isAdmin = user?.role === "admin";
   const isGlobalAdmin = user?.role === "superadmin";
+  const [drawerOpen, setDrawerOpen] = useState(false);
 
   return (
     <div className={styles.appLayout}>
       <ImpersonationBanner />
-      {/* Top Navbar */}
-      <header className={styles.topHeader}>
-        <div className={styles.headerLeft}>
-          <Link to="/dashboard" className={styles.brandLogo}>
+
+      {/* Sidebar — fixa no desktop, drawer retrátil no mobile (F6-04) */}
+      <aside className={`${styles.sidebarRail} ${drawerOpen ? styles.sidebarRailOpen : ""}`}>
+        <div className={styles.sidebarHeader}>
+          <Link to="/dashboard" className={styles.brandLogo} onClick={() => setDrawerOpen(false)}>
             <div className={styles.logoBadge}>
               <IconSparkles width="18" height="18" />
             </div>
@@ -46,30 +38,72 @@ export function AppLayout() {
               <span className={styles.brandSub}>Estética Manager</span>
             </div>
           </Link>
-
-          <div className={styles.clinicSelector}>
-            <span className={styles.statusDot} />
-            <span className={styles.clinicName}>{user?.clinic_name || "Clínica Principal"}</span>
-          </div>
+          <button
+            type="button"
+            className={styles.drawerCloseBtn}
+            onClick={() => setDrawerOpen(false)}
+            aria-label="Fechar menu"
+          >
+            <IconX width="20" height="20" />
+          </button>
         </div>
 
-        <div className={styles.headerRight}>
-          <Link
-            to="/agenda/rapido"
-            className={styles.btnNovaVenda}
-            title="Ver horários livres e responder rápido no WhatsApp"
+        <Sidebar onNavigate={() => setDrawerOpen(false)} />
+
+        <div className={styles.sidebarFooter}>
+          <div className={styles.userAvatar}>{user?.name?.[0]?.toUpperCase() ?? "U"}</div>
+          <div className={styles.sidebarFooterInfo}>
+            <span className={styles.sidebarFooterName}>{user?.name ?? "Usuária"}</span>
+            <span className={styles.sidebarFooterClinic}>{user?.clinic_name || "Clínica Principal"}</span>
+          </div>
+          <button
+            type="button"
+            onClick={logout}
+            className={styles.btnLogout}
+            title="Encerrar sessão"
           >
-            <IconWhatsApp width="16" height="16" />
-            <span>Modo Ocupado</span>
-          </Link>
+            <IconLogout width="16" height="16" />
+          </button>
+        </div>
+      </aside>
 
-          <Link to="/vendas/nova" className={styles.btnNovaVenda}>
-            <IconPlus width="16" height="16" />
-            <span>Nova Venda</span>
-          </Link>
+      {drawerOpen && (
+        <div
+          className={styles.drawerOverlay}
+          onClick={() => setDrawerOpen(false)}
+          aria-hidden
+        />
+      )}
 
-          <div className={styles.userMenu}>
+      <div className={styles.contentColumn}>
+        {/* Top bar fina — ações rápidas, tema, atalhos admin (F6-02) */}
+        <header className={styles.topHeader}>
+          <button
+            type="button"
+            className={styles.hamburgerBtn}
+            onClick={() => setDrawerOpen(true)}
+            aria-label="Abrir menu"
+          >
+            <IconMenu width="22" height="22" />
+          </button>
+
+          <div className={styles.headerRight}>
+            <Link
+              to="/agenda/rapido"
+              className={styles.btnNovaVenda}
+              title="Ver horários livres e responder rápido no WhatsApp"
+            >
+              <IconWhatsApp width="16" height="16" />
+              <span>Modo Ocupado</span>
+            </Link>
+
+            <Link to="/vendas/nova" className={styles.btnNovaVenda}>
+              <IconPlus width="16" height="16" />
+              <span>Nova Venda</span>
+            </Link>
+
             <ThemeToggle />
+
             {isAdmin && (
               <Link to="/admin" className={styles.adminLink} title="Painel da Clínica">
                 <IconShield width="15" height="15" />
@@ -82,47 +116,16 @@ export function AppLayout() {
                 <span>Painel SaaS</span>
               </Link>
             )}
-            <div className={styles.userAvatar}>{user?.name?.[0]?.toUpperCase() ?? "U"}</div>
-            <button
-              type="button"
-              onClick={logout}
-              className={styles.btnLogout}
-              title="Encerrar sessão"
-            >
-              <IconLogout width="16" height="16" />
-              <span>Sair</span>
-            </button>
           </div>
-        </div>
-      </header>
+        </header>
 
-      {/* Main Navigation Bar */}
-      <nav className={styles.mainNav} aria-label="Navegação principal">
-        <div className={styles.navInner}>
-          {NAV_ITEMS.map((item) => (
-            <NavLink
-              key={item.to}
-              to={item.to}
-              end={item.end}
-              className={({ isActive }) =>
-                isActive ? `${styles.navItem} ${styles.navItemActive}` : styles.navItem
-              }
-            >
-              <span className={styles.navIcon}>
-                <item.Icon width="17" height="17" />
-              </span>
-              <span>{item.label}</span>
-            </NavLink>
-          ))}
-        </div>
-      </nav>
-
-      {/* Page Content */}
-      <main className={styles.mainContent}>
-        <div className={styles.contentContainer}>
-          <Outlet />
-        </div>
-      </main>
+        {/* Page Content */}
+        <main className={styles.mainContent}>
+          <div className={styles.contentContainer}>
+            <Outlet />
+          </div>
+        </main>
+      </div>
     </div>
   );
 }

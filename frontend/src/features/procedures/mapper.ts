@@ -12,5 +12,7 @@ export function toProcedurePayload(values: ProcedureFormValues) {
         ? null
         : Number(values.return_interval_days),
     default_modality: values.default_modality,
+    is_invasive: values.is_invasive,
+    session_plan: values.session_plan,
   };
 }

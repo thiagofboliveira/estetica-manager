@@ -11,6 +11,7 @@ class ProcedureRankingRowOut(OutputSchema):
     gross_revenue: MoneyOut
     net_profit: MoneyOut
     margin: RateOut | None
+    session_count: int
 
 
 class ProcedureRankingOut(OutputSchema):
@@ -18,3 +19,6 @@ class ProcedureRankingOut(OutputSchema):
     date_from: date
     date_to: date
     rows: list[ProcedureRankingRowOut]
+    total_count: int
+    page: int
+    page_size: int
