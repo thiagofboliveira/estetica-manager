@@ -1,5 +1,6 @@
 from functools import lru_cache
 
+from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -10,8 +11,17 @@ class Settings(BaseSettings):
     # RLS é ignorado silenciosamente se a app conectar como owner/service_role.
     DATABASE_URL: str
 
-    # Conexão separada para Alembic, com o owner — RLS não pode bloquear ALTER TABLE.
-    DATABASE_URL_MIGRATIONS: str
+    # Conexão separada para Alembic, com o owner — se omitida, usa DATABASE_URL.
+    DATABASE_URL_MIGRATIONS: str | None = None
+
+    @field_validator("DATABASE_URL", "DATABASE_URL_MIGRATIONS", mode="before")
+    @classmethod
+    def _normalize_db_url(cls, v: str | None) -> str | None:
+        if v and v.startswith("postgres://"):
+            return v.replace("postgres://", "postgresql+psycopg2://", 1)
+        if v and v.startswith("postgresql://") and not v.startswith("postgresql+"):
+            return v.replace("postgresql://", "postgresql+psycopg2://", 1)
+        return v
 
     SUPABASE_URL: str
     SUPABASE_JWT_AUDIENCE: str = "authenticated"
