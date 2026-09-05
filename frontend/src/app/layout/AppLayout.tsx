@@ -1,6 +1,7 @@
 import { useState } from "react";
-import { Link, Outlet } from "react-router-dom";
+import { Link, Outlet, useNavigate } from "react-router-dom";
 import { useAuth } from "@/lib/auth/AuthContext";
+import { getImpersonationState, stopImpersonation } from "@/lib/auth/impersonation";
 import { ImpersonationBanner } from "./ImpersonationBanner";
 import { Sidebar } from "./Sidebar";
 import {
@@ -17,10 +18,23 @@ import { ThemeToggle } from "@/ui/ThemeToggle";
 import styles from "./AppLayout.module.css";
 
 export function AppLayout() {
-  const { user, logout } = useAuth();
+  const { user, logout, checkAuth } = useAuth();
+  const navigate = useNavigate();
   const isAdmin = user?.role === "admin";
   const isGlobalAdmin = user?.role === "superadmin";
   const [drawerOpen, setDrawerOpen] = useState(false);
+
+  // Sem isso, sair pelo link do header (em vez do botão do banner) deixava
+  // o estado de impersonação pendurado em sessionStorage indefinidamente —
+  // sobretudo no caso self-impersonation, onde o banner nem aparece.
+  async function handleExitToSuperAdmin(e: React.MouseEvent) {
+    if (getImpersonationState().isImpersonating) {
+      e.preventDefault();
+      stopImpersonation();
+      await checkAuth();
+      navigate("/super-admin", { replace: true });
+    }
+  }
 
   return (
     <div className={styles.appLayout}>
@@ -111,7 +125,12 @@ export function AppLayout() {
               </Link>
             )}
             {isGlobalAdmin && (
-              <Link to="/super-admin" className={styles.superAdminLink} title="Painel Plataforma SaaS">
+              <Link
+                to="/super-admin"
+                className={styles.superAdminLink}
+                title="Painel Plataforma SaaS"
+                onClick={handleExitToSuperAdmin}
+              >
                 <IconCrown width="15" height="15" />
                 <span>Painel SaaS</span>
               </Link>

@@ -13,6 +13,7 @@
 const IMPERSONATION_KEY = "estetica.impersonation.token";
 const ORIGINAL_TOKEN_KEY = "estetica.impersonation.originalToken";
 const ORIGINAL_USER_KEY = "estetica.impersonation.originalUser";
+const ORIGINAL_USER_ID_KEY = "estetica.impersonation.originalUserId";
 const DEV_TOKEN_KEY = "estetica.dev-auth.token";
 const API_ROOT = import.meta.env.VITE_API_URL.replace(/\/api\/v1\/?$/, "");
 
@@ -20,21 +21,27 @@ export interface ImpersonationState {
   isImpersonating: boolean;
   originalUserName: string | null;
   targetUserName: string | null;
+  /** true quando o superadmin impersona a si mesmo (mesma conta, outra clínica). */
+  isSelfImpersonation: boolean;
 }
 
 export function getImpersonationState(): ImpersonationState {
   const imp = sessionStorage.getItem(IMPERSONATION_KEY);
   const originalUser = sessionStorage.getItem(ORIGINAL_USER_KEY);
-  if (!imp) return { isImpersonating: false, originalUserName: null, targetUserName: null };
+  const originalUserId = sessionStorage.getItem(ORIGINAL_USER_ID_KEY);
+  if (!imp) {
+    return { isImpersonating: false, originalUserName: null, targetUserName: null, isSelfImpersonation: false };
+  }
   try {
-    const data = JSON.parse(imp) as { targetName: string };
+    const data = JSON.parse(imp) as { targetName: string; targetUserId?: string };
     return {
       isImpersonating: true,
       originalUserName: originalUser,
       targetUserName: data.targetName,
+      isSelfImpersonation: !!data.targetUserId && data.targetUserId === originalUserId,
     };
   } catch {
-    return { isImpersonating: false, originalUserName: null, targetUserName: null };
+    return { isImpersonating: false, originalUserName: null, targetUserName: null, isSelfImpersonation: false };
   }
 }
 
@@ -42,6 +49,7 @@ export async function startImpersonation(
   userId: string,
   targetName: string,
   originalUserName: string,
+  originalUserId: string,
 ): Promise<void> {
   const currentToken = sessionStorage.getItem(DEV_TOKEN_KEY);
   if (!currentToken) throw new Error("Nenhuma sessão ativa para salvar");
@@ -63,7 +71,8 @@ export async function startImpersonation(
   // Salva o token original e os metadados antes de trocar
   sessionStorage.setItem(ORIGINAL_TOKEN_KEY, currentToken);
   sessionStorage.setItem(ORIGINAL_USER_KEY, originalUserName);
-  sessionStorage.setItem(IMPERSONATION_KEY, JSON.stringify({ targetName }));
+  sessionStorage.setItem(ORIGINAL_USER_ID_KEY, originalUserId);
+  sessionStorage.setItem(IMPERSONATION_KEY, JSON.stringify({ targetName, targetUserId: userId }));
 
   // Substitui a sessão ativa pelo token de impersonação
   sessionStorage.setItem(DEV_TOKEN_KEY, body.access_token);
@@ -76,5 +85,6 @@ export function stopImpersonation(): void {
   }
   sessionStorage.removeItem(ORIGINAL_TOKEN_KEY);
   sessionStorage.removeItem(ORIGINAL_USER_KEY);
+  sessionStorage.removeItem(ORIGINAL_USER_ID_KEY);
   sessionStorage.removeItem(IMPERSONATION_KEY);
 }

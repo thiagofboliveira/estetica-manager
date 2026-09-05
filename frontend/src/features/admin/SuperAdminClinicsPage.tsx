@@ -130,17 +130,21 @@ export function SuperAdminClinicsPage() {
     if (!currentUser) return;
     setImpersonatingId(clinic.id);
     try {
-      // Busca o primeiro usuário da clínica (não superadmin)
+      // Busca o usuário da clínica. Um superadmin só é elegível se for o
+      // próprio usuário logado (ele soma a visão de gerente sem perder o
+      // privilégio global) — impersonar OUTRO superadmin vazaria acesso a
+      // /super-admin/* dentro da sessão de teste, pois o backend não
+      // distingue impersonação de login normal (mesmo registro de usuário).
       const allUsers = await api.get<Array<{ id: string; name: string; role: string; clinic_id: string | null; is_superuser: boolean }>>("/super-admin/users");
       const clinicUser = allUsers.find(
-        (u) => u.clinic_id === clinic.id && !u.is_superuser,
+        (u) => u.clinic_id === clinic.id && (!u.is_superuser || u.id === currentUser.id),
       );
       if (!clinicUser) {
         alert(`Nenhum usuário encontrado para a clínica "${clinic.name}". Crie um usuário antes de entrar como ela.`);
         setImpersonatingId(null);
         return;
       }
-      await startImpersonation(clinicUser.id, `${clinicUser.name} (${clinic.name})`, currentUser.name);
+      await startImpersonation(clinicUser.id, `${clinicUser.name} (${clinic.name})`, currentUser.name, currentUser.id);
       await checkAuth();
       navigate("/dashboard", { replace: true });
     } catch (err: unknown) {
