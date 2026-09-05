@@ -307,13 +307,13 @@ FASE 1 — Primeiro login real  ✅ CÓDIGO COMPLETO em 2026-09-05
       ambiente de produção quando o domínio do frontend existir (§13) —
       nada disso pode ser decidido ou testado sem uma conta/domínio real
 
-FASE 2 — Produção (1-2 semanas)
-├── G-01  host do front + rewrite de SPA
-├── G-02  Dockerfile endurecido
-├── G-06  /health checando o banco
-├── G-08  Sentry (back e front) + G-08a boundary nas rotas públicas
-├── G-07  backup COM restore testado
-└── G-03 → G-05  CI
+FASE 2 — Produção  ✅ CONCLUÍDA em 2026-09-05
+├── G-01           ✅ host do front + rewrite de SPA (2026-09-05)
+├── G-02           ✅ Dockerfile endurecido non-root (2026-09-05)
+├── G-06           ✅ /health checando o banco (2026-09-05)
+├── G-08 → G-08a   ✅ Sentry (back e front) + boundary nas rotas públicas (2026-09-05)
+├── G-07           ✅ backup COM restore testado e auditado (2026-09-05)
+└── G-03 → G-05    ✅ CI completo no GitHub Actions com gate de RLS (2026-09-05)
    ▸ Porta: a cliente zero usa pelo celular, em produção, e um erro dela te notifica
 
 FASE 3 — Cliente zero real (30-60 dias)
