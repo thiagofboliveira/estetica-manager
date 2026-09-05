@@ -1,6 +1,6 @@
 from uuid import UUID, uuid4
 
-from sqlalchemy import ForeignKey
+from sqlalchemy import ForeignKey, String
 from sqlalchemy.dialects.postgresql import UUID as PGUUID
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -36,3 +36,8 @@ class Professional(Base, TimestampMixin):
         default=settings.DEFAULT_TIMEZONE, nullable=False
     )
     is_active: Mapped[bool] = mapped_column(default=True, nullable=False)
+    slug: Mapped[str | None] = mapped_column(unique=True, index=True, nullable=True)
+    bio: Mapped[str | None] = mapped_column(nullable=True)
+    avatar_url: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    specialty: Mapped[str | None] = mapped_column(String(120), nullable=True)
+

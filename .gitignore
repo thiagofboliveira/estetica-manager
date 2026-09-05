@@ -7,3 +7,10 @@ dist/
 *.log
 .DS_Store
 Thumbs.db
+
+# Segredos (S-03): estavam fora do git por sorte, não por proteção.
+# Os .env.example são versionados de propósito — ver exceção abaixo.
+.env
+.env.*
+!.env.example
+!.env.*.example

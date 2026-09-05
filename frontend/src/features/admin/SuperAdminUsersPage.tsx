@@ -146,7 +146,7 @@ export function SuperAdminUsersPage() {
     if (!currentUser) return;
     setImpersonatingId(targetUser.id);
     try {
-      await startImpersonation(targetUser.id, targetUser.name, currentUser.name);
+      await startImpersonation(targetUser.id, targetUser.name, currentUser.name, currentUser.id);
       await checkAuth();
       navigate("/dashboard", { replace: true });
     } catch (err: unknown) {

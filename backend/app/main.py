@@ -1,8 +1,10 @@
 import time
 
 import jwt
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel
+from sqlalchemy import text
 
 from app.api.v1 import (
     bookings,
@@ -13,6 +15,7 @@ from app.api.v1 import (
     patients,
     payment_fee_rules,
     procedures,
+    public_agenda,
     reports,
     retention,
     sales,
@@ -22,15 +25,44 @@ from app.api.v1 import (
     users,
 )
 from app.core.config import settings
+from app.db.session import unsafe_session_without_tenant
+from app.repositories.user import UserRepository
+
+# G-08: Observabilidade e telemetria de erros via Sentry em produção.
+# Se SENTRY_DSN não for informado, a telemetria não é inicializada (fail-safe).
+if settings.SENTRY_DSN:
+    import sentry_sdk
+    from sentry_sdk.integrations.fastapi import FastApiIntegration
+    from sentry_sdk.integrations.sqlalchemy import SqlalchemyIntegration
+
+    sentry_sdk.init(
+        dsn=settings.SENTRY_DSN,
+        environment=settings.ENV,
+        traces_sample_rate=settings.SENTRY_TRACES_SAMPLE_RATE,
+        send_default_pii=False,  # LGPD: nunca coletar dados pessoais de pacientes/usuárias
+        integrations=[
+            FastApiIntegration(),
+            SqlalchemyIntegration(),
+        ],
+    )
 
 app = FastAPI(title="Estetica API", version="0.1.0")
 
+# B-04: sem isto, front e back em domínios diferentes (o cenário normal
+# de deploy — ex. Vercel + Railway) têm toda chamada bloqueada pelo
+# browser, mesmo com o backend respondendo certo. allow_origins nunca é
+# "*" — nem em dev (localhost fixo) nem em produção (lista explícita via
+# ALLOWED_ORIGINS). Uma lista vazia em produção é configuração
+# incompleta, não motivo para abrir para qualquer origem.
 if settings.ENV == "development":
-    # Só em dev: em produção o front é servido de um domínio fixo e
-    # conhecido, configurado explicitamente — nunca "*".
+    _cors_origins = ["http://localhost:5173"]
+else:
+    _cors_origins = settings.allowed_origins_list
+
+if _cors_origins:
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=["http://localhost:5173"],
+        allow_origins=_cors_origins,
         allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],
@@ -40,13 +72,21 @@ if settings.ENV == "development":
 @app.get("/health", tags=["health"])
 def health() -> dict[str, str]:
     """Rota pública — não declara DbSession, então não passa pela
-    validação de JWT nem exige tenant."""
+    validação de JWT nem exige tenant.
+
+    G-06: antes respondia "ok" mesmo com o Postgres caído (não tocava o
+    banco) — o Railway (railway.json healthcheckPath) nunca detectaria
+    e nunca reiniciaria o container. Um SELECT 1 trivial (sem tenant,
+    sem dado de negócio) prova que a conexão real está de pé; falha aqui
+    vira 503, que o orquestrador entende como "não saudável"."""
+    try:
+        with unsafe_session_without_tenant("healthcheck") as session:
+            session.execute(text("SELECT 1"))
+    except Exception:
+        raise HTTPException(
+            status_code=503, detail="Banco de dados indisponível"
+        ) from None
     return {"status": "ok"}
-
-
-from pydantic import BaseModel
-from app.db.session import unsafe_session_without_tenant
-from app.repositories.user import UserRepository
 
 
 class DevLoginPayload(BaseModel):
@@ -55,7 +95,13 @@ class DevLoginPayload(BaseModel):
 
 
 if settings.ENV == "development":
-    dev_secret = settings.DEV_AUTH_SECRET or "dev-secret-estetica-local-key-superadmin-2026"
+    # S-01b: sem fallback hardcoded — ver core/security.py._decode_dev().
+    if not settings.DEV_AUTH_SECRET:
+        raise RuntimeError(
+            "ENV=development exige DEV_AUTH_SECRET no .env "
+            "(sem default: um segredo hardcoded que assina token de superadmin é público)"
+        )
+    dev_secret = settings.DEV_AUTH_SECRET
 
     @app.post("/dev/login", tags=["dev"])
     def dev_login(payload: DevLoginPayload | None = None) -> dict[str, str]:
@@ -89,11 +135,10 @@ if settings.ENV == "development":
         return {"access_token": token}
 
     from uuid import UUID as _UUID
-    from app.api.deps import GlobalSuperAdminUser as _SuperAdminDep
-    from app.db.session import get_tenant_session as _get_tenant_session
-    from app.core.security import get_current_professional_id as _get_prof_id
+
     from fastapi import Depends as _Depends
-    from fastapi.security import HTTPBearer as _HTTPBearer, HTTPAuthorizationCredentials as _HTTPCreds
+    from fastapi.security import HTTPAuthorizationCredentials as _HTTPCreds
+    from fastapi.security import HTTPBearer as _HTTPBearer
 
     @app.post("/dev/impersonate/{user_id}", tags=["dev"])
     def dev_impersonate(
@@ -104,9 +149,11 @@ if settings.ENV == "development":
         Exige que o chamador seja um Super Admin autenticado.
         SOMENTE disponível em ENV=development.
         """
+        from fastapi import HTTPException as _HTTPEx
+        from fastapi import status as _status
+
         from app.core.security import _decode as _sec_decode
         from app.db.session import unsafe_session_without_tenant as _unsafe_sess
-        from fastapi import HTTPException as _HTTPEx, status as _status
 
         # Valida que quem chama é superadmin
         claims = _sec_decode(creds.credentials)
@@ -159,3 +206,4 @@ app.include_router(export.router, prefix="/api/v1")
 app.include_router(system.router, prefix="/api/v1")
 app.include_router(users.router, prefix="/api/v1")
 app.include_router(super_admin.router, prefix="/api/v1")
+app.include_router(public_agenda.router, prefix="/api/v1")

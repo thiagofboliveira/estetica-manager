@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { qk } from "@/lib/query/keys";
 import { CACHE } from "@/lib/query/client";
-import { dashboardApi, type DashboardParams } from "./api";
+import { dashboardApi, type DashboardParams, type ProcedureRankingParams } from "./api";
 
 export function useDashboard(params: DashboardParams) {
   return useQuery({
@@ -12,12 +12,20 @@ export function useDashboard(params: DashboardParams) {
   });
 }
 
-export function useProcedureRanking(params: DashboardParams) {
+export function useProcedureRanking(params: ProcedureRankingParams) {
   return useQuery({
     queryKey: qk.procedureRanking(params),
     queryFn: () => dashboardApi.getProcedureRanking(params),
     ...CACHE.MONEY,
     enabled: params.period !== "custom" || Boolean(params.date_from && params.date_to),
+  });
+}
+
+export function useExpensesByCategory() {
+  return useQuery({
+    queryKey: qk.expensesByCategory(),
+    queryFn: () => dashboardApi.getExpensesByCategory(),
+    ...CACHE.SETTINGS,
   });
 }
 

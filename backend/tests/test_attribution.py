@@ -9,6 +9,7 @@ from hypothesis import strategies as st
 from app.domain.financial.attribution import (
     AttributedCandidate,
     calculate_attributed_revenue,
+    calculate_no_show_avoided_revenue,
 )
 from app.models.professional import Professional
 from app.services.attribution_service import AttributionService
@@ -171,15 +172,87 @@ def test_attribution_service_get_roi():
     )
     mock_prof_repo.get_current.return_value = mock_prof
 
+    # G-09: subscription_fee vem de financial_settings, não mais de uma
+    # constante hardcoded — mock retornando o mesmo valor usado antes
+    # (R$97) para não recalcular as asserções de ROI deste teste.
+    mock_financial_settings_svc = MagicMock()
+    mock_financial_settings_svc.get_or_create_default.return_value = MagicMock(
+        subscription_fee=Decimal("97.00")
+    )
+
     svc = AttributionService(
         opportunity_repo=mock_opp_repo,
         professional_repo=mock_prof_repo,
+        financial_settings_service=mock_financial_settings_svc,
     )
 
-    result, period_name, d_from, d_to, is_estimated = svc.get_roi(filter_name="this_month")
+    result, period_name, d_from, d_to, is_estimated = svc.get_roi(
+        filter_name="this_month"
+    )
 
     assert result.attributed_revenue == Decimal("0.00")
     assert result.attributed_sale_count == 0
     assert period_name == "MONTH"
     assert is_estimated is True
     assert d_from <= d_to
+    # G-11: sem session_repo injetado (None por padrão), no-show evitado
+    # é 0 — nunca quebra o ROI, apenas fica invisível até ser conectado.
+    assert result.no_show_avoided_count == 0
+    assert result.no_show_avoided_revenue == Decimal("0.00")
+
+
+class TestNoShowAvoided:
+    """G-11: sessões que passaram pelo fluxo anti-no-show e foram
+    COMPLETED — o maior alvo econômico do produto, que antes não era
+    medido em lugar nenhum (docs/pending/BACKLOG_GO_LIVE.md §6)."""
+
+    def test_soma_valores_das_sessoes_confirmadas(self) -> None:
+        count, total = calculate_no_show_avoided_revenue(
+            [Decimal("280.00"), Decimal("150.00"), Decimal("280.00")]
+        )
+        assert count == 3
+        assert total == Decimal("710.00")
+
+    def test_lista_vazia_nao_quebra(self) -> None:
+        count, total = calculate_no_show_avoided_revenue([])
+        assert count == 0
+        assert total == Decimal("0.00")
+
+    def test_nunca_contamina_attributed_revenue_da_reativacao(self) -> None:
+        """A fonte central da regra de negócio: no-show evitado e
+        receita de reativação são mecanismos diferentes, e o resultado
+        tem de manter os dois campos SEPARADOS, nunca somados."""
+        patient_id = uuid4()
+        sale_id = uuid4()
+        contacted_at = datetime(2026, 1, 20, 10, 0)
+        candidates = [
+            AttributedCandidate(
+                opportunity_id=uuid4(),
+                patient_id=patient_id,
+                due_date=date(2026, 1, 1),
+                contacted_at=contacted_at,
+                resolved_by_sale_id=sale_id,
+                sale_sold_at=datetime(2026, 1, 25, 10, 0),
+                sale_net_profit=Decimal("100.00"),
+            )
+        ]
+
+        result = calculate_attributed_revenue(
+            candidates=candidates,
+            subscription_fee=Decimal("39.00"),
+            no_show_avoided_session_values=[Decimal("280.00"), Decimal("280.00")],
+        )
+
+        assert result.attributed_revenue == Decimal("100.00")
+        assert result.no_show_avoided_revenue == Decimal("560.00")
+        # roi_ratio usa só attributed_revenue — nunca soma no-show evitado
+        assert result.roi_ratio == (Decimal("100.00") / Decimal("39.00")).quantize(
+            Decimal("0.1")
+        )
+
+    def test_sem_session_values_resulta_em_zero(self) -> None:
+        """Chamada sem o parâmetro novo (retrocompatibilidade) não
+        quebra e não inventa valor."""
+        result = calculate_attributed_revenue(candidates=[])
+        assert result.no_show_avoided_count == 0
+        assert result.no_show_avoided_revenue == Decimal("0.00")

@@ -7,6 +7,7 @@ import { CurrencyInput } from "@/ui/CurrencyInput";
 import { ZERO, type Money } from "@/lib/money/money";
 import type { Modality, Procedure, ProcedureType } from "./api";
 import { toast } from "@/ui/ToastContext";
+import { SUGGESTED_PROCEDURE_PHOTOS, getProcedurePhoto } from "@/features/public-booking/procedureImages";
 
 const schema = z.object({
   name: z.string().min(1, "Nome é obrigatório"),
@@ -15,6 +16,9 @@ const schema = z.object({
   estimated_cost: z.string(),
   return_interval_days: z.string().optional(),
   default_modality: z.enum(["IN_PERSON", "REMOTE"]),
+  is_invasive: z.boolean(),
+  session_plan: z.enum(["SINGLE", "MULTIPLE"]),
+  image_url: z.string().optional(),
 });
 
 export type ProcedureFormValues = z.infer<typeof schema>;
@@ -32,6 +36,7 @@ export function ProcedureForm({ initial, onSubmit, submitLabel }: Props) {
     register,
     control,
     watch,
+    setValue,
     handleSubmit,
     formState: { errors, isSubmitting },
   } = useForm<ProcedureFormValues>({
@@ -43,10 +48,16 @@ export function ProcedureForm({ initial, onSubmit, submitLabel }: Props) {
       estimated_cost: initial?.estimated_cost ?? ZERO,
       return_interval_days: initial?.return_interval_days?.toString() ?? "",
       default_modality: (initial?.default_modality ?? "IN_PERSON") as Modality,
+      is_invasive: initial?.is_invasive ?? false,
+      session_plan: initial?.session_plan ?? "SINGLE",
+      image_url: initial?.image_url ?? "",
     },
   });
 
   const type = watch("type");
+  const name = watch("name");
+  const currentImageUrl = watch("image_url");
+  const activePreview = currentImageUrl?.trim() || (name ? getProcedurePhoto(name) : "");
 
   // Qualquer edição após salvar invalida o "Salvo com sucesso" —
   // senão a mensagem fica presa mesmo depois de mudar campos sem reenviar.
@@ -85,6 +96,95 @@ export function ProcedureForm({ initial, onSubmit, submitLabel }: Props) {
         </label>
       </fieldset>
 
+      <div className="form__field" style={{ marginTop: "8px", marginBottom: "8px" }}>
+        <span style={{ fontWeight: 600, fontSize: "0.95rem" }}>🖼️ Foto do Procedimento (Vitrine & Agendamento)</span>
+        <p style={{ margin: "2px 0 8px", fontSize: "0.82rem", color: "#64748b" }}>
+          Foto exibida para os clientes na agenda pública e catálogo.
+        </p>
+
+        <div style={{ display: "flex", gap: "14px", alignItems: "flex-start" }}>
+          {activePreview ? (
+            <div style={{ position: "relative", flexShrink: 0 }}>
+              <img
+                src={activePreview}
+                alt="Preview do procedimento"
+                style={{
+                  width: "110px",
+                  height: "75px",
+                  objectFit: "cover",
+                  borderRadius: "8px",
+                  border: "1px solid #e2e8f0",
+                }}
+              />
+              {currentImageUrl && (
+                <button
+                  type="button"
+                  onClick={() => setValue("image_url", "", { shouldDirty: true })}
+                  style={{
+                    position: "absolute",
+                    top: "-6px",
+                    right: "-6px",
+                    background: "#ef4444",
+                    color: "#fff",
+                    border: "none",
+                    borderRadius: "50%",
+                    width: "20px",
+                    height: "20px",
+                    fontSize: "11px",
+                    cursor: "pointer",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
+                  title="Remover foto personalizada (usar automática)"
+                >
+                  ✕
+                </button>
+              )}
+            </div>
+          ) : null}
+
+          <div style={{ flex: 1 }}>
+            <input
+              {...register("image_url")}
+              placeholder="Cole a URL de uma foto (https://...)"
+              style={{ width: "100%", fontSize: "0.85rem" }}
+            />
+            {errors.image_url && (
+              <span role="alert" style={{ color: "#ef4444", fontSize: "0.8rem", display: "block", marginTop: "2px" }}>
+                {errors.image_url.message}
+              </span>
+            )}
+
+            <div style={{ marginTop: "8px" }}>
+              <span style={{ fontSize: "0.78rem", color: "#64748b", display: "block", marginBottom: "4px" }}>
+                Ou selecione uma foto da nossa biblioteca clínica:
+              </span>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}>
+                {SUGGESTED_PROCEDURE_PHOTOS.map((photo) => (
+                  <button
+                    key={photo.label}
+                    type="button"
+                    onClick={() => setValue("image_url", photo.url, { shouldDirty: true })}
+                    style={{
+                      fontSize: "0.74rem",
+                      padding: "3px 8px",
+                      borderRadius: "12px",
+                      border: currentImageUrl === photo.url ? "1.5px solid #d97706" : "1px solid #cbd5e1",
+                      background: currentImageUrl === photo.url ? "#fef3c7" : "#f8fafc",
+                      color: currentImageUrl === photo.url ? "#92400e" : "#334155",
+                      cursor: "pointer",
+                    }}
+                  >
+                    {photo.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <label className="form__field">
         <span>Preço *</span>
         <Controller
@@ -114,6 +214,21 @@ export function ProcedureForm({ initial, onSubmit, submitLabel }: Props) {
             />
           )}
         />
+      </label>
+
+      <fieldset className="form__field">
+        <legend>Sessões</legend>
+        <label>
+          <input type="radio" value="SINGLE" {...register("session_plan")} /> Sessão única
+        </label>
+        <label>
+          <input type="radio" value="MULTIPLE" {...register("session_plan")} /> Múltiplas sessões
+        </label>
+      </fieldset>
+
+      <label className="form__field" style={{ flexDirection: "row", alignItems: "center", gap: "8px" }}>
+        <input type="checkbox" {...register("is_invasive")} />
+        <span>⚠️ Procedimento invasivo</span>
       </label>
 
       {type === "SERVICE" && (

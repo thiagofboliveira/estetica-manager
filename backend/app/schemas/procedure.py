@@ -3,7 +3,7 @@ from uuid import UUID
 
 from pydantic import Field, model_validator
 
-from app.models.procedure import Modality, ProcedureType
+from app.models.procedure import Modality, ProcedureType, SessionPlan
 from app.schemas.base import InputSchema, OutputSchema
 from app.schemas.types import MoneyOut
 
@@ -16,8 +16,12 @@ class ProcedureCreate(InputSchema):
     return_interval_days: int | None = Field(default=None, ge=0)
     default_modality: Modality = Modality.IN_PERSON
     split_override: str | None = Field(
-        default=None, description="Percentual de comissão customizado, ex: '30.00' (E6 / P1)"
+        default=None,
+        description="Percentual de comissão customizado, ex: '30.00' (E6 / P1)",
     )
+    is_invasive: bool = False
+    session_plan: SessionPlan = SessionPlan.SINGLE
+    image_url: str | None = None
 
     @model_validator(mode="after")
     def _produto_sem_intervalo_de_retorno(self) -> "ProcedureCreate":
@@ -36,6 +40,9 @@ class ProcedureUpdate(InputSchema):
     default_modality: Modality | None = None
     split_override: str | None = None
     is_active: bool | None = None
+    is_invasive: bool | None = None
+    session_plan: SessionPlan | None = None
+    image_url: str | None = None
 
 
 class ProcedureOut(OutputSchema):
@@ -48,8 +55,18 @@ class ProcedureOut(OutputSchema):
     default_modality: Modality
     split_override: MoneyOut | None = None
     is_active: bool
+    is_invasive: bool
+    session_plan: SessionPlan
+    image_url: str | None = None
     created_at: datetime
     updated_at: datetime
+
+
+class ProcedureListOut(OutputSchema):
+    items: list[ProcedureOut]
+    total_count: int
+    page: int
+    page_size: int
 
 
 class ProcedureTemplateOut(OutputSchema):
@@ -67,11 +84,16 @@ class ProcedureFromTemplateCreate(InputSchema):
     template_id: str = Field(description="Identificador do template (slug)")
     name: str | None = Field(default=None, description="Nome customizado (opcional)")
     price: str | None = Field(default=None, description="Preço customizado (opcional)")
-    estimated_cost: str | None = Field(default=None, description="Custo customizado (opcional)")
+    estimated_cost: str | None = Field(
+        default=None, description="Custo customizado (opcional)"
+    )
     return_interval_days: int | None = Field(
         default=None, ge=0, description="Intervalo de retorno customizado (opcional)"
     )
     default_modality: Modality = Modality.IN_PERSON
     split_override: str | None = Field(
         default=None, description="Percentual de comissão customizado (opcional)"
+    )
+    image_url: str | None = Field(
+        default=None, description="URL da foto customizada do procedimento (opcional)"
     )

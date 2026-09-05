@@ -34,6 +34,8 @@ export function NewProcedurePage() {
     // campos obrigatórios do mock initial
     id: "",
     is_active: true,
+    is_invasive: false,
+    session_plan: "SINGLE" as const,
     created_at: "",
     updated_at: "",
   } : undefined;

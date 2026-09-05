@@ -5,17 +5,20 @@ do JWT — não existe caminho no código que produza sessão sem tenant.
 Rotas públicas (/health) simplesmente não declaram DbSession.
 """
 
+from datetime import timedelta
 from typing import Annotated
 from uuid import UUID
 
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends, HTTPException, Request, status
 from sqlalchemy.orm import Session
 
+from app.core.rate_limit import InMemoryRateLimiter
 from app.core.security import get_current_professional_id
 from app.db.session import get_tenant_session, unsafe_session_without_tenant
 from app.models.user import User
 from app.repositories.booking import BookingRepository
 from app.repositories.clinic import ClinicRepository
+from app.repositories.event import EventRepository
 from app.repositories.financial_settings import FinancialSettingsRepository
 from app.repositories.fixed_expense import FixedExpenseRepository
 from app.repositories.patient import PatientRepository
@@ -26,11 +29,15 @@ from app.repositories.return_opportunity import ReturnOpportunityRepository
 from app.repositories.sale import SaleRepository
 from app.repositories.sale_item import SaleItemRepository
 from app.repositories.session import SessionRepository
+from app.repositories.terms_acceptance import TermsAcceptanceRepository
 from app.repositories.user import UserRepository
+from app.services.agenda_service import AgendaService
 from app.services.attribution_service import AttributionService
 from app.services.booking_service import BookingService
 from app.services.clinic_service import ClinicService
 from app.services.dashboard_service import DashboardService
+from app.services.event_service import EventService
+from app.services.expenses_by_category_service import ExpensesByCategoryService
 from app.services.export_service import ExportService
 from app.services.financial_settings_service import FinancialSettingsService
 from app.services.fixed_expense_service import FixedExpenseService
@@ -45,6 +52,51 @@ from app.services.system_service import SystemService
 from app.services.user_service import UserService
 
 CurrentProfessional = Annotated[UUID, Depends(get_current_professional_id)]
+
+
+_patient_import_rate_limiter = InMemoryRateLimiter(
+    max_calls=3, window=timedelta(hours=1)
+)
+
+
+def check_patient_import_rate_limit(professional_id: CurrentProfessional) -> None:
+    """3 chamadas/hora por profissional para POST /patients/import (AC-07)."""
+    retry_after = _patient_import_rate_limiter.check(professional_id)
+    if retry_after is not None:
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail="Limite de importações em lote excedido. Tente novamente em breve.",
+            headers={"Retry-After": str(max(1, int(retry_after.total_seconds())))},
+        )
+
+
+PatientImportRateLimit = Annotated[None, Depends(check_patient_import_rate_limit)]
+
+
+# S-04: rate limit por IP em rotas PÚBLICAS (sem professional_id — a
+# rota é alcançada antes de qualquer JWT). /system/setup em particular:
+# sem limite, um atacante poderia bombardear convites via Supabase Admin
+# API (SUPABASE_SERVICE_ROLE_KEY) ou tentar exaurir o guard de
+# count() > 0 de alguma forma. IP é heurística fraca (proxy/NAT
+# compartilham IP, VPN troca), mas é a única chave disponível sem
+# autenticação — suficiente para conter abuso casual, não um atacante
+# dedicado (esse precisa de S-01/RLS, não de rate limit).
+_system_setup_rate_limiter = InMemoryRateLimiter(max_calls=5, window=timedelta(hours=1))
+
+
+def check_system_setup_rate_limit(request: Request) -> None:
+    """5 chamadas/hora por IP para POST /system/setup."""
+    client_ip = request.client.host if request.client else "unknown"
+    retry_after = _system_setup_rate_limiter.check(client_ip)
+    if retry_after is not None:
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail="Muitas tentativas de configuração. Tente novamente em breve.",
+            headers={"Retry-After": str(max(1, int(retry_after.total_seconds())))},
+        )
+
+
+SystemSetupRateLimit = Annotated[None, Depends(check_system_setup_rate_limit)]
 
 
 def _db(professional_id: CurrentProfessional):
@@ -62,9 +114,7 @@ def _system_db():
 SystemDbSession = Annotated[Session, Depends(_system_db)]
 
 
-def get_current_user(
-    session: DbSession, professional_id: CurrentProfessional
-) -> User:
+def get_current_user(session: DbSession, professional_id: CurrentProfessional) -> User:
     user = UserRepository(session).get_by_id(professional_id)
     if user is None:
         raise HTTPException(
@@ -105,10 +155,21 @@ SuperAdminUser = Annotated[User, Depends(require_superadmin)]
 GlobalSuperAdminUser = Annotated[User, Depends(require_superadmin)]
 
 
+def get_event_service(
+    session: DbSession, professional_id: CurrentProfessional
+) -> EventService:
+    return EventService(EventRepository(session, professional_id))
+
+
 def get_patient_service(
     session: DbSession, professional_id: CurrentProfessional
 ) -> PatientService:
-    return PatientService(PatientRepository(session, professional_id))
+    return PatientService(
+        PatientRepository(session, professional_id),
+        procedure_repo=ProcedureRepository(session, professional_id),
+        return_opportunity_repo=ReturnOpportunityRepository(session, professional_id),
+        professional_repo=ProfessionalRepository(session, professional_id),
+    )
 
 
 def get_procedure_service(
@@ -155,6 +216,15 @@ def get_procedure_ranking_service(
         sale_item_repo=SaleItemRepository(session, professional_id),
         procedure_repo=ProcedureRepository(session, professional_id),
         professional_repo=ProfessionalRepository(session, professional_id),
+        session_repo=SessionRepository(session, professional_id),
+    )
+
+
+def get_expenses_by_category_service(
+    session: DbSession, professional_id: CurrentProfessional
+) -> ExpensesByCategoryService:
+    return ExpensesByCategoryService(
+        fixed_expense_repo=FixedExpenseRepository(session, professional_id)
     )
 
 
@@ -212,16 +282,27 @@ def get_booking_service(
     )
 
 
-def get_user_service(session: DbSession) -> UserService:
-    return UserService(UserRepository(session))
+def get_user_service(
+    session: DbSession, professional_id: CurrentProfessional
+) -> UserService:
+    prof = ProfessionalRepository(session, professional_id).get_by_id(professional_id)
+    clinic_id = prof.clinic_id if prof else None
+    return UserService(
+        user_repo=UserRepository(session, clinic_id=clinic_id),
+        terms_repo=TermsAcceptanceRepository(session),
+    )
 
 
 def get_system_service(session: SystemDbSession) -> SystemService:
     return SystemService(UserRepository(session), session)
 
 
-def get_clinic_service(session: DbSession) -> ClinicService:
-    return ClinicService(ClinicRepository(session))
+def get_clinic_service(
+    session: DbSession, professional_id: CurrentProfessional
+) -> ClinicService:
+    prof = ProfessionalRepository(session, professional_id).get_by_id(professional_id)
+    clinic_id = prof.clinic_id if prof else None
+    return ClinicService(ClinicRepository(session, clinic_id=clinic_id))
 
 
 def get_system_clinic_service(session: SystemDbSession) -> ClinicService:
@@ -229,7 +310,10 @@ def get_system_clinic_service(session: SystemDbSession) -> ClinicService:
 
 
 def get_system_user_service(session: SystemDbSession) -> UserService:
-    return UserService(UserRepository(session))
+    return UserService(
+        user_repo=UserRepository(session),
+        terms_repo=TermsAcceptanceRepository(session),
+    )
 
 
 def get_attribution_service(
@@ -238,6 +322,10 @@ def get_attribution_service(
     return AttributionService(
         opportunity_repo=ReturnOpportunityRepository(session, professional_id),
         professional_repo=ProfessionalRepository(session, professional_id),
+        financial_settings_service=get_financial_settings_service(
+            session, professional_id
+        ),
+        session_repo=SessionRepository(session, professional_id),
     )
 
 
@@ -252,6 +340,7 @@ def get_export_service(
     )
 
 
+EventSvc = Annotated[EventService, Depends(get_event_service)]
 PatientSvc = Annotated[PatientService, Depends(get_patient_service)]
 ProcedureSvc = Annotated[ProcedureService, Depends(get_procedure_service)]
 FinancialSettingsSvc = Annotated[
@@ -266,7 +355,25 @@ DashboardSvc = Annotated[DashboardService, Depends(get_dashboard_service)]
 ProcedureRankingSvc = Annotated[
     ProcedureRankingService, Depends(get_procedure_ranking_service)
 ]
+ExpensesByCategorySvc = Annotated[
+    ExpensesByCategoryService, Depends(get_expenses_by_category_service)
+]
 SessionSvc = Annotated[SessionService, Depends(get_session_service)]
+
+
+def get_agenda_service(
+    session: DbSession, professional_id: CurrentProfessional
+) -> AgendaService:
+    return AgendaService(
+        session_service=get_session_service(session, professional_id),
+        financial_settings_service=get_financial_settings_service(
+            session, professional_id
+        ),
+        professional_repo=ProfessionalRepository(session, professional_id),
+    )
+
+
+AgendaSvc = Annotated[AgendaService, Depends(get_agenda_service)]
 RetentionSvc = Annotated[RetentionService, Depends(get_retention_service)]
 BookingSvc = Annotated[BookingService, Depends(get_booking_service)]
 UserSvc = Annotated[UserService, Depends(get_user_service)]
@@ -276,4 +383,3 @@ SystemClinicSvc = Annotated[ClinicService, Depends(get_system_clinic_service)]
 SystemUserSvc = Annotated[UserService, Depends(get_system_user_service)]
 AttributionSvc = Annotated[AttributionService, Depends(get_attribution_service)]
 ExportSvc = Annotated[ExportService, Depends(get_export_service)]
-

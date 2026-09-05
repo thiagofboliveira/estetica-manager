@@ -13,14 +13,22 @@ from app.core.tz import today_in_timezone
 from app.domain.financial.dashboard import (
     DashboardResult,
     FixedExpenseForDashboard,
+    PeriodKind,
     SaleForDashboard,
     build_dashboard,
+    calculate_recent_average_ticket,
 )
-from app.domain.financial.period import ResolvedPeriod, resolve_period
+from app.domain.financial.period import (
+    ResolvedPeriod,
+    last_n_closed_months_range,
+    resolve_period,
+)
 from app.repositories.fixed_expense import FixedExpenseRepository
 from app.repositories.professional import ProfessionalRepository
 from app.repositories.sale import SaleRepository
 from app.repositories.session import SessionRepository
+
+RECENT_TICKET_MONTHS = 3
 
 
 class DashboardService:
@@ -73,6 +81,27 @@ class DashboardService:
             for e in self._fixed_expenses.list_active()
         ]
 
+        # Ticket médio recente só é relevante no mês CORRENTE em
+        # andamento (onde o breakeven se aplica) — evita uma query
+        # extra nos outros filtros (hoje, 7 dias, mês passado, custom).
+        average_ticket_recent = None
+        if period.kind is PeriodKind.MONTH and period.date_to == today:
+            recent_from, recent_to = last_n_closed_months_range(
+                today, n=RECENT_TICKET_MONTHS
+            )
+            recent_sales = self._sales.list_in_period(recent_from, recent_to)
+            average_ticket_recent = calculate_recent_average_ticket(
+                [
+                    SaleForDashboard(
+                        gross_amount=s.gross_amount,
+                        net_profit=s.net_profit,
+                        expected_receipt_date=s.expected_receipt_date,
+                        sold_at=s.sold_at,
+                    )
+                    for s in recent_sales
+                ]
+            )
+
         result = build_dashboard(
             sales=sales,
             session_count=session_count,
@@ -80,13 +109,13 @@ class DashboardService:
             fixed_expenses=fixed_expenses,
             period_kind=period.kind,
             today=today,
+            date_to=period.date_to,
             has_any_sale_ever=self._sales.has_any_sale(),
+            average_ticket_recent=average_ticket_recent,
         )
         return result, period
 
-    def get_receivables_projection(
-        self, *, months_ahead: int = 12
-    ):
+    def get_receivables_projection(self, *, months_ahead: int = 12):
         from app.domain.financial.receivables import (
             SaleReceivableInput,
             project_monthly_receivables,
@@ -105,7 +134,9 @@ class DashboardService:
                 else str(s.payment_method),
                 installments=s.installments,
                 net_received_amount=s.gross_amount - s.fee_amount_applied,
-                is_anticipated=False,
+                is_anticipated=bool(
+                    (s.snapshot_payload or {}).get("anticipates_all", False)
+                ),
             )
             for s in sales_models
             if s.status.value == "ACTIVE"
@@ -116,4 +147,3 @@ class DashboardService:
             reference_date=today,
             months_ahead=months_ahead,
         )
-

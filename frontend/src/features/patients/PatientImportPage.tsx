@@ -1,7 +1,8 @@
-﻿import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { usePatientImport } from "./hooks";
-import type { BatchImportResult } from "./api";
+import type { BatchImportResult, BatchImportPayload } from "./api";
+import { useProcedures } from "@/features/procedures/hooks";
 import { IconUsers, IconCheck, IconAlertTriangle, IconArrowRight, IconSparkles } from "@/ui/icons";
 import styles from "./PatientImport.module.css";
 
@@ -14,6 +15,16 @@ export function PatientImportPage() {
   const [text, setText] = useState("");
   const [result, setResult] = useState<BatchImportResult | null>(null);
   
+  const { data: procedures = [] } = useProcedures();
+  const [generateOpportunities, setGenerateOpportunities] = useState(true);
+  const [selectedProcedureId, setSelectedProcedureId] = useState<string>("");
+
+  useEffect(() => {
+    if (procedures.length > 0 && !selectedProcedureId) {
+      setSelectedProcedureId(procedures[0].id);
+    }
+  }, [procedures, selectedProcedureId]);
+
   const importMutation = usePatientImport();
 
   const parsedData = useMemo(() => {
@@ -50,8 +61,10 @@ export function PatientImportPage() {
     
     setStep(3);
     try {
-      const payload = {
-        patients: parsedData.map(r => ({ name: r.name, phone: r.phone }))
+      const payload: BatchImportPayload = {
+        patients: parsedData.map(r => ({ name: r.name, phone: r.phone })),
+        default_procedure_id: generateOpportunities && selectedProcedureId ? selectedProcedureId : null,
+        generate_return_opportunities: generateOpportunities && Boolean(selectedProcedureId),
       };
       const res = await importMutation.mutateAsync(payload);
       setResult(res);
@@ -152,7 +165,56 @@ export function PatientImportPage() {
                 <span>{parsedData.filter(r => r.status === "WARN").length} pacientes não possuem telefone e não poderão receber lembretes automáticos de WhatsApp.</span>
               </div>
             )}
-            <div className={styles.actionsRow}>
+
+            {procedures.length > 0 && (
+              <div style={{
+                marginTop: "16px",
+                padding: "16px",
+                borderRadius: "8px",
+                border: "1px solid var(--border-color, #e2e8f0)",
+                backgroundColor: "var(--bg-card-subtle, #f8fafc)",
+                textAlign: "left"
+              }}>
+                <label style={{ display: "flex", alignItems: "center", gap: "8px", fontWeight: 600, cursor: "pointer" }}>
+                  <input
+                    type="checkbox"
+                    checked={generateOpportunities}
+                    onChange={(e) => setGenerateOpportunities(e.target.checked)}
+                  />
+                  <span>🎯 Gerar oportunidades de retorno imediatas no "Quem chamar hoje?"</span>
+                </label>
+                <p style={{ margin: "6px 0 12px 24px", fontSize: "0.875rem", color: "var(--text-muted, #64748b)" }}>
+                  Cria a fila de contato para chamar essas pacientes de volta logo no 1º dia de uso.
+                </p>
+                {generateOpportunities && (
+                  <div style={{ marginLeft: "24px" }}>
+                    <label style={{ display: "block", fontSize: "0.85rem", marginBottom: "4px", fontWeight: 500 }}>
+                      Procedimento de referência:
+                    </label>
+                    <select
+                      value={selectedProcedureId}
+                      onChange={(e) => setSelectedProcedureId(e.target.value)}
+                      style={{
+                        padding: "8px 12px",
+                        borderRadius: "6px",
+                        border: "1px solid var(--border-color, #cbd5e1)",
+                        width: "100%",
+                        maxWidth: "360px",
+                        backgroundColor: "var(--bg-input, #ffffff)"
+                      }}
+                    >
+                      {procedures.map((proc) => (
+                        <option key={proc.id} value={proc.id}>
+                          {proc.name} ({proc.return_interval_days} dias de retorno)
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+              </div>
+            )}
+
+            <div className={styles.actionsRow} style={{ marginTop: "24px" }}>
               <button 
                 className={styles.btnBack} 
                 onClick={() => setStep(1)}
@@ -194,6 +256,12 @@ export function PatientImportPage() {
                 <span className={styles.statValue} style={{ color: "#d97706" }}>{result.skipped_count}</span>
                 <span className={styles.statLabel}>Já existiam</span>
               </div>
+              {result.opportunities_created_count != null && result.opportunities_created_count > 0 && (
+                <div className={styles.statItem}>
+                  <span className={styles.statValue} style={{ color: "#2563eb" }}>{result.opportunities_created_count}</span>
+                  <span className={styles.statLabel}>Para chamar hoje</span>
+                </div>
+              )}
               <div className={styles.statItem}>
                 <span className={styles.statValue} style={{ color: "#dc2626" }}>{result.errors.length}</span>
                 <span className={styles.statLabel}>Inconsistências</span>
@@ -211,7 +279,17 @@ export function PatientImportPage() {
               </div>
             )}
 
-            <div className={styles.actionsRow} style={{ marginTop: "24px" }}>
+            <div className={styles.actionsRow} style={{ marginTop: "24px", gap: "12px" }}>
+              {result.opportunities_created_count != null && result.opportunities_created_count > 0 && (
+                <button
+                  className={styles.btnConfirm}
+                  style={{ backgroundColor: "#2563eb" }}
+                  onClick={() => navigate("/retencao")}
+                >
+                  <span>Ver "Quem Chamar Hoje"</span>
+                  <IconArrowRight width="15" height="15" />
+                </button>
+              )}
               <button className={styles.btnConfirm} onClick={() => navigate("/pacientes")}>
                 <span>Ver Lista de Pacientes</span>
                 <IconArrowRight width="15" height="15" />

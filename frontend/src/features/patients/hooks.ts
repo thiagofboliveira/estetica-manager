@@ -4,19 +4,37 @@ import { CACHE } from "@/lib/query/client";
 import {
   patientsApi,
   type PatientCreateInput,
+  type PatientListParams,
   type PatientUpdateInput,
 } from "./api";
 
+// Usado por PatientPicker/OnboardingChecklist, que precisam de uma
+// lista simples (não paginada) para montar um <select> ou checar
+// "existe pelo menos uma paciente cadastrada".
 export function usePatientsSearch(search: string) {
   return useQuery({
     queryKey: qk.patientsSearch(search),
-    queryFn: () => patientsApi.list({ search: search || undefined, limit: 50 }),
+    queryFn: () =>
+      patientsApi.list({ search: search || undefined, page: 1, page_size: 50 }).then((r) => r.items),
     ...CACHE.SEARCH,
   });
 }
 
 export function usePatients(search = "") {
   return usePatientsSearch(search);
+}
+
+// Usado pela tela de listagem paginada (PatientsPage).
+export function usePatientsPage(
+  filters: Omit<PatientListParams, "page" | "page_size">,
+  page: number,
+  pageSize: number,
+) {
+  return useQuery({
+    queryKey: [...qk.patients(), "page", filters, page, pageSize] as const,
+    queryFn: () => patientsApi.list({ ...filters, page, page_size: pageSize }),
+    ...CACHE.SEARCH,
+  });
 }
 
 export function usePatient(id: string) {

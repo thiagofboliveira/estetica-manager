@@ -3,6 +3,7 @@ import { AppLayout } from "@/app/layout/AppLayout";
 import { GlobalErrorBoundary } from "@/app/layout/GlobalErrorBoundary";
 import { RequireAuth } from "@/app/layout/RequireAuth";
 import { LandingPage } from "@/features/landing/LandingPage";
+import { HowWeCalculatePage } from "@/features/landing/HowWeCalculatePage";
 import { LoginPage } from "@/features/onboarding/LoginPage";
 import { PatientsPage } from "@/features/patients/PatientsPage";
 import { NewPatientPage } from "@/features/patients/NewPatientPage";
@@ -16,7 +17,9 @@ import { NewPackageSalePage } from "@/features/sales/NewPackageSalePage";
 import { DashboardPage } from "@/features/dashboard/DashboardPage";
 import { RetentionPage } from "@/features/retention/RetentionPage";
 import { AgendaPage } from "@/features/agenda/AgendaPage";
-import { SettingsPage } from "@/features/settings/SettingsPage";
+import { ModoOcupadoPage } from "@/features/agenda/ModoOcupadoPage";
+import { FinancialSettingsPage } from "@/features/settings/FinancialSettingsPage";
+import { FixedExpensesPage } from "@/features/fixed-expenses/FixedExpensesPage";
 import { SetupWizardPage } from "@/features/admin/SetupWizardPage";
 import { AdminLayout } from "@/features/admin/AdminLayout";
 import { AdminUsersPage } from "@/features/admin/AdminUsersPage";
@@ -24,51 +27,67 @@ import { SuperAdminLayout } from "@/features/admin/SuperAdminLayout";
 import { SuperAdminClinicsPage } from "@/features/admin/SuperAdminClinicsPage";
 import { SuperAdminUsersPage } from "@/features/admin/SuperAdminUsersPage";
 
+import { TermsOfServicePage } from "@/features/legal/TermsOfServicePage";
+import { PrivacyPolicyPage } from "@/features/legal/PrivacyPolicyPage";
+import { PublicBookingPage } from "@/features/public-booking/PublicBookingPage";
+import { BookingManagementPage } from "@/features/public-booking/BookingManagementPage";
+
 export const router = createBrowserRouter([
-  { path: "/", element: <LandingPage /> },
-  { path: "/login", element: <LoginPage /> },
-  { path: "/setup", element: <SetupWizardPage /> },
   {
-    element: (
-      <GlobalErrorBoundary>
-        <RequireAuth />
-      </GlobalErrorBoundary>
-    ),
+    // G-08a: o boundary agora envolve a árvore INTEIRA, não só a
+    // autenticada — /login e /setup são as telas do primeiro contato;
+    // um erro de render nelas dava tela branca sem recuperação antes.
+    element: <GlobalErrorBoundary />,
     children: [
+      { path: "/", element: <LandingPage /> },
+      { path: "/como-calculamos", element: <HowWeCalculatePage /> },
+      { path: "/termos", element: <TermsOfServicePage /> },
+      { path: "/privacidade", element: <PrivacyPolicyPage /> },
+      { path: "/login", element: <LoginPage /> },
+      { path: "/setup", element: <SetupWizardPage /> },
+      { path: "/agendar/:slug", element: <PublicBookingPage /> },
+      { path: "/agendamento/:id", element: <BookingManagementPage /> },
       {
-        path: "/super-admin",
-        element: <SuperAdminLayout />,
+        element: <RequireAuth />,
         children: [
-          { path: "clinicas", element: <SuperAdminClinicsPage /> },
-          { path: "usuarios", element: <SuperAdminUsersPage /> },
-          { index: true, element: <Navigate to="clinicas" replace /> },
-        ]
-      },
-      {
-        element: <AppLayout />,
-        children: [
-          { path: "/dashboard", element: <DashboardPage /> },
-          { path: "/retornos", element: <RetentionPage /> },
-          { path: "/pacientes", element: <PatientsPage /> },
-          { path: "/pacientes/novo", element: <NewPatientPage /> },
-          { path: "/pacientes/importar", element: <PatientImportPage /> },
-          { path: "/pacientes/:id", element: <PatientDetailPage /> },
-          { path: "/procedimentos", element: <ProceduresPage /> },
-          { path: "/procedimentos/novo", element: <NewProcedurePage /> },
-          { path: "/procedimentos/:id", element: <ProcedureDetailPage /> },
-          { path: "/vendas/nova", element: <NewSalePage /> },
-          { path: "/vendas/nova-pacote", element: <NewPackageSalePage /> },
-          { path: "/agenda", element: <AgendaPage /> },
-          { path: "/configuracoes", element: <SettingsPage /> },
-          { path: "*", element: <Navigate to="/dashboard" replace /> },
-        ],
-      },
-      {
-        path: "/admin",
-        element: <AdminLayout />,
-        children: [
-          { path: "usuarios", element: <AdminUsersPage /> },
-          { index: true, element: <Navigate to="usuarios" replace /> },
+          {
+            path: "/super-admin",
+            element: <SuperAdminLayout />,
+            children: [
+              { path: "clinicas", element: <SuperAdminClinicsPage /> },
+              { path: "usuarios", element: <SuperAdminUsersPage /> },
+              { index: true, element: <Navigate to="clinicas" replace /> },
+            ]
+          },
+          {
+            element: <AppLayout />,
+            children: [
+              { path: "/dashboard", element: <DashboardPage /> },
+              { path: "/retornos", element: <RetentionPage /> },
+              { path: "/pacientes", element: <PatientsPage /> },
+              { path: "/pacientes/novo", element: <NewPatientPage /> },
+              { path: "/pacientes/importar", element: <PatientImportPage /> },
+              { path: "/pacientes/:id", element: <PatientDetailPage /> },
+              { path: "/procedimentos", element: <ProceduresPage /> },
+              { path: "/procedimentos/novo", element: <NewProcedurePage /> },
+              { path: "/procedimentos/:id", element: <ProcedureDetailPage /> },
+              { path: "/vendas/nova", element: <NewSalePage /> },
+              { path: "/vendas/nova-pacote", element: <NewPackageSalePage /> },
+              { path: "/agenda", element: <AgendaPage /> },
+              { path: "/agenda/rapido", element: <ModoOcupadoPage /> },
+              { path: "/financeiro", element: <FinancialSettingsPage /> },
+              { path: "/despesas-fixas", element: <FixedExpensesPage /> },
+              { path: "*", element: <Navigate to="/dashboard" replace /> },
+            ],
+          },
+          {
+            path: "/admin",
+            element: <AdminLayout />,
+            children: [
+              { path: "usuarios", element: <AdminUsersPage /> },
+              { index: true, element: <Navigate to="usuarios" replace /> },
+            ],
+          },
         ],
       },
     ],

@@ -1,16 +1,12 @@
 from uuid import UUID
 
 from app.core.money import money
-from app.domain.catalog.procedure_templates import (
-    find_procedure_template,
-    list_procedure_templates,
-)
-from app.models.procedure import Procedure, ProcedureType
+from app.domain.catalog.procedure_templates import find_procedure_template
+from app.models.procedure import Procedure, ProcedureType, SessionPlan
 from app.repositories.procedure import ProcedureRepository
 from app.schemas.procedure import (
     ProcedureCreate,
     ProcedureFromTemplateCreate,
-    ProcedureTemplateOut,
     ProcedureUpdate,
 )
 
@@ -35,26 +31,14 @@ class ProcedureService:
             estimated_cost=money(dto.estimated_cost),
             return_interval_days=dto.return_interval_days,
             default_modality=dto.default_modality,
-            split_override=money(dto.split_override) if dto.split_override is not None else None,
+            split_override=money(dto.split_override)
+            if dto.split_override is not None
+            else None,
+            is_invasive=dto.is_invasive,
+            session_plan=dto.session_plan,
+            image_url=dto.image_url,
         )
         return self._repo.add(procedure)
-
-    def list_templates(self) -> list[ProcedureTemplateOut]:
-        """Retorna templates de procedimentos do catálogo de domínio (EPIC-S2-04, TASK-BACK-S2-17)."""
-        templates = list_procedure_templates()
-        return [
-            ProcedureTemplateOut(
-                template_id=t.template_id,
-                name=t.name,
-                type=t.type,
-                suggested_price=t.suggested_price,
-                suggested_cost=t.suggested_cost,
-                suggested_return_interval_days=t.suggested_return_interval_days,
-                category=t.category,
-                is_suggested=t.is_suggested,
-            )
-            for t in templates
-        ]
 
     def create_from_template(self, dto: ProcedureFromTemplateCreate) -> Procedure:
         """Cria procedimento a partir de template com overrides opcionais (TASK-BACK-S2-19)."""
@@ -65,7 +49,9 @@ class ProcedureService:
         name = dto.name.strip() if dto.name else template.name
         existing = self._repo.find_by_name(name)
         if existing:
-            raise ProcedureAlreadyExistsError(f"Procedimento '{name}' já está cadastrado.")
+            raise ProcedureAlreadyExistsError(
+                f"Procedimento '{name}' já está cadastrado."
+            )
 
         price = dto.price if dto.price is not None else str(template.suggested_price)
         estimated_cost = (
@@ -87,6 +73,7 @@ class ProcedureService:
             return_interval_days=return_interval_days,
             default_modality=dto.default_modality,
             split_override=dto.split_override,
+            image_url=dto.image_url,
         )
         return self.create(create_dto)
 
@@ -96,8 +83,28 @@ class ProcedureService:
             raise ProcedureNotFoundError()
         return procedure
 
-    def list(self, *, limit: int = 50, offset: int = 0) -> list[Procedure]:
-        return self._repo.list(limit=limit, offset=offset)
+    def list(
+        self,
+        *,
+        limit: int = 50,
+        offset: int = 0,
+        is_invasive: bool | None = None,
+        session_plan: SessionPlan | None = None,
+    ) -> list[Procedure]:
+        return self._repo.list(
+            limit=limit,
+            offset=offset,
+            is_invasive=is_invasive,
+            session_plan=session_plan,
+        )
+
+    def count(
+        self,
+        *,
+        is_invasive: bool | None = None,
+        session_plan: SessionPlan | None = None,
+    ) -> int:
+        return self._repo.count(is_invasive=is_invasive, session_plan=session_plan)
 
     def update(self, procedure_id: UUID, dto: ProcedureUpdate) -> Procedure:
         procedure = self.get(procedure_id)

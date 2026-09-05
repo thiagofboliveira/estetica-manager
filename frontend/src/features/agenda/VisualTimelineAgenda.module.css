@@ -254,6 +254,131 @@
   background: var(--accent-bg);
 }
 
+/* Month Calendar Grid */
+.monthGridWrapper {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  overflow: hidden;
+  box-shadow: var(--shadow-card);
+}
+
+.monthWeekdayRow {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  background: var(--bg-subtle);
+  border-bottom: 1px solid var(--border);
+}
+
+.monthWeekdayCell {
+  padding: 10px 6px;
+  text-align: center;
+  font-size: 11.5px;
+  font-weight: 700;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.monthGrid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+}
+
+.monthCell {
+  min-height: 108px;
+  padding: 8px;
+  border-right: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  transition: background-color 0.15s ease;
+}
+
+.monthCell:nth-child(7n) {
+  border-right: none;
+}
+
+.monthCell:hover {
+  background: var(--bg-subtle);
+}
+
+.monthCellOutside {
+  background: var(--bg-subtle);
+  opacity: 0.55;
+}
+
+.monthCellToday {
+  background: var(--accent-bg);
+}
+
+.monthCellDayNum {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-h);
+}
+
+.monthCellItems {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  overflow: hidden;
+}
+
+.monthItemChip {
+  font-size: 10.5px;
+  font-weight: 600;
+  padding: 2px 5px;
+  border-radius: 4px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  border-left: 3px solid transparent;
+}
+
+.monthItemScheduled {
+  background: var(--accent-bg);
+  color: var(--accent);
+  border-left-color: var(--accent);
+}
+
+.monthItemBooking {
+  background: var(--warning-bg);
+  color: var(--warning);
+  border-left-color: var(--warning);
+}
+
+.monthItemCompleted {
+  background: var(--success-bg);
+  color: var(--success);
+  border-left-color: var(--success);
+}
+
+.monthItemNoShow {
+  background: var(--danger-bg);
+  color: var(--danger);
+  border-left-color: var(--danger);
+}
+
+.monthMoreLabel {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--text-muted);
+  padding: 1px 5px;
+}
+
+@media (max-width: 720px) {
+  .monthCell {
+    min-height: 76px;
+  }
+
+  .monthItemChip {
+    font-size: 9.5px;
+  }
+}
+
 /* Timeline Hourly Grid */
 .timelineGridWrapper {
   background: var(--bg-card);

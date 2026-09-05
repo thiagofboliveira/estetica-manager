@@ -16,6 +16,11 @@ export function LoginPage() {
   const [error, setError] = useState<string | null>(null);
   const [isPending, setIsPending] = useState(false);
   const [authMode, setAuthMode] = useState<"dev" | "standard">(DEV_AUTH ? "dev" : "standard");
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
+  const [forgotEmail, setForgotEmail] = useState("");
+  const [forgotStatus, setForgotStatus] = useState<"idle" | "pending" | "sent" | "error">(
+    "idle",
+  );
 
   async function goToReturnTo() {
     await checkAuth();
@@ -40,6 +45,24 @@ export function LoginPage() {
       setIsPending(false);
       const errMsg = err instanceof Error ? err.message : "Erro ao conectar com servidor local.";
       setError(errMsg);
+    }
+  }
+
+  async function handleForgotPasswordSubmit(e: FormEvent) {
+    e.preventDefault();
+    setForgotStatus("pending");
+    try {
+      const { supabase } = await import("@/lib/auth/supabase");
+      // B-05: sem service_role — resetPasswordForEmail é uma chamada
+      // pública do client (mesma anon key), o Supabase manda o e-mail.
+      // Não revelamos se o e-mail existe ou não (mesma mensagem nos dois
+      // casos) — evita enumerar contas cadastradas.
+      await supabase.auth.resetPasswordForEmail(forgotEmail, {
+        redirectTo: `${window.location.origin}/login`,
+      });
+      setForgotStatus("sent");
+    } catch {
+      setForgotStatus("error");
     }
   }
 
@@ -161,7 +184,71 @@ export function LoginPage() {
             </div>
           )}
 
-          {authMode === "standard" ? (
+          {authMode === "standard" && showForgotPassword ? (
+            forgotStatus === "sent" ? (
+              <div className={styles.devBox}>
+                <div className={styles.devCardInfo}>
+                  <div className={styles.devCardHeader}>
+                    <IconCheck width="16" height="16" />
+                    <strong>Verifique seu e-mail</strong>
+                  </div>
+                  <p>
+                    Se <strong>{forgotEmail}</strong> estiver cadastrado, enviamos um link para
+                    redefinir a senha. Confira também a caixa de spam.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  className={styles.devSubmitBtn}
+                  onClick={() => {
+                    setShowForgotPassword(false);
+                    setForgotStatus("idle");
+                  }}
+                >
+                  Voltar para o login
+                </button>
+              </div>
+            ) : (
+              <form onSubmit={handleForgotPasswordSubmit} className={styles.form}>
+                <div className={styles.inputGroup}>
+                  <label htmlFor="forgot-email">Digite seu e-mail de acesso</label>
+                  <input
+                    id="forgot-email"
+                    type="email"
+                    inputMode="email"
+                    autoComplete="email"
+                    placeholder="doutora@clinica.com.br"
+                    value={forgotEmail}
+                    onChange={(e) => setForgotEmail(e.target.value)}
+                    required
+                  />
+                </div>
+
+                {forgotStatus === "error" && (
+                  <div role="alert" className={styles.alertError}>
+                    <IconAlertTriangle width="18" height="18" />
+                    <span>Não foi possível enviar o link agora. Tente novamente.</span>
+                  </div>
+                )}
+
+                <button
+                  type="submit"
+                  disabled={forgotStatus === "pending"}
+                  className={styles.submitBtn}
+                >
+                  {forgotStatus === "pending" ? "Enviando…" : "Enviar link de recuperação"}
+                </button>
+
+                <button
+                  type="button"
+                  className={styles.forgotLink}
+                  onClick={() => setShowForgotPassword(false)}
+                >
+                  ← Voltar para o login
+                </button>
+              </form>
+            )
+          ) : authMode === "standard" ? (
             <form onSubmit={handleStandardSubmit} className={styles.form}>
               <div className={styles.inputGroup}>
                 <label htmlFor="email">E-mail de Acesso</label>
@@ -180,9 +267,13 @@ export function LoginPage() {
               <div className={styles.inputGroup}>
                 <div className={styles.labelRow}>
                   <label htmlFor="password">Senha</label>
-                  <a href="#recuperar" className={styles.forgotLink}>
+                  <button
+                    type="button"
+                    className={styles.forgotLink}
+                    onClick={() => setShowForgotPassword(true)}
+                  >
                     Esqueceu a senha?
-                  </a>
+                  </button>
                 </div>
                 <input
                   id="password"
@@ -228,7 +319,15 @@ export function LoginPage() {
           )}
 
           <div className={styles.termsNote}>
-            Plataforma protegida e em conformidade com as diretrizes de privacidade LGPD.
+            Ao acessar, você concorda com nossos{" "}
+            <Link to="/termos" target="_blank" rel="noopener noreferrer">
+              Termos de Uso
+            </Link>{" "}
+            e nossa{" "}
+            <Link to="/privacidade" target="_blank" rel="noopener noreferrer">
+              Política de Privacidade (LGPD)
+            </Link>
+            .
           </div>
         </div>
       </div>

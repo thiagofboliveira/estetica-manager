@@ -10,7 +10,7 @@ mudar o procedimento depois não altera vendas passadas.
 from decimal import Decimal
 from enum import StrEnum
 
-from sqlalchemy import Enum, Numeric
+from sqlalchemy import Enum, Numeric, String
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.models.base import TenantModel
@@ -19,6 +19,16 @@ from app.models.base import TenantModel
 class ProcedureType(StrEnum):
     SERVICE = "SERVICE"
     PRODUCT = "PRODUCT"
+
+
+class SessionPlan(StrEnum):
+    """Rótulo informativo do catálogo — "este serviço normalmente é
+    feito em uma ou várias sessões". Deliberadamente desacoplado do
+    número real de sessões vendido (SaleItem/pacote): são conceitos
+    diferentes, ver docs/pending/BACKLOG_FILTROS_E_LAYOUT.md (E2)."""
+
+    SINGLE = "SINGLE"
+    MULTIPLE = "MULTIPLE"
 
 
 class Modality(StrEnum):
@@ -58,3 +68,11 @@ class Procedure(TenantModel):
         Numeric(5, 2, asdecimal=True), nullable=True
     )
     is_active: Mapped[bool] = mapped_column(default=True, nullable=False)
+    is_invasive: Mapped[bool] = mapped_column(default=False, nullable=False)
+    session_plan: Mapped[SessionPlan] = mapped_column(
+        Enum(SessionPlan, name="procedure_session_plan", native_enum=False),
+        default=SessionPlan.SINGLE,
+        nullable=False,
+    )
+    image_url: Mapped[str | None] = mapped_column(String(500), nullable=True)
+

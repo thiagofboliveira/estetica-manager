@@ -77,4 +77,7 @@ def test_export_sales_csv():
     csv_content = svc.export_sales_csv()
 
     assert "ID Venda;Data da Venda;Paciente;Tipo;Forma de Pagamento" in csv_content
-    assert "Ana Paula;PACKAGE;CREDIT;3;1200,00;100,00;60,00;300,00;200,00;540,00;45.0%;ACTIVE" in csv_content
+    assert (
+        "Ana Paula;PACKAGE;CREDIT;3;1200,00;100,00;60,00;300,00;200,00;540,00;45.0%;ACTIVE"
+        in csv_content
+    )

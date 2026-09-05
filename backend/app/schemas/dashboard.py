@@ -28,6 +28,11 @@ class DashboardOut(OutputSchema):
     no_show_count: int | None = None
     no_show_rate: RateOut | None = None
 
+    # Épico C — Ponto de equilíbrio do mês (roadmap 2026-09-02)
+    breakeven_remaining_amount: MoneyOut | None = None
+    breakeven_remaining_sessions_estimate: int | None = None
+    breakeven_alert: bool = False
+
 
 class ROIOut(OutputSchema):
     attributed_revenue: MoneyOut
@@ -39,6 +44,13 @@ class ROIOut(OutputSchema):
     date_from: date
     date_to: date
     is_estimated: bool
+    # G-11: fonte SEPARADA de attributed_revenue — nunca somada nem
+    # incluída em roi_ratio. Sessões que passaram pela confirmação
+    # anti-no-show (GET /sessions/unconfirmed) e foram COMPLETED, não
+    # NO_SHOW. Rotulado à parte para o frontend não confundir as duas
+    # fontes de valor (ver docs/pending/BACKLOG_GO_LIVE.md §6).
+    no_show_avoided_count: int
+    no_show_avoided_revenue: MoneyOut
 
 
 class MonthlyReceivableOut(OutputSchema):

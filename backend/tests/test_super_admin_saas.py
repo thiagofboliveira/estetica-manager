@@ -6,7 +6,13 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
-from app.api.deps import _db, _system_db, get_current_professional_id
+from app.api.deps import (
+    _db,
+    _system_db,
+    get_current_professional_id,
+    get_system_user_service,
+    get_user_service,
+)
 from app.main import app
 from app.models.clinic import Clinic
 from app.models.professional import Professional
@@ -14,6 +20,27 @@ from app.models.user import User
 from app.repositories.clinic import ClinicRepository
 from app.repositories.user import UserRepository
 from app.services.clinic_service import ClinicService
+from app.services.user_service import UserService
+
+
+class _FakeSupabaseAdmin:
+    """create_user() chama o Supabase Auth via Admin API — fake aqui
+    (sem Postgres real/rede), o comportamento real é coberto por
+    tests/test_supabase_auth_integration.py."""
+
+    def __init__(self):
+        self.invited_emails: list[str] = []
+        self.deleted_ids: list = []
+
+    def invite_user_by_email(self, email: str, redirect_to: str | None = None):
+        from uuid import uuid4 as _uuid4
+
+        self.invited_emails.append(email)
+        return _uuid4()
+
+    def delete_user(self, user_id) -> None:
+        self.deleted_ids.append(user_id)
+
 
 TEST_ENGINE = create_engine(
     "sqlite:///:memory:",
@@ -118,25 +145,63 @@ def test_tenant_user_isolation_between_clinics(db_session):
     clinic_repo = ClinicRepository(db_session)
     user_repo = UserRepository(db_session)
 
-    c_a = clinic_repo.add(Clinic(id=uuid4(), name="Clínica A", plan="standard", is_active=True))
-    c_b = clinic_repo.add(Clinic(id=uuid4(), name="Clínica B", plan="standard", is_active=True))
+    c_a = clinic_repo.add(
+        Clinic(id=uuid4(), name="Clínica A", plan="standard", is_active=True)
+    )
+    c_b = clinic_repo.add(
+        Clinic(id=uuid4(), name="Clínica B", plan="standard", is_active=True)
+    )
 
     admin_a = user_repo.add(
-        User(id=uuid4(), clinic_id=c_a.id, name="Admin A", email="admina@test.com", role="admin", is_active=True)
+        User(
+            id=uuid4(),
+            clinic_id=c_a.id,
+            name="Admin A",
+            email="admina@test.com",
+            role="admin",
+            is_active=True,
+        )
     )
     user_repo.add(
-        User(id=uuid4(), clinic_id=c_a.id, name="User A", email="usera@test.com", role="user", is_active=True)
+        User(
+            id=uuid4(),
+            clinic_id=c_a.id,
+            name="User A",
+            email="usera@test.com",
+            role="user",
+            is_active=True,
+        )
     )
 
     user_repo.add(
-        User(id=uuid4(), clinic_id=c_b.id, name="Admin B", email="adminb@test.com", role="admin", is_active=True)
+        User(
+            id=uuid4(),
+            clinic_id=c_b.id,
+            name="Admin B",
+            email="adminb@test.com",
+            role="admin",
+            is_active=True,
+        )
     )
     user_b = user_repo.add(
-        User(id=uuid4(), clinic_id=c_b.id, name="User B", email="userb@test.com", role="user", is_active=True)
+        User(
+            id=uuid4(),
+            clinic_id=c_b.id,
+            name="User B",
+            email="userb@test.com",
+            role="user",
+            is_active=True,
+        )
     )
     db_session.commit()
 
+    def override_user_service():
+        return UserService(
+            UserRepository(db_session), supabase_admin=_FakeSupabaseAdmin()
+        )
+
     app.dependency_overrides[_db] = lambda: db_session
+    app.dependency_overrides[get_user_service] = override_user_service
     client = TestClient(app)
 
     # 1. Admin A só enxerga usuários da Clínica A
@@ -156,7 +221,10 @@ def test_tenant_user_isolation_between_clinics(db_session):
     assert res_del_cross.status_code == 404
 
     # 3. Admin A cria usuário -> automaticamente associado a c_a
-    res_create = client.post("/api/v1/users", json={"name": "Novo A", "email": "novoa@test.com", "role": "receptionist"})
+    res_create = client.post(
+        "/api/v1/users",
+        json={"name": "Novo A", "email": "novoa@test.com", "role": "receptionist"},
+    )
     assert res_create.status_code == 201
     assert res_create.json()["clinic_id"] == str(c_a.id)
 
@@ -169,20 +237,41 @@ def test_super_admin_saas_platform_endpoints(db_session):
 
     # Super Admin Global (clinic_id = None, is_superuser = True)
     global_admin = user_repo.add(
-        User(id=uuid4(), clinic_id=None, name="Super Global", email="super@platform.com", role="superadmin", is_superuser=True, is_active=True)
+        User(
+            id=uuid4(),
+            clinic_id=None,
+            name="Super Global",
+            email="super@platform.com",
+            role="superadmin",
+            is_superuser=True,
+            is_active=True,
+        )
     )
-    clinic_one = clinic_repo.add(Clinic(id=uuid4(), name="Matriz", plan="enterprise", is_active=True))
+    clinic_one = clinic_repo.add(
+        Clinic(id=uuid4(), name="Matriz", plan="enterprise", is_active=True)
+    )
     db_session.commit()
+
+    def override_user_service():
+        return UserService(
+            UserRepository(db_session), supabase_admin=_FakeSupabaseAdmin()
+        )
 
     app.dependency_overrides[_db] = lambda: db_session
     app.dependency_overrides[_system_db] = lambda: db_session
     app.dependency_overrides[get_current_professional_id] = lambda: global_admin.id
+    app.dependency_overrides[get_user_service] = override_user_service
+    app.dependency_overrides[get_system_user_service] = override_user_service
     client = TestClient(app)
 
     # 1. POST /api/v1/super-admin/clinics
     res_new_clinic = client.post(
         "/api/v1/super-admin/clinics",
-        json={"name": "Nova Filial Sul", "document": "99.888.777/0001-66", "plan": "pro"},
+        json={
+            "name": "Nova Filial Sul",
+            "document": "99.888.777/0001-66",
+            "plan": "pro",
+        },
     )
     assert res_new_clinic.status_code == 201
     new_clinic_id = res_new_clinic.json()["id"]
@@ -193,7 +282,9 @@ def test_super_admin_saas_platform_endpoints(db_session):
     assert len(res_list_clinics.json()) == 2
 
     # 3. PUT & DELETE /api/v1/super-admin/clinics/{id}
-    res_put = client.put(f"/api/v1/super-admin/clinics/{new_clinic_id}", json={"plan": "enterprise"})
+    res_put = client.put(
+        f"/api/v1/super-admin/clinics/{new_clinic_id}", json={"plan": "enterprise"}
+    )
     assert res_put.status_code == 200
     assert res_put.json()["plan"] == "enterprise"
 

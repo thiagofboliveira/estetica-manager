@@ -8,7 +8,10 @@ export function ImpersonationBanner() {
   const { checkAuth } = useAuth();
   const navigate = useNavigate();
 
-  if (!state.isImpersonating) return null;
+  // Impersonar a própria conta (ver a clínica como gerente, sem trocar de
+  // identidade) não precisa do aviso — não há confusão de "de quem são
+  // esses dados", é o mesmo super-admin o tempo todo.
+  if (!state.isImpersonating || state.isSelfImpersonation) return null;
 
   async function handleExit() {
     stopImpersonation();

@@ -3,17 +3,31 @@ from unittest.mock import MagicMock
 from uuid import uuid4
 
 import pytest
+from fastapi.testclient import TestClient
 
 from app.domain.catalog.procedure_templates import (
     find_procedure_template,
     list_procedure_templates,
 )
+from app.main import app
 from app.models.procedure import Procedure
 from app.schemas.procedure import ProcedureFromTemplateCreate
 from app.services.procedure_service import (
     ProcedureAlreadyExistsError,
     ProcedureService,
 )
+
+
+def test_get_templates_route_is_public():
+    """GET /procedures/templates deve responder 200 sem Authorization
+    (AC-02): a rota é usada na landing page e no onboarding pré-login."""
+    client = TestClient(app)
+    resp = client.get("/api/v1/procedures/templates")
+
+    assert resp.status_code == 200
+    body = resp.json()
+    assert len(body) >= 10
+    assert body[0]["is_suggested"] is True
 
 
 def test_list_procedure_templates():

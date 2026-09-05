@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, time
 from uuid import UUID
 
 from app.models.financial_settings import FeePayer, PaymentMethod, SplitBase
@@ -15,6 +15,10 @@ class FinancialSettingsUpdate(InputSchema):
     default_payment_method: PaymentMethod | None = None
     anticipates_all: bool | None = None
     anticipation_rate_per_installment: str | None = None
+    work_start_time: time | None = None
+    work_end_time: time | None = None
+    slot_duration_minutes: int | None = None
+    buffer_minutes: int | None = None
 
 
 class FinancialSettingsOut(OutputSchema):
@@ -27,5 +31,9 @@ class FinancialSettingsOut(OutputSchema):
     default_payment_method: PaymentMethod
     anticipates_all: bool = False
     anticipation_rate_per_installment: MoneyOut | None = None
+    work_start_time: time
+    work_end_time: time
+    slot_duration_minutes: int
+    buffer_minutes: int
     created_at: datetime
     updated_at: datetime

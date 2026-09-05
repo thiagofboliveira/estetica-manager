@@ -7,6 +7,7 @@ from app.api.deps import RetentionSvc
 from app.domain.retention.state_machine import InvalidReturnOpportunityTransitionError
 from app.schemas.retention import (
     PatientRetentionCardOut,
+    ReengagementResponseOut,
     ReturnOpportunityOut,
     ReturnOpportunityUpdate,
 )
@@ -31,6 +32,23 @@ def get_retention_opportunities(
     if view == "all":
         return svc.list_all()
     return svc.list_cards(reference_date=reference_date)
+
+
+@router.get("/reengagement", response_model=ReengagementResponseOut)
+def get_retention_reengagement(
+    svc: RetentionSvc,
+    inactive_days: int = Query(
+        default=60,
+        ge=1,
+        description="Considera 'parado' quem não trata há mais de N dias (F4-03, variável por chamada)",
+    ),
+    page: int = Query(default=1, ge=1),
+    page_size: int = Query(default=20, ge=1, le=200),
+) -> ReengagementResponseOut:
+    """F4-04: pacientes nunca tratados ou inativos há N dias — reengajamento,
+    fonte separada do motor de retorno real (I6/I7). Página compartilhada
+    pelas duas seções (never_treated/inactive)."""
+    return svc.list_reengagement(inactive_days, page=page, page_size=page_size)
 
 
 @router.patch("/opportunities/{opp_id}", response_model=ReturnOpportunityOut)

@@ -59,3 +59,15 @@ def update_booking(
         ) from exc
     except InvalidBookingTransitionError as exc:
         raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, str(exc)) from exc
+
+
+@router.post("/{booking_id}/confirm", response_model=BookingOut)
+def confirm_booking(booking_id: UUID, svc: BookingSvc) -> BookingOut:
+    """Registra a confirmação de presença do agendamento público (anti-no-show)."""
+    try:
+        booking = svc.confirm(booking_id)
+        return BookingOut.model_validate(booking)
+    except BookingNotFoundError as exc:
+        raise HTTPException(
+            status.HTTP_404_NOT_FOUND, "Agendamento não encontrado"
+        ) from exc

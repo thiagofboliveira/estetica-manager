@@ -7,6 +7,7 @@ dataclasses puros de domain/financial/procedure_ranking, chama
 build_procedure_ranking(). O CÁLCULO em si vive em domain/.
 """
 
+from dataclasses import replace
 from datetime import date
 
 from app.core.tz import today_in_timezone
@@ -19,6 +20,7 @@ from app.domain.financial.procedure_ranking import (
 from app.repositories.procedure import ProcedureRepository
 from app.repositories.professional import ProfessionalRepository
 from app.repositories.sale_item import SaleItemRepository
+from app.repositories.session import SessionRepository
 
 
 class ProcedureRankingService:
@@ -27,10 +29,12 @@ class ProcedureRankingService:
         sale_item_repo: SaleItemRepository,
         procedure_repo: ProcedureRepository,
         professional_repo: ProfessionalRepository,
+        session_repo: SessionRepository,
     ) -> None:
         self._sale_items = sale_item_repo
         self._procedures = procedure_repo
         self._professionals = professional_repo
+        self._sessions = session_repo
 
     def get_ranking(
         self,
@@ -81,4 +85,16 @@ class ProcedureRankingService:
         ]
 
         ranking = build_procedure_ranking(items)
+
+        # "Atendimento" é Sessão COMPLETED (I5), não SaleItem.quantity —
+        # enriquecido aqui, fora do domínio puro, porque Session é uma
+        # tabela que build_procedure_ranking() nunca precisa conhecer.
+        session_counts = self._sessions.count_completed_by_procedure_in_period(
+            period.date_from, period.date_to, professional.timezone
+        )
+        ranking = [
+            replace(row, session_count=session_counts.get(row.procedure_id, 0))
+            for row in ranking
+        ]
+
         return ranking, period

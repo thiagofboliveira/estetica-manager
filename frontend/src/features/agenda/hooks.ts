@@ -56,6 +56,15 @@ export function useUpdateBooking() {
   });
 }
 
+export function useFreeSlots(date: string) {
+  return useQuery({
+    queryKey: qk.freeSlots(date),
+    queryFn: () => sessionsApi.getFreeSlots(date),
+    ...CACHE.MONEY,
+    enabled: Boolean(date),
+  });
+}
+
 export function useUnconfirmedSessions() {
   return useQuery({
     queryKey: [...qk.sessions(), "unconfirmed"],
@@ -67,22 +76,23 @@ export function useUnconfirmedSessions() {
 
 export function useConfirmSession() {
   return useMutation({
-    mutationFn: (id: string) => sessionsApi.confirmSession(id),
-    onMutate: async (id) => {
+    mutationFn: (item: { session_id: string; type: "SESSION" | "BOOKING" }) =>
+      sessionsApi.confirmItem(item),
+    onMutate: async (item) => {
       await queryClient.cancelQueries({ queryKey: [...qk.sessions(), "unconfirmed"] });
       const previousData = queryClient.getQueryData([...qk.sessions(), "unconfirmed"]);
       queryClient.setQueryData(
         [...qk.sessions(), "unconfirmed"],
         (old: any[] | undefined) =>
           old?.map(s =>
-            s.session_id === id
+            s.session_id === item.session_id
               ? { ...s, confirmed_at: new Date().toISOString() }
               : s
           )
       );
       return { previousData };
     },
-    onError: (_err, _id, context) => {
+    onError: (_err, _item, context) => {
       if (context?.previousData) {
         queryClient.setQueryData([...qk.sessions(), "unconfirmed"], context.previousData);
       }

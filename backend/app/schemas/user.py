@@ -1,9 +1,11 @@
 from datetime import datetime
 from uuid import UUID
 
-from pydantic import EmailStr, Field
+from pydantic import EmailStr, Field, computed_field
 
 from app.schemas.base import InputSchema, OutputSchema
+
+CURRENT_TERMS_VERSION = "2026-09-v1"
 
 
 class UserCreateInput(InputSchema):
@@ -27,6 +29,19 @@ class UserUpdateInput(InputSchema):
     clinic_id: UUID | None = None
 
 
+class TermsAcceptInput(InputSchema):
+    terms_version: str = Field(default=CURRENT_TERMS_VERSION, max_length=32)
+
+
+class PublicProfileUpdate(InputSchema):
+    slug: str | None = Field(
+        default=None, min_length=3, max_length=100, pattern=r"^[a-z0-9-]+$"
+    )
+    bio: str | None = Field(default=None, max_length=1000)
+    avatar_url: str | None = Field(default=None, max_length=500)
+    specialty: str | None = Field(default=None, max_length=120)
+
+
 class UserOutput(OutputSchema):
     id: UUID
     clinic_id: UUID | None = None
@@ -36,5 +51,19 @@ class UserOutput(OutputSchema):
     role: str
     is_superuser: bool
     is_active: bool
+    slug: str | None = None
+    bio: str | None = None
+    avatar_url: str | None = None
+    specialty: str | None = None
+    terms_accepted_at: datetime | None = None
+    terms_version: str | None = None
     created_at: datetime
     updated_at: datetime
+
+    @computed_field
+    @property
+    def terms_accepted(self) -> bool:
+        return bool(
+            self.terms_accepted_at is not None
+            and self.terms_version == CURRENT_TERMS_VERSION
+        )

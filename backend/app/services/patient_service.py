@@ -1,11 +1,18 @@
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from uuid import UUID, uuid4
 
 from app.core.phone import InvalidPhoneError, normalize_br_phone
-from app.models.patient import Patient
+from app.core.tz import today_in_timezone
+from app.domain.retention.enums import ReturnOpportunityStatus
+from app.models.patient import Gender, Patient
+from app.models.return_opportunity import ReturnOpportunity
 from app.repositories.patient import PatientRepository
+from app.repositories.procedure import ProcedureRepository
+from app.repositories.professional import ProfessionalRepository
+from app.repositories.return_opportunity import ReturnOpportunityRepository
 from app.schemas.patient import (
     PatientBatchImportError,
+    PatientBatchImportItem,
     PatientBatchImportRequest,
     PatientBatchImportResult,
     PatientCreate,
@@ -19,8 +26,17 @@ class PatientNotFoundError(Exception):
 
 
 class PatientService:
-    def __init__(self, repo: PatientRepository) -> None:
+    def __init__(
+        self,
+        repo: PatientRepository,
+        procedure_repo: ProcedureRepository | None = None,
+        return_opportunity_repo: ReturnOpportunityRepository | None = None,
+        professional_repo: ProfessionalRepository | None = None,
+    ) -> None:
         self._repo = repo
+        self._procedures = procedure_repo
+        self._return_opportunities = return_opportunity_repo
+        self._professionals = professional_repo
 
     def create(self, dto: PatientCreate) -> Patient:
         phone = normalize_br_phone(dto.phone) if dto.phone else None
@@ -33,15 +49,18 @@ class PatientService:
             notes=dto.notes,
             consent_whatsapp=dto.consent_whatsapp,
             consent_at=consent_at,
+            gender=dto.gender,
         )
         return self._repo.add(patient)
 
-    def batch_import(self, request: PatientBatchImportRequest) -> PatientBatchImportResult:
+    def batch_import(
+        self, request: PatientBatchImportRequest
+    ) -> PatientBatchImportResult:
         """Importação em lote de pacientes com deduplicação por telefone e validação atômica (EPIC-S2-03, TASK-BACK-S2-14)."""
         existing_phones = self._repo.list_existing_phones()
         seen_batch_phones: set[str] = set()
 
-        created_patients: list[Patient] = []
+        created_patient_pairs: list[tuple[Patient, PatientBatchImportItem]] = []
         errors: list[PatientBatchImportError] = []
         skipped_count = 0
 
@@ -87,27 +106,71 @@ class PatientService:
                 created_at=now,
                 updated_at=now,
             )
-            created_patients.append(new_patient)
+            created_patient_pairs.append((new_patient, item))
 
         # Transação atômica: se houver erros críticos (> 20% das linhas), aborta
         if total_items > 0 and len(errors) / total_items > 0.20:
             return PatientBatchImportResult(
                 created_count=0,
                 skipped_count=0,
+                opportunities_created_count=0,
                 errors=errors,
                 patients=[],
             )
 
-        for p in created_patients:
+        for p, _ in created_patient_pairs:
             self._repo.add(p)
+
+        # G-12: Gerar oportunidades de retorno retroativas (source=IMPORT)
+        opportunities_created_count = 0
+        if (
+            (
+                request.generate_return_opportunities
+                or request.default_procedure_id is not None
+            )
+            and self._return_opportunities is not None
+            and self._procedures is not None
+        ):
+            prof = (
+                self._professionals.get_by_id(self._repo._professional_id)
+                if self._professionals
+                else None
+            )
+            tz = prof.timezone if prof and prof.timezone else "America/Sao_Paulo"
+            today = today_in_timezone(tz)
+
+            for p, item in created_patient_pairs:
+                target_proc_id = item.procedure_id or request.default_procedure_id
+                if not target_proc_id:
+                    continue
+                proc = self._procedures.get(target_proc_id)
+                if not proc:
+                    continue
+
+                interval = proc.return_interval_days or 0
+                if item.last_visit_date:
+                    due_date = item.last_visit_date + timedelta(days=interval)
+                else:
+                    due_date = today
+
+                opp = ReturnOpportunity(
+                    patient_id=p.id,
+                    procedure_id=proc.id,
+                    source="IMPORT",
+                    due_date=due_date,
+                    status=ReturnOpportunityStatus.OPEN,
+                )
+                self._return_opportunities.add(opp)
+                opportunities_created_count += 1
 
         self._repo.flush()
 
         return PatientBatchImportResult(
-            created_count=len(created_patients),
+            created_count=len(created_patient_pairs),
             skipped_count=skipped_count,
+            opportunities_created_count=opportunities_created_count,
             errors=errors,
-            patients=[PatientOut.model_validate(p) for p in created_patients],
+            patients=[PatientOut.model_validate(p) for p, _ in created_patient_pairs],
         )
 
     def get(self, patient_id: UUID) -> Patient:
@@ -117,9 +180,38 @@ class PatientService:
         return patient
 
     def list(
-        self, *, limit: int = 50, offset: int = 0, search: str | None = None
+        self,
+        *,
+        limit: int = 50,
+        offset: int = 0,
+        search: str | None = None,
+        gender: Gender | None = None,
+        has_upcoming_booking: bool | None = None,
+        has_completed_treatment: bool | None = None,
     ) -> list[Patient]:
-        return self._repo.list(limit=limit, offset=offset, search=search)
+        return self._repo.list(
+            limit=limit,
+            offset=offset,
+            search=search,
+            gender=gender,
+            has_upcoming_booking=has_upcoming_booking,
+            has_completed_treatment=has_completed_treatment,
+        )
+
+    def count(
+        self,
+        *,
+        search: str | None = None,
+        gender: Gender | None = None,
+        has_upcoming_booking: bool | None = None,
+        has_completed_treatment: bool | None = None,
+    ) -> int:
+        return self._repo.count(
+            search=search,
+            gender=gender,
+            has_upcoming_booking=has_upcoming_booking,
+            has_completed_treatment=has_completed_treatment,
+        )
 
     def update(self, patient_id: UUID, dto: PatientUpdate) -> Patient:
         patient = self.get(patient_id)

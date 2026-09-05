@@ -25,6 +25,10 @@ export type Dashboard = {
   sale_count: number;
   session_count: number;
   average_ticket: string | null;
+
+  breakeven_remaining_amount: string | null;
+  breakeven_remaining_sessions_estimate: number | null;
+  breakeven_alert: boolean;
 };
 
 export type ProcedureRankingRow = {
@@ -33,6 +37,9 @@ export type ProcedureRankingRow = {
   gross_revenue: string;
   net_profit: string;
   margin: string | null;
+  // Sessão COMPLETED no período (I5) — não é SaleItem.quantity, que
+  // inclui sessão PENDING/SCHEDULED ainda não realizada.
+  session_count: number;
 };
 
 export type ProcedureRanking = {
@@ -40,6 +47,23 @@ export type ProcedureRanking = {
   date_from: string;
   date_to: string;
   rows: ProcedureRankingRow[];
+  total_count: number;
+  page: number;
+  page_size: number;
+};
+
+export type ProcedureRankingParams = DashboardParams & {
+  page?: number;
+  page_size?: number;
+};
+
+export type ExpenseByCategoryRow = {
+  category: string;
+  monthly_amount: string;
+};
+
+export type ExpensesByCategory = {
+  rows: ExpenseByCategoryRow[];
 };
 
 export type ROI = {
@@ -60,12 +84,15 @@ export const dashboardApi = {
     if (params.date_to) qs.set("date_to", params.date_to);
     return api.get<Dashboard>(`/dashboard?${qs.toString()}`);
   },
-  getProcedureRanking: (params: DashboardParams) => {
+  getProcedureRanking: (params: ProcedureRankingParams) => {
     const qs = new URLSearchParams({ period: params.period });
     if (params.date_from) qs.set("date_from", params.date_from);
     if (params.date_to) qs.set("date_to", params.date_to);
+    if (params.page) qs.set("page", String(params.page));
+    if (params.page_size) qs.set("page_size", String(params.page_size));
     return api.get<ProcedureRanking>(`/reports/procedures?${qs.toString()}`);
   },
+  getExpensesByCategory: () => api.get<ExpensesByCategory>("/reports/expenses-by-category"),
   getRoi: (params: DashboardParams) => {
     const qs = new URLSearchParams({ period: params.period });
     if (params.date_from) qs.set("date_from", params.date_from);

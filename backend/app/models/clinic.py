@@ -8,7 +8,7 @@ from app.models.base import Base, TimestampMixin
 
 class Clinic(Base, TimestampMixin):
     """Clínica — entidade de Tenant organizacional no SaaS Multi-Tenant.
-    
+
     Representa a empresa/clínica contratante do SaaS, agrupando profissionais,
     usuários e configurações de atendimento.
     """

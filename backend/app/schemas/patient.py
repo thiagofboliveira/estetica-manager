@@ -4,6 +4,7 @@ from uuid import UUID
 from pydantic import EmailStr, Field, field_validator
 
 from app.core.phone import InvalidPhoneError, normalize_br_phone
+from app.models.patient import Gender
 from app.schemas.base import InputSchema, OutputSchema
 
 
@@ -14,6 +15,7 @@ class PatientCreate(InputSchema):
     birth_date: date | None = None
     notes: str | None = None
     consent_whatsapp: bool = False
+    gender: Gender | None = None
 
     @field_validator("phone")
     @classmethod
@@ -23,7 +25,9 @@ class PatientCreate(InputSchema):
         try:
             return normalize_br_phone(v)
         except InvalidPhoneError as exc:
-            raise ValueError("Número de telefone inválido (deve conter DDD + número)") from exc
+            raise ValueError(
+                "Número de telefone inválido (deve conter DDD + número)"
+            ) from exc
 
 
 class PatientUpdate(InputSchema):
@@ -33,6 +37,7 @@ class PatientUpdate(InputSchema):
     birth_date: date | None = None
     notes: str | None = None
     consent_whatsapp: bool | None = None
+    gender: Gender | None = None
 
     @field_validator("phone")
     @classmethod
@@ -42,7 +47,9 @@ class PatientUpdate(InputSchema):
         try:
             return normalize_br_phone(v)
         except InvalidPhoneError as exc:
-            raise ValueError("Número de telefone inválido (deve conter DDD + número)") from exc
+            raise ValueError(
+                "Número de telefone inválido (deve conter DDD + número)"
+            ) from exc
 
 
 class PatientOut(OutputSchema):
@@ -55,8 +62,16 @@ class PatientOut(OutputSchema):
     consent_whatsapp: bool
     consent_at: datetime | None
     is_active: bool
+    gender: Gender | None
     created_at: datetime
     updated_at: datetime
+
+
+class PatientListOut(OutputSchema):
+    items: list[PatientOut]
+    total_count: int
+    page: int
+    page_size: int
 
 
 class PatientBatchImportItem(InputSchema):
@@ -64,6 +79,13 @@ class PatientBatchImportItem(InputSchema):
     phone: str | None = Field(default=None, description="Telefone ou WhatsApp com DDD")
     email: str | None = Field(default=None, description="E-mail de contato")
     notes: str | None = Field(default=None, description="Anotações / histórico prévio")
+    procedure_id: UUID | None = Field(
+        default=None,
+        description="Procedimento de referência para oportunidade de retorno",
+    )
+    last_visit_date: date | None = Field(
+        default=None, description="Data da última visita para calcular data de retorno"
+    )
 
 
 class PatientBatchImportRequest(InputSchema):
@@ -71,6 +93,14 @@ class PatientBatchImportRequest(InputSchema):
         min_length=1,
         max_length=100,
         description="Lista de pacientes a importar (máximo 100 por lote)",
+    )
+    default_procedure_id: UUID | None = Field(
+        default=None,
+        description="Procedimento padrão a associar às pacientes importadas",
+    )
+    generate_return_opportunities: bool = Field(
+        default=False,
+        description="Se True, gera oportunidades de retorno retroativas (source=IMPORT) no dia 1",
     )
 
 
@@ -82,5 +112,6 @@ class PatientBatchImportError(OutputSchema):
 class PatientBatchImportResult(OutputSchema):
     created_count: int
     skipped_count: int
+    opportunities_created_count: int = 0
     errors: list[PatientBatchImportError]
     patients: list[PatientOut]

@@ -5,6 +5,7 @@ O backend valida JWT (app/core/security.py), nunca emite nem armazena
 senha. Ver MVP v6 §7 e ../../ENGENHARIA.md invariante I2.
 """
 
+from datetime import datetime
 from uuid import UUID
 
 from sqlalchemy import ForeignKey
@@ -29,3 +30,5 @@ class User(Base, TimestampMixin):
     role: Mapped[str] = mapped_column(default="user", nullable=False)
     is_superuser: Mapped[bool] = mapped_column(default=False, nullable=False)
     is_active: Mapped[bool] = mapped_column(default=True, nullable=False)
+    terms_accepted_at: Mapped[datetime | None] = mapped_column(nullable=True)
+    terms_version: Mapped[str | None] = mapped_column(nullable=True)

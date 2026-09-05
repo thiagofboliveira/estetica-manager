@@ -43,12 +43,16 @@ def test_receivables_projection_single_and_installments():
         is_anticipated=True,
     )
 
-    projection = project_monthly_receivables([s1, s2, s3], reference_date=ref_date, months_ahead=6)
+    projection = project_monthly_receivables(
+        [s1, s2, s3], reference_date=ref_date, months_ahead=6
+    )
 
     # 6 meses projetados: 2026-08, 2026-09, 2026-10, 2026-11, 2026-12, 2027-01
     assert len(projection) == 6
     assert projection[0].year_month == "2026-08"
-    assert projection[0].total_amount == Decimal("650.00")  # 200 (pix) + 450 (antecipado)
+    assert projection[0].total_amount == Decimal(
+        "650.00"
+    )  # 200 (pix) + 450 (antecipado)
 
     assert projection[1].year_month == "2026-09"
     assert projection[1].total_amount == Decimal("300.00")

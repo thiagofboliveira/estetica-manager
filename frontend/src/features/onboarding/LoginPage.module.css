@@ -250,6 +250,13 @@
   color: var(--accent);
   text-decoration: none;
   font-weight: 600;
+  /* B-05: virou <button> (era <a href="#recuperar">, âncora morta) —
+     reseta a aparência padrão de botão para continuar parecendo link. */
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  font-family: inherit;
 }
 
 .forgotLink:hover {

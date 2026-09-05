@@ -13,6 +13,7 @@
   },
   "dependencies": {
     "@hookform/resolvers": "^5.9.1",
+    "@sentry/react": "^10.73.0",
     "@supabase/supabase-js": "^2.112.4",
     "@tanstack/react-query": "^5.102.8",
     "decimal.js": "^10.6.0",
@@ -20,14 +21,14 @@
     "react-dom": "^19.2.8",
     "react-hook-form": "^7.86.0",
     "react-router-dom": "^7.18.3",
+    "recharts": "^3.10.1",
     "zod": "^4.5.2"
   },
   "devDependencies": {
-    "@oxlint/binding-win32-x64-msvc": "^1.80.0",
     "@types/node": "^24.13.3",
     "@types/react": "^19.2.18",
     "@types/react-dom": "^19.2.4",
-    "@vitejs/plugin-react": "^4.3.4",
+    "@vitejs/plugin-react": "^4.7.0",
     "@vitest/ui": "^3.0.0",
     "fast-check": "^4.9.0",
     "happy-dom": "^20.12.0",

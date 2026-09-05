@@ -45,10 +45,9 @@ class PaymentFeeRuleService:
         for r in existing_rules:
             if exclude_rule_id and r.id == exclude_rule_id:
                 continue
-            if (
-                r.payment_method == payment_method
-                and max(imin, r.installments_min) <= min(imax, r.installments_max)
-            ):
+            if r.payment_method == payment_method and max(
+                imin, r.installments_min
+            ) <= min(imax, r.installments_max):
                 raise ValueError(
                     f"A faixa de parcelas ({imin} a {imax}) se sobrepõe com a regra existente ({r.installments_min} a {r.installments_max}) para {payment_method.value}."
                 )

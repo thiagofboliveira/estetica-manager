@@ -27,25 +27,26 @@ Os relatórios detalhados específicos de cada camada estão disponíveis em:
 
 ## 🚨 Principais Pontos de Ação (Priorizados)
 
-### 1. [BUG-FRONT-S3-01] Falha no Build do Service Worker PWA no Node.js 18
+> ✅ **2026-09-02 — Os quatro itens abaixo foram verificados e estão corrigidos no código atual.** Este relatório ficou desatualizado em relação ao estado real do repositório; mantido como histórico.
+
+### 1. [BUG-FRONT-S3-01] Falha no Build do Service Worker PWA no Node.js 18 — ✅ Corrigido
 * **Arquivo:** `frontend/vite.config.ts`
 * **Erro:** `Error: Unable to write the service worker file. 'crypto is not defined'` ao rodar `vite build`.
-* **Solução:** Polyfill de `globalThis.crypto = crypto.webcrypto` no topo de `vite.config.ts`.
+* **Verificado:** `vite.config.ts` já tem o polyfill (`globalThis.crypto = nodeCrypto.webcrypto`) e o polyfill de `diagnostics_channel.tracingChannel`. `npm run build` roda limpo, PWA gera `sw.js` normalmente.
 
-### 2. [BUG-FRONT-S2-03] Prefixo Duplicado `/api/v1` nas Telas Administrativas
+### 2. [BUG-FRONT-S2-03] Prefixo Duplicado `/api/v1` nas Telas Administrativas — ✅ Corrigido
 * **Arquivos:** `SuperAdminUsersPage.tsx`, `SuperAdminClinicsPage.tsx`, `AdminUsersPage.tsx`, `RequireAuth.tsx`, `SetupWizardPage.tsx`, `AuthContext.tsx`.
-* **Causa:** As chamadas usam `/api/v1/...` enquanto o `VITE_API_URL` já possui `/api/v1`.
-* **Solução:** Remover o `/api/v1` inicial das chamadas do frontend.
+* **Verificado:** nenhuma chamada com prefixo duplicado encontrada; `client.ts` centraliza `BASE = VITE_API_URL` e os call sites usam paths relativos sem repetir `/api/v1`.
 
-### 3. [BUG-FRONT-S2-02] Filtro de Fuso Horário no `<NoShowAlert />`
-* **Arquivo:** `frontend/src/features/agenda/NoShowAlert.tsx` (linhas 13-17)
-* **Causa:** Refiltragem client-side usando data UTC que causa perda de sessões em horários noturnos do Brasil (UTC-3).
-* **Solução:** Consumir diretamente as sessões já filtradas no fuso correto pelo backend.
+### 3. [BUG-FRONT-S2-02] Filtro de Fuso Horário no `<NoShowAlert />` — ✅ Corrigido
+* **Arquivo:** `frontend/src/features/agenda/NoShowAlert.tsx`
+* **Verificado:** o componente já consome `useUnconfirmedSessions()` diretamente, sem refiltragem client-side por data UTC.
 
-### 4. [OBS-BACK-S3-01] Flag `is_anticipated` na Projeção de Recebíveis
-* **Arquivo:** `backend/app/services/dashboard_service.py` (linha 108)
-* **Causa:** `is_anticipated` está estático em `False`.
-* **Solução:** Ler `financial_settings.anticipates_all` para refletir antecipações no fluxo de caixa projetado.
+### 4. [OBS-BACK-S3-01] Flag `is_anticipated` na Projeção de Recebíveis — ✅ Corrigido em 2026-09-02
+* **Arquivo:** `backend/app/services/dashboard_service.py`
+* **Causa:** `is_anticipated` estava estático em `False` em `get_receivables_projection`, ignorando `financial_settings.anticipates_all` — vendas antecipadas eram projetadas em D+30/60/90 em vez de D+2.
+* **Correção aplicada:** em vez de ler a config *atual* (o que violaria a invariante I3 de snapshot congelado — ver `ENGENHARIA.md`), o valor de `anticipates_all` vigente no momento da venda passou a ser gravado em `Sale.snapshot_payload` (`sale_service.py::_snapshot_payload`) e é esse valor congelado que `DashboardService` lê agora.
+* **Teste:** `backend/tests/test_dashboard_integration.py::TestReceivablesRespeitaAntecipacaoCongelada` — cria uma venda a crédito parcelada com `anticipates_all=True`, desliga a configuração de volta, e prova que a projeção ainda cai em D+2 no mês da venda (não D+30/60/90), confirmando que o dado vem do congelado e não da config atual.
 
 ---
 

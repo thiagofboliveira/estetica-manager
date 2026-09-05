@@ -14,13 +14,29 @@ export interface UserSession {
   role: Role;
   is_superuser: boolean;
   is_active?: boolean;
+  terms_accepted?: boolean;
+  terms_accepted_at?: string | null;
+  terms_version?: string | null;
+  slug?: string | null;
+  bio?: string | null;
+  avatar_url?: string | null;
+  specialty?: string | null;
 }
+
+export type UpdatePublicProfileParams = {
+  slug?: string;
+  bio?: string;
+  avatar_url?: string | null;
+  specialty?: string | null;
+};
 
 interface AuthContextValue {
   user: UserSession | null;
   isLoading: boolean;
   logout: () => Promise<void>;
   checkAuth: () => Promise<void>;
+  acceptTerms: (termsVersion?: string) => Promise<void>;
+  updatePublicProfile: (params: UpdatePublicProfileParams) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
@@ -40,11 +56,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       
       const res = await api.get<UserSession>("/users/me");
       setUser(res);
-    } catch (e) {
+    } catch {
       setUser(null);
     } finally {
       setIsLoading(false);
     }
+  }
+
+  async function acceptTerms(termsVersion: string = "2026-09-v1") {
+    const updated = await api.post<UserSession>("/users/me/accept-terms", {
+      terms_version: termsVersion,
+    });
+    setUser(updated);
+  }
+
+  async function updatePublicProfile(params: UpdatePublicProfileParams) {
+    const updated = await api.patch<UserSession>("/users/me/public-profile", params);
+    setUser(updated);
   }
 
   async function logout() {
@@ -58,7 +86,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   return (
-    <AuthContext.Provider value={{ user, isLoading, logout, checkAuth }}>
+    <AuthContext.Provider
+      value={{
+        user,
+        isLoading,
+        logout,
+        checkAuth,
+        acceptTerms,
+        updatePublicProfile,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );

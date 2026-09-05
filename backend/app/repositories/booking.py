@@ -13,6 +13,13 @@ class BookingRepository(TenantRepository[Booking]):
         stmt = self._scoped().where(Booking.id == booking_id)
         return self._session.scalar(stmt)
 
+    def get_by_id_and_token(self, booking_id: UUID, token: str) -> Booking | None:
+        stmt = self._scoped().where(
+            Booking.id == booking_id,
+            Booking.management_token == token,
+        )
+        return self._session.scalar(stmt)
+
     def list_in_range(
         self, start_dt: datetime, end_dt: datetime, status: BookingStatus | None = None
     ) -> list[Booking]:

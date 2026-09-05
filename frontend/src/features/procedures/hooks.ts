@@ -4,13 +4,30 @@ import { CACHE } from "@/lib/query/client";
 import {
   proceduresApi,
   type ProcedureCreateInput,
+  type ProcedureListParams,
   type ProcedureUpdateInput,
 } from "./api";
 
+// Usado por formulários/pickers que precisam do catálogo inteiro para
+// montar um <select> (SaleForm, PackageSaleForm, OnboardingChecklist) —
+// não pagina, só lê a página grande o bastante para cobrir o catálogo.
 export function useProcedures() {
   return useQuery({
     queryKey: qk.procedures(),
-    queryFn: () => proceduresApi.list({ limit: 200 }),
+    queryFn: () => proceduresApi.list({ page: 1, page_size: 200 }).then((r) => r.items),
+    ...CACHE.CATALOG,
+  });
+}
+
+// Usado pela tela de listagem paginada (ProceduresPage).
+export function useProceduresPage(
+  filters: Omit<ProcedureListParams, "page" | "page_size">,
+  page: number,
+  pageSize: number,
+) {
+  return useQuery({
+    queryKey: [...qk.procedures(), "page", filters, page, pageSize] as const,
+    queryFn: () => proceduresApi.list({ ...filters, page, page_size: pageSize }),
     ...CACHE.CATALOG,
   });
 }

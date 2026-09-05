@@ -25,6 +25,7 @@ export function PatientDetailPage() {
       birth_date: values.birth_date || null,
       notes: values.notes || null,
       consent_whatsapp: values.consent_whatsapp,
+      gender: values.gender || null,
     });
   }
 

@@ -2,11 +2,14 @@ from uuid import UUID
 
 from fastapi import APIRouter, HTTPException, Query, status
 
-from app.api.deps import PatientSvc
+from app.api.deps import EventSvc, PatientImportRateLimit, PatientSvc
+from app.domain.events import EventName
+from app.models.patient import Gender
 from app.schemas.patient import (
     PatientBatchImportRequest,
     PatientBatchImportResult,
     PatientCreate,
+    PatientListOut,
     PatientOut,
     PatientUpdate,
 )
@@ -22,21 +25,50 @@ def create_patient(payload: PatientCreate, svc: PatientSvc) -> PatientOut:
 
 @router.post("/import", response_model=PatientBatchImportResult)
 def import_patients(
-    payload: PatientBatchImportRequest, svc: PatientSvc
+    payload: PatientBatchImportRequest,
+    svc: PatientSvc,
+    events: EventSvc,
+    _rate_limit: PatientImportRateLimit,
 ) -> PatientBatchImportResult:
-    """Importa pacientes em lote com deduplicação por telefone (EPIC-S2-03, TASK-BACK-S2-15)."""
-    return svc.batch_import(payload)
+    """Importa pacientes em lote com deduplicação por telefone (EPIC-S2-03, TASK-BACK-S2-15).
+
+    Limitado a 3 chamadas/hora por profissional (AC-07)."""
+    result = svc.batch_import(payload)
+    if result.created_count > 0:
+        events.track_first(EventName.FIRST_PATIENT_IMPORTED)
+    return result
 
 
-@router.get("", response_model=list[PatientOut])
+@router.get("", response_model=PatientListOut)
 def list_patients(
     svc: PatientSvc,
     search: str | None = Query(default=None),
-    limit: int = Query(default=50, le=200),
-    offset: int = Query(default=0, ge=0),
-) -> list[PatientOut]:
-    patients = svc.list(limit=limit, offset=offset, search=search)
-    return [PatientOut.model_validate(p) for p in patients]
+    gender: Gender | None = Query(default=None),
+    has_upcoming_booking: bool | None = Query(default=None),
+    has_completed_treatment: bool | None = Query(default=None),
+    page: int = Query(default=1, ge=1),
+    page_size: int = Query(default=20, ge=1, le=200),
+) -> PatientListOut:
+    offset = (page - 1) * page_size
+    patients = svc.list(
+        limit=page_size,
+        offset=offset,
+        search=search,
+        gender=gender,
+        has_upcoming_booking=has_upcoming_booking,
+        has_completed_treatment=has_completed_treatment,
+    )
+    return PatientListOut(
+        items=[PatientOut.model_validate(p) for p in patients],
+        total_count=svc.count(
+            search=search,
+            gender=gender,
+            has_upcoming_booking=has_upcoming_booking,
+            has_completed_treatment=has_completed_treatment,
+        ),
+        page=page,
+        page_size=page_size,
+    )
 
 
 @router.get("/{patient_id}", response_model=PatientOut)

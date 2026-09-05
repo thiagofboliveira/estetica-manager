@@ -490,6 +490,117 @@ button:disabled, .button:disabled {
   background: var(--bg-subtle);
 }
 
+.pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  margin-top: 16px;
+  flex-wrap: wrap;
+}
+
+.pagination__status {
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.filters-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin: 12px 0;
+}
+
+.filters-bar select {
+  padding: 8px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--border-input);
+  background: var(--bg-card);
+  color: var(--text);
+  font-size: 13.5px;
+  min-height: 40px;
+}
+
+.filters-bar__toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 8px 14px;
+  border-radius: 9999px;
+  border: 1px solid var(--border-input);
+  background: var(--bg-card);
+  color: var(--text-muted);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  min-height: 40px;
+  transition: all 0.15s ease;
+}
+
+.filters-bar__toggle:hover {
+  border-color: var(--border-focus);
+  color: var(--text-h);
+}
+
+.filters-bar__toggle--active {
+  background: var(--accent-bg);
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+/* ==========================================================================
+   Modal (overlay genérico — NewBookingModal, ScheduleSessionModal)
+   ========================================================================== */
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  z-index: 1000;
+}
+
+.modal-card {
+  background: var(--bg-card);
+  border-radius: 16px;
+  padding: 24px;
+  width: 100%;
+  max-width: 480px;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: var(--shadow-lg);
+}
+
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.modal-header h3 {
+  margin: 0;
+  color: var(--text-h);
+}
+
+.modal-close {
+  background: transparent;
+  border: none;
+  font-size: 1.1rem;
+  line-height: 1;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 4px 8px;
+}
+
+.modal-close:hover {
+  color: var(--text-h);
+}
+
 /* ==========================================================================
    Page Layout & Common Structures
    ========================================================================== */
@@ -690,4 +801,9 @@ button:disabled, .button:disabled {
 
 .dashboard__metric--wide dd {
   font-size: 18px;
+}
+
+.dashboard__metric--alert {
+  border-color: var(--warning-border);
+  background: var(--warning-bg);
 }

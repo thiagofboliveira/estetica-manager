@@ -2,10 +2,14 @@ from uuid import UUID
 
 from fastapi import APIRouter, HTTPException, Query, status
 
-from app.api.deps import ProcedureSvc
+from app.api.deps import EventSvc, ProcedureSvc
+from app.domain.catalog.procedure_templates import list_procedure_templates
+from app.domain.events import EventName
+from app.models.procedure import SessionPlan
 from app.schemas.procedure import (
     ProcedureCreate,
     ProcedureFromTemplateCreate,
+    ProcedureListOut,
     ProcedureOut,
     ProcedureTemplateOut,
     ProcedureUpdate,
@@ -19,17 +23,40 @@ router = APIRouter(prefix="/procedures", tags=["procedures"])
 
 
 @router.post("", response_model=ProcedureOut, status_code=status.HTTP_201_CREATED)
-def create_procedure(payload: ProcedureCreate, svc: ProcedureSvc) -> ProcedureOut:
-    return ProcedureOut.model_validate(svc.create(payload))
+def create_procedure(
+    payload: ProcedureCreate, svc: ProcedureSvc, events: EventSvc
+) -> ProcedureOut:
+    procedure = svc.create(payload)
+    # G-13: emitido na rota, não no service — evita alterar a assinatura
+    # de ProcedureService (e seus testes) só para injetar telemetria.
+    events.track_first(EventName.FIRST_PROCEDURE_CREATED)
+    return ProcedureOut.model_validate(procedure)
 
 
 @router.get("/templates", response_model=list[ProcedureTemplateOut])
-def list_procedure_templates(svc: ProcedureSvc) -> list[ProcedureTemplateOut]:
-    """Retorna templates de procedimentos do mercado de estética (EPIC-S2-04, TASK-BACK-S2-17)."""
-    return svc.list_templates()
+def get_procedure_templates() -> list[ProcedureTemplateOut]:
+    """Templates públicos de procedimentos do mercado de estética, sem
+    autenticação, para uso na landing page e no onboarding pré-login
+    (EPIC-S2-04, TASK-BACK-S2-17)."""
+    templates = list_procedure_templates()
+    return [
+        ProcedureTemplateOut(
+            template_id=t.template_id,
+            name=t.name,
+            type=t.type,
+            suggested_price=t.suggested_price,
+            suggested_cost=t.suggested_cost,
+            suggested_return_interval_days=t.suggested_return_interval_days,
+            category=t.category,
+            is_suggested=t.is_suggested,
+        )
+        for t in templates
+    ]
 
 
-@router.post("/from-template", response_model=ProcedureOut, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/from-template", response_model=ProcedureOut, status_code=status.HTTP_201_CREATED
+)
 def create_procedure_from_template(
     payload: ProcedureFromTemplateCreate, svc: ProcedureSvc
 ) -> ProcedureOut:
@@ -43,15 +70,27 @@ def create_procedure_from_template(
         raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, str(exc)) from exc
 
 
-@router.get("", response_model=list[ProcedureOut])
+@router.get("", response_model=ProcedureListOut)
 def list_procedures(
     svc: ProcedureSvc,
-    limit: int = Query(default=50, le=200),
-    offset: int = Query(default=0, ge=0),
-) -> list[ProcedureOut]:
-    return [
-        ProcedureOut.model_validate(p) for p in svc.list(limit=limit, offset=offset)
-    ]
+    is_invasive: bool | None = Query(default=None),
+    session_plan: SessionPlan | None = Query(default=None),
+    page: int = Query(default=1, ge=1),
+    page_size: int = Query(default=20, ge=1, le=200),
+) -> ProcedureListOut:
+    offset = (page - 1) * page_size
+    items = svc.list(
+        limit=page_size,
+        offset=offset,
+        is_invasive=is_invasive,
+        session_plan=session_plan,
+    )
+    return ProcedureListOut(
+        items=[ProcedureOut.model_validate(p) for p in items],
+        total_count=svc.count(is_invasive=is_invasive, session_plan=session_plan),
+        page=page,
+        page_size=page_size,
+    )
 
 
 @router.get("/{procedure_id}", response_model=ProcedureOut)

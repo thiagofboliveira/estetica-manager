@@ -14,6 +14,14 @@ export function useRetentionCards(referenceDate?: string) {
   });
 }
 
+export function useReengagement(inactiveDays: number, page: number, pageSize: number) {
+  return useQuery({
+    queryKey: qk.retentionReengagement(inactiveDays, page, pageSize),
+    queryFn: () => retentionApi.getReengagement(inactiveDays, page, pageSize),
+    ...CACHE.MONEY,
+  });
+}
+
 export function useUpdateRetentionOpportunity() {
   return useMutation({
     mutationFn: ({ id, payload }: { id: string; payload: ReturnOpportunityUpdate }) =>

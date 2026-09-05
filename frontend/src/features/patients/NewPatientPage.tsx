@@ -14,6 +14,7 @@ export function NewPatientPage() {
       birth_date: values.birth_date || null,
       notes: values.notes || null,
       consent_whatsapp: values.consent_whatsapp,
+      gender: values.gender || null,
     });
     navigate(`/pacientes/${patient.id}`);
   }

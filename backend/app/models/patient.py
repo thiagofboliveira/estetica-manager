@@ -7,11 +7,20 @@ Hard delete real só por processo administrativo, fora do produto.
 """
 
 from datetime import date, datetime
+from enum import StrEnum
 
+from sqlalchemy import Enum
 from sqlalchemy.dialects.postgresql import TIMESTAMP
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.models.base import TenantModel
+
+
+class Gender(StrEnum):
+    FEMALE = "FEMALE"
+    MALE = "MALE"
+    OTHER = "OTHER"
+    UNDISCLOSED = "UNDISCLOSED"
 
 
 class Patient(TenantModel):
@@ -24,6 +33,11 @@ class Patient(TenantModel):
     email: Mapped[str | None] = mapped_column(nullable=True)
     birth_date: Mapped[date | None] = mapped_column(nullable=True)
     notes: Mapped[str | None] = mapped_column(nullable=True)
+    # Nulo: base já tinha pacientes cadastradas sem esse dado — opcional
+    # no form, sem preenchimento retroativo forçado.
+    gender: Mapped[Gender | None] = mapped_column(
+        Enum(Gender, name="patient_gender", native_enum=False), nullable=True
+    )
 
     consent_whatsapp: Mapped[bool] = mapped_column(default=False, nullable=False)
     consent_at: Mapped[datetime | None] = mapped_column(
