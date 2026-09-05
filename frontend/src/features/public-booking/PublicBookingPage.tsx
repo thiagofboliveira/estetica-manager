@@ -8,9 +8,13 @@ import {
 import { getProcedurePhoto } from "./procedureImages";
 import styles from "./PublicBookingPage.module.css";
 
+type Step = 1 | 2 | 3;
+
 export function PublicBookingPage() {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
+
+  const [step, setStep] = useState<Step>(1);
 
   const [loadingProfile, setLoadingProfile] = useState(true);
   const [profile, setProfile] = useState<PublicProfessionalInfo | null>(null);
@@ -47,9 +51,6 @@ export function PublicBookingPage() {
       .getAgendaInfo(slug)
       .then((data) => {
         setProfile(data);
-        if (data.procedures.length > 0) {
-          setSelectedProcedure(data.procedures[0]);
-        }
       })
       .catch((err) => {
         setProfileError(err.message || "Agenda não encontrada.");
@@ -93,22 +94,21 @@ export function PublicBookingPage() {
     }
   };
 
-  // Carrega horários disponíveis para a data selecionada
+  // Carrega horários disponíveis ao entrar na etapa 2 ou mudar data
   useEffect(() => {
-    if (!slug || !selectedDate) return;
+    if (!slug || !selectedDate || step !== 2) return;
     setLoadingSlots(true);
     setSelectedSlot(null);
     publicBookingApi
       .getSlots(slug, selectedDate)
       .then((data) => {
         setSlots(data);
-        if (data.length > 0) {
-          setSelectedSlot(data[0]);
-        }
+        if (data.length > 0) setSelectedSlot(data[0]);
       })
       .catch(() => setSlots([]))
       .finally(() => setLoadingSlots(false));
-  }, [slug, selectedDate]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [slug, selectedDate, step]);
 
   // Gera os próximos 6 dias para seleção rápida
   const quickDays = useMemo(() => {
@@ -193,6 +193,13 @@ export function PublicBookingPage() {
     }
   }, [selectedDate]);
 
+  const goToStep = (target: Step) => {
+    if (target === 2 && !selectedProcedure) return;
+    if (target === 3 && (!selectedProcedure || !selectedSlot)) return;
+    setStep(target);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
   if (loadingProfile) {
     return (
       <div className={styles.wrapper}>
@@ -217,10 +224,12 @@ export function PublicBookingPage() {
     );
   }
 
+  const stepLabels = ["Procedimento", "Data e Hora", "Seus Dados"];
+
   return (
     <div className={styles.wrapper}>
       <div className={styles.mainContainer}>
-        <form className={styles.layoutGrid} onSubmit={handleSubmit}>
+        <div className={styles.layoutGrid}>
           {/* COLUNA ESQUERDA: Perfil e Resumo em Tempo Real */}
           <aside className={styles.sidebarCol}>
             <div className={styles.profileCard}>
@@ -283,322 +292,374 @@ export function PublicBookingPage() {
             </div>
           </aside>
 
-          {/* COLUNA DIREITA: Fluxo de Agendamento Harmonizado */}
+          {/* COLUNA DIREITA: Wizard de 3 Etapas */}
           <main className={styles.contentCol}>
-            {/* 1. Seleção de Procedimento com Fotos, Busca e Paginação */}
-            <section className={styles.sectionCard}>
-              <div className={styles.sectionHeader}>
-                <h2 className={styles.sectionTitle}>
-                  <span className={styles.stepBadge}>1</span>
-                  Selecione o Procedimento
-                </h2>
-                <span style={{ fontSize: "0.85rem", color: "var(--text-muted)" }}>
-                  {filteredProcedures.length} {filteredProcedures.length === 1 ? "serviço" : "serviços"} disponíveis
-                </span>
+            {/* Barra de Progresso */}
+            <div className={styles.stepperBar}>
+              <div className={styles.stepperTrack}>
+                <div
+                  className={styles.stepperProgress}
+                  style={{ width: `${((step - 1) / 2) * 100}%` }}
+                />
               </div>
+              {([1, 2, 3] as Step[]).map((num) => {
+                const isActive = step === num;
+                const isDone = step > num;
+                return (
+                  <button
+                    key={num}
+                    type="button"
+                    className={`${styles.stepperItem} ${
+                      isActive
+                        ? styles.stepperActive
+                        : isDone
+                        ? styles.stepperDone
+                        : styles.stepperPending
+                    }`}
+                    onClick={() => { if (isDone) goToStep(num); }}
+                    disabled={!isDone && !isActive}
+                  >
+                    <span className={styles.stepperCircle}>
+                      {isDone ? "✓" : num}
+                    </span>
+                    <span className={styles.stepperLabel}>{stepLabels[num - 1]}</span>
+                  </button>
+                );
+              })}
+            </div>
 
-              {/* Barra de Busca e Dropdown de Lista Rápida */}
-              <div className={styles.procedureFilterBar}>
-                <div className={styles.searchBox}>
-                  <span className={styles.searchIcon}>🔍</span>
-                  <input
-                    type="text"
-                    className={styles.searchInput}
-                    placeholder="Pesquisar por nome do procedimento..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                  />
-                  {searchTerm && (
+            {/* ── ETAPA 1: Selecionar Procedimento ── */}
+            {step === 1 && (
+              <section className={styles.sectionCard}>
+                <div className={styles.sectionHeader}>
+                  <h2 className={styles.sectionTitle}>
+                    <span className={styles.stepBadge}>1</span>
+                    Selecione o Procedimento
+                  </h2>
+                  <span style={{ fontSize: "0.85rem", color: "var(--text-muted)" }}>
+                    {filteredProcedures.length}{" "}
+                    {filteredProcedures.length === 1 ? "serviço" : "serviços"} disponíveis
+                  </span>
+                </div>
+
+                {/* Barra de Busca e Dropdown */}
+                <div className={styles.procedureFilterBar}>
+                  <div className={styles.searchBox}>
+                    <span className={styles.searchIcon}>🔍</span>
+                    <input
+                      type="text"
+                      className={styles.searchInput}
+                      placeholder="Pesquisar por nome do procedimento..."
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                    />
+                    {searchTerm && (
+                      <button
+                        type="button"
+                        onClick={() => setSearchTerm("")}
+                        style={{
+                          position: "absolute",
+                          right: "10px",
+                          top: "50%",
+                          transform: "translateY(-50%)",
+                          background: "none",
+                          border: "none",
+                          color: "var(--text-muted)",
+                          cursor: "pointer",
+                          fontSize: "0.85rem",
+                        }}
+                        title="Limpar pesquisa"
+                      >
+                        ✕
+                      </button>
+                    )}
+                  </div>
+
+                  <select
+                    className={styles.filterSelect}
+                    value={selectedProcedure?.id || ""}
+                    onChange={(e) => handleDropdownSelect(e.target.value)}
+                    aria-label="Selecionar procedimento pelo menu"
+                  >
+                    <option value="">-- Ou escolha na lista suspensa --</option>
+                    {profile.procedures.map((p) => (
+                      <option key={p.id} value={p.id}>
+                        {p.name} (R$ {parseFloat(p.price).toFixed(2).replace(".", ",")})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Grid de Procedimentos Paginados */}
+                {paginatedProcedures.length > 0 ? (
+                  <div className={styles.procedureGrid}>
+                    {paginatedProcedures.map((proc) => {
+                      const isSelected = selectedProcedure?.id === proc.id;
+                      const photoUrl = proc.image_url || getProcedurePhoto(proc.name);
+
+                      return (
+                        <div
+                          key={proc.id}
+                          className={`${styles.procedureCard} ${
+                            isSelected ? styles.procedureCardSelected : ""
+                          }`}
+                          onClick={() => setSelectedProcedure(proc)}
+                        >
+                          <div className={styles.procImageWrapper}>
+                            <img
+                              src={photoUrl}
+                              alt={proc.name}
+                              className={styles.procImage}
+                              loading="lazy"
+                            />
+                            <span className={styles.planTag}>
+                              {proc.session_plan === "SINGLE" ? "Sessão Única" : "Plano de Sessões"}
+                            </span>
+                          </div>
+
+                          <div className={styles.procBody}>
+                            <h3 className={styles.procName}>{proc.name}</h3>
+                            <div className={styles.procFooter}>
+                              <span className={styles.procPrice}>
+                                R$ {parseFloat(proc.price).toFixed(2).replace(".", ",")}
+                              </span>
+                              <span className={styles.selectIndicator}>
+                                {isSelected ? "● Selecionado" : "Selecionar"}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <div className={styles.emptySearch}>
+                    <p>Nenhum procedimento encontrado para "<strong>{searchTerm}</strong>".</p>
                     <button
                       type="button"
+                      className={styles.clearSearchBtn}
                       onClick={() => setSearchTerm("")}
-                      style={{
-                        position: "absolute",
-                        right: "10px",
-                        top: "50%",
-                        transform: "translateY(-50%)",
-                        background: "none",
-                        border: "none",
-                        color: "var(--text-muted)",
-                        cursor: "pointer",
-                        fontSize: "0.85rem",
-                      }}
-                      title="Limpar pesquisa"
                     >
-                      ✕
+                      Limpar pesquisa
                     </button>
+                  </div>
+                )}
+
+                {/* Paginação */}
+                {totalPages > 1 && (
+                  <div className={styles.paginationRow}>
+                    <span className={styles.paginationInfo}>
+                      Página {currentPage} de {totalPages} ({filteredProcedures.length} procedimentos)
+                    </span>
+                    <div className={styles.paginationControls}>
+                      <button
+                        type="button"
+                        className={styles.pageBtn}
+                        onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                        disabled={currentPage === 1}
+                      >
+                        ← Anterior
+                      </button>
+                      {Array.from({ length: totalPages }).map((_, idx) => {
+                        const pageNum = idx + 1;
+                        return (
+                          <button
+                            key={pageNum}
+                            type="button"
+                            className={`${styles.pageNumber} ${
+                              pageNum === currentPage ? styles.pageNumberActive : ""
+                            }`}
+                            onClick={() => setCurrentPage(pageNum)}
+                          >
+                            {pageNum}
+                          </button>
+                        );
+                      })}
+                      <button
+                        type="button"
+                        className={styles.pageBtn}
+                        onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                        disabled={currentPage === totalPages}
+                      >
+                        Próxima →
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                <button
+                  type="button"
+                  className={styles.nextBtn}
+                  disabled={!selectedProcedure}
+                  onClick={() => goToStep(2)}
+                >
+                  Continuar → Escolher Data e Horário
+                </button>
+              </section>
+            )}
+
+            {/* ── ETAPA 2: Data e Horário ── */}
+            {step === 2 && (
+              <section className={styles.sectionCard}>
+                <div className={styles.sectionHeader}>
+                  <h2 className={styles.sectionTitle}>
+                    <span className={styles.stepBadge}>2</span>
+                    Data e Horário
+                  </h2>
+                  {formattedSelectedDate && (
+                    <span style={{ fontSize: "0.9rem", color: "var(--accent)", fontWeight: 600 }}>
+                      {formattedSelectedDate}
+                    </span>
                   )}
                 </div>
 
-                <select
-                  className={styles.filterSelect}
-                  value={selectedProcedure?.id || ""}
-                  onChange={(e) => handleDropdownSelect(e.target.value)}
-                  aria-label="Selecionar procedimento pelo menu"
-                >
-                  <option value="">-- Ou escolha na lista suspensa --</option>
-                  {profile.procedures.map((p) => (
-                    <option key={p.id} value={p.id}>
-                      {p.name} (R$ {parseFloat(p.price).toFixed(2).replace(".", ",")})
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              {/* Grid de Procedimentos Paginados */}
-              {paginatedProcedures.length > 0 ? (
-                <div className={styles.procedureGrid}>
-                  {paginatedProcedures.map((proc) => {
-                    const isSelected = selectedProcedure?.id === proc.id;
-                    const photoUrl = proc.image_url || getProcedurePhoto(proc.name);
-
-                    return (
-                      <div
-                        key={proc.id}
-                        className={`${styles.procedureCard} ${
-                          isSelected ? styles.procedureCardSelected : ""
-                        }`}
-                        onClick={() => {
-                          setSelectedProcedure(proc);
-                        }}
-                      >
-                        <div className={styles.procImageWrapper}>
-                          <img
-                            src={photoUrl}
-                            alt={proc.name}
-                            className={styles.procImage}
-                            loading="lazy"
-                          />
-                          <span className={styles.planTag}>
-                            {proc.session_plan === "SINGLE" ? "Sessão Única" : "Plano de Sessões"}
-                          </span>
-                        </div>
-
-                        <div className={styles.procBody}>
-                          <h3 className={styles.procName}>{proc.name}</h3>
-
-                          <div className={styles.procFooter}>
-                            <span className={styles.procPrice}>
-                              R$ {parseFloat(proc.price).toFixed(2).replace(".", ",")}
-                            </span>
-                            <span className={styles.selectIndicator}>
-                              {isSelected ? "● Selecionado" : "Selecionar"}
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              ) : (
-                <div className={styles.emptySearch}>
-                  <p>Nenhum procedimento encontrado para "<strong>{searchTerm}</strong>".</p>
-                  <button
-                    type="button"
-                    className={styles.clearSearchBtn}
-                    onClick={() => setSearchTerm("")}
-                  >
-                    Limpar pesquisa
-                  </button>
-                </div>
-              )}
-
-              {/* Controles de Paginação */}
-              {totalPages > 1 && (
-                <div className={styles.paginationRow}>
-                  <span className={styles.paginationInfo}>
-                    Página {currentPage} de {totalPages} ({filteredProcedures.length} procedimentos)
-                  </span>
-
-                  <div className={styles.paginationControls}>
-                    <button
-                      type="button"
-                      className={styles.pageBtn}
-                      onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-                      disabled={currentPage === 1}
-                    >
-                      ← Anterior
-                    </button>
-
-                    {Array.from({ length: totalPages }).map((_, idx) => {
-                      const pageNum = idx + 1;
+                <div className={styles.dateContainer}>
+                  <div className={styles.dateQuickPick}>
+                    {quickDays.map((d) => {
+                      const isSelected = selectedDate === d.iso;
                       return (
                         <button
-                          key={pageNum}
                           type="button"
-                          className={`${styles.pageNumber} ${
-                            pageNum === currentPage ? styles.pageNumberActive : ""
+                          key={d.iso}
+                          className={`${styles.quickDayBtn} ${
+                            isSelected ? styles.quickDayBtnSelected : ""
                           }`}
-                          onClick={() => setCurrentPage(pageNum)}
+                          onClick={() => setSelectedDate(d.iso)}
                         >
-                          {pageNum}
+                          <span className={styles.quickDayName}>{d.weekday}</span>
+                          <span className={styles.quickDayNumber}>{d.dayNum}</span>
+                          <span style={{ fontSize: "0.75rem", color: "var(--text-muted)" }}>
+                            {d.monthNum}
+                          </span>
                         </button>
                       );
                     })}
+                  </div>
 
-                    <button
-                      type="button"
-                      className={styles.pageBtn}
-                      onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-                      disabled={currentPage === totalPages}
-                    >
-                      Próxima →
-                    </button>
+                  <div className={styles.dateInputGroup}>
+                    <span style={{ fontSize: "0.85rem", color: "var(--text-muted)" }}>
+                      Ou escolha no calendário:
+                    </span>
+                    <input
+                      type="date"
+                      className={styles.dateInput}
+                      value={selectedDate}
+                      min={new Date().toISOString().split("T")[0]}
+                      onChange={(e) => setSelectedDate(e.target.value)}
+                    />
                   </div>
                 </div>
-              )}
-            </section>
 
-            {/* 2. Seleção de Data e Horário */}
-            <section className={styles.sectionCard}>
-              <div className={styles.sectionHeader}>
-                <h2 className={styles.sectionTitle}>
-                  <span className={styles.stepBadge}>2</span>
-                  Data e Horário
-                </h2>
-                {formattedSelectedDate && (
-                  <span style={{ fontSize: "0.9rem", color: "var(--accent)", fontWeight: 600 }}>
-                    {formattedSelectedDate}
-                  </span>
-                )}
-              </div>
+                <div className={styles.slotsSection}>
+                  <span className={styles.periodLabel}>Horários Livres Disponíveis</span>
 
-              <div className={styles.dateContainer}>
-                {/* Abas Rápidas de Dias */}
-                <div className={styles.dateQuickPick}>
-                  {quickDays.map((d) => {
-                    const isSelected = selectedDate === d.iso;
-                    return (
-                      <button
-                        type="button"
-                        key={d.iso}
-                        className={`${styles.quickDayBtn} ${
-                          isSelected ? styles.quickDayBtnSelected : ""
-                        }`}
-                        onClick={() => setSelectedDate(d.iso)}
-                      >
-                        <span className={styles.quickDayName}>{d.weekday}</span>
-                        <span className={styles.quickDayNumber}>{d.dayNum}</span>
-                        <span style={{ fontSize: "0.75rem", color: "var(--text-muted)" }}>
-                          {d.monthNum}
-                        </span>
-                      </button>
-                    );
-                  })}
-                </div>
-
-                {/* Selecionar Outra Data */}
-                <div className={styles.dateInputGroup}>
-                  <span style={{ fontSize: "0.85rem", color: "var(--text-muted)" }}>
-                    Ou escolha no calendário:
-                  </span>
-                  <input
-                    type="date"
-                    className={styles.dateInput}
-                    value={selectedDate}
-                    min={new Date().toISOString().split("T")[0]}
-                    onChange={(e) => setSelectedDate(e.target.value)}
-                    required
-                  />
-                </div>
-              </div>
-
-              {/* Grade de Horários Livres */}
-              <div className={styles.slotsSection}>
-                <span className={styles.periodLabel}>Horários Livres Disponíveis</span>
-
-                {loadingSlots ? (
-                  <p style={{ color: "var(--text-muted)", padding: "16px 0", margin: 0 }}>
-                    Verificando disponibilidade em tempo real...
-                  </p>
-                ) : slots.length === 0 ? (
-                  <div className={styles.emptyNotice}>
-                    Não encontramos horários livres para esta data. Por favor selecione outro dia.
-                  </div>
-                ) : (
-                  <div className={styles.slotsGrid}>
-                    {slots.map((slot) => {
-                      const isSelected = selectedSlot === slot;
-                      return (
+                  {loadingSlots ? (
+                    <p style={{ color: "var(--text-muted)", padding: "16px 0", margin: 0 }}>
+                      Verificando disponibilidade em tempo real...
+                    </p>
+                  ) : slots.length === 0 ? (
+                    <div className={styles.emptyNotice}>
+                      Não encontramos horários livres para esta data. Por favor selecione outro dia.
+                    </div>
+                  ) : (
+                    <div className={styles.slotsGrid}>
+                      {slots.map((slot) => (
                         <button
                           type="button"
                           key={slot}
                           className={`${styles.slotBtn} ${
-                            isSelected ? styles.slotBtnSelected : ""
+                            selectedSlot === slot ? styles.slotBtnSelected : ""
                           }`}
                           onClick={() => setSelectedSlot(slot)}
                         >
                           {slot}
                         </button>
-                      );
-                    })}
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                <div className={styles.stepNavRow}>
+                  <button type="button" className={styles.backBtn} onClick={() => goToStep(1)}>
+                    ← Voltar
+                  </button>
+                  <button
+                    type="button"
+                    className={styles.nextBtn}
+                    disabled={!selectedSlot}
+                    onClick={() => goToStep(3)}
+                  >
+                    Continuar → Meus Dados
+                  </button>
+                </div>
+              </section>
+            )}
+
+            {/* ── ETAPA 3: Dados da Paciente ── */}
+            {step === 3 && (
+              <form className={styles.sectionCard} onSubmit={handleSubmit}>
+                <div className={styles.sectionHeader}>
+                  <h2 className={styles.sectionTitle}>
+                    <span className={styles.stepBadge}>3</span>
+                    Seus Dados para Contato
+                  </h2>
+                </div>
+
+                <div className={styles.formGrid}>
+                  <div className={styles.formGroup}>
+                    <label className={styles.label}>Nome Completo *</label>
+                    <input
+                      type="text"
+                      className={styles.input}
+                      placeholder="Ex: Mariana Ferreira"
+                      value={patientName}
+                      onChange={(e) => setPatientName(e.target.value)}
+                      required
+                    />
                   </div>
-                )}
-              </div>
-            </section>
 
-            {/* 3. Dados da Paciente */}
-            <section className={styles.sectionCard}>
-              <div className={styles.sectionHeader}>
-                <h2 className={styles.sectionTitle}>
-                  <span className={styles.stepBadge}>3</span>
-                  Seus Dados para Contato
-                </h2>
-              </div>
+                  <div className={styles.formGroup}>
+                    <label className={styles.label}>WhatsApp / Celular *</label>
+                    <input
+                      type="tel"
+                      className={styles.input}
+                      placeholder="(11) 99999-9999"
+                      value={patientPhone}
+                      onChange={handlePhoneChange}
+                      required
+                    />
+                  </div>
 
-              <div className={styles.formGrid}>
-                <div className={styles.formGroup}>
-                  <label className={styles.label}>Nome Completo *</label>
-                  <input
-                    type="text"
-                    className={styles.input}
-                    placeholder="Ex: Mariana Ferreira"
-                    value={patientName}
-                    onChange={(e) => setPatientName(e.target.value)}
-                    required
-                  />
+                  <div className={`${styles.formGroup} ${styles.fullWidth}`}>
+                    <label className={styles.label}>Alguma observação ou dúvida? (Opcional)</label>
+                    <textarea
+                      className={styles.input}
+                      rows={2}
+                      placeholder="Conte-nos se você tem alguma alergia ou é a sua primeira vez no procedimento..."
+                      value={note}
+                      onChange={(e) => setNote(e.target.value)}
+                    />
+                  </div>
                 </div>
 
-                <div className={styles.formGroup}>
-                  <label className={styles.label}>WhatsApp / Celular *</label>
-                  <input
-                    type="tel"
-                    className={styles.input}
-                    placeholder="(11) 99999-9999"
-                    value={patientPhone}
-                    onChange={handlePhoneChange}
-                    required
-                  />
+                {submitError && <div className={styles.errorBanner}>{submitError}</div>}
+
+                <div className={styles.stepNavRow}>
+                  <button type="button" className={styles.backBtn} onClick={() => goToStep(2)}>
+                    ← Voltar
+                  </button>
+                  <button type="submit" className={styles.submitBtn} disabled={submitting}>
+                    {submitting ? "Reservando horário..." : "✓ Confirmar Agendamento Agora"}
+                  </button>
                 </div>
 
-                <div className={`${styles.formGroup} ${styles.fullWidth}`}>
-                  <label className={styles.label}>Alguma observação ou dúvida? (Opcional)</label>
-                  <textarea
-                    className={styles.input}
-                    rows={2}
-                    placeholder="Conte-nos se você tem alguma alergia ou é a sua primeira vez no procedimento..."
-                    value={note}
-                    onChange={(e) => setNote(e.target.value)}
-                  />
+                <div className={styles.footer}>
+                  Lumina Estética • Agendamento Seguro e Sem Fricção
                 </div>
-              </div>
-            </section>
-
-            {submitError && <div className={styles.errorBanner}>{submitError}</div>}
-
-            <button
-              type="submit"
-              className={styles.submitBtn}
-              disabled={submitting || !selectedSlot}
-            >
-              {submitting ? "Reservando horário..." : "✓ Confirmar Agendamento Agora"}
-            </button>
-
-            <div className={styles.footer}>
-              Lumina Estética • Agendamento Seguro e Sem Fricção
-            </div>
+              </form>
+            )}
           </main>
-        </form>
+        </div>
       </div>
     </div>
   );

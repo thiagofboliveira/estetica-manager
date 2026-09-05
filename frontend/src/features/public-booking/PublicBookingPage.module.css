@@ -732,3 +732,157 @@
   font-weight: 600;
   cursor: pointer;
 }
+
+/* ── Barra de Progresso (Stepper) ── */
+.stepperBar {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 16px 20px;
+  margin-bottom: 4px;
+  box-shadow: var(--shadow-sm);
+  gap: 8px;
+}
+
+.stepperTrack {
+  position: absolute;
+  top: 50%;
+  left: 20px;
+  right: 20px;
+  height: 3px;
+  background: var(--border);
+  border-radius: 2px;
+  transform: translateY(-50%);
+  z-index: 0;
+}
+
+.stepperProgress {
+  height: 100%;
+  background: var(--accent);
+  border-radius: 2px;
+  transition: width 0.4s ease;
+}
+
+.stepperItem {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  background: none;
+  border: none;
+  cursor: default;
+  padding: 0;
+}
+
+.stepperCircle {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.9rem;
+  font-weight: 700;
+  border: 2px solid var(--border);
+  background: var(--bg-card);
+  color: var(--text-muted);
+  transition: all 0.2s;
+}
+
+.stepperLabel {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  white-space: nowrap;
+  transition: color 0.2s;
+}
+
+.stepperActive .stepperCircle {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+  box-shadow: 0 0 0 4px var(--accent-bg);
+}
+
+.stepperActive .stepperLabel {
+  color: var(--accent);
+}
+
+.stepperDone {
+  cursor: pointer;
+}
+
+.stepperDone .stepperCircle {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+
+.stepperDone .stepperLabel {
+  color: var(--accent);
+}
+
+.stepperPending .stepperCircle {
+  background: var(--bg);
+  border-color: var(--border);
+  color: var(--text-muted);
+}
+
+/* ── Botões de Navegação entre Etapas ── */
+.stepNavRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding-top: 8px;
+}
+
+.nextBtn {
+  flex: 1;
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  border-radius: 14px;
+  padding: 14px 24px;
+  font-size: 1rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s;
+  text-align: center;
+}
+
+.nextBtn:hover:not(:disabled) {
+  background: var(--accent-dark, #0d9488);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 14px rgba(15, 118, 110, 0.35);
+}
+
+.nextBtn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.backBtn {
+  background: var(--bg-card);
+  color: var(--text-muted);
+  border: 1.5px solid var(--border);
+  border-radius: 14px;
+  padding: 14px 20px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.backBtn:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
