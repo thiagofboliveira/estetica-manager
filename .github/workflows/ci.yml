@@ -1,0 +1,113 @@
+name: CI
+
+on:
+  push:
+    branches: [ main, feature/** ]
+  pull_request:
+    branches: [ main, feature/** ]
+
+jobs:
+  backend:
+    name: Backend (Python / Pytest / Ruff)
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: estetica
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgrespassword
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+          cache-dependency-path: backend/pyproject.toml
+
+      - name: Install dependencies
+        working-directory: ./backend
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev]"
+
+      - name: Prepare Postgres roles and permissions
+        run: |
+          PGPASSWORD=postgrespassword psql -h localhost -U postgres -d estetica -c "
+            DO \$\$ BEGIN
+              IF NOT EXISTS (SELECT FROM pg_catalog.pg_roles WHERE rolname = 'estetica_app') THEN
+                CREATE ROLE estetica_app WITH LOGIN PASSWORD 'app_password';
+              END IF;
+            END \$\$;
+            GRANT ALL PRIVILEGES ON DATABASE estetica TO estetica_app;
+            GRANT ALL ON SCHEMA public TO estetica_app;
+          "
+
+      - name: Run Alembic migrations
+        working-directory: ./backend
+        env:
+          DATABASE_URL_MIGRATIONS: postgresql+psycopg2://postgres:postgrespassword@localhost:5432/estetica
+        run: |
+          alembic upgrade head
+
+      - name: Run Ruff check
+        working-directory: ./backend
+        run: |
+          ruff check .
+
+      - name: Run Pytest
+        working-directory: ./backend
+        env:
+          DATABASE_URL: postgresql+psycopg2://estetica_app:app_password@localhost:5432/estetica
+          DATABASE_URL_MIGRATIONS: postgresql+psycopg2://postgres:postgrespassword@localhost:5432/estetica
+          ENV: development
+          DEV_AUTH_SECRET: ci-dev-secret-for-testing-only-32chars
+        run: |
+          pytest -q
+
+  frontend:
+    name: Frontend (TypeScript / Oxlint / Vitest / Build)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        working-directory: ./frontend
+        run: npm ci
+
+      - name: TypeScript type-check
+        working-directory: ./frontend
+        run: npx tsc -b
+
+      - name: Lint check (Oxlint)
+        working-directory: ./frontend
+        run: npm run lint
+
+      - name: Unit tests (Vitest)
+        working-directory: ./frontend
+        run: npm run test
+
+      - name: Production build
+        working-directory: ./frontend
+        run: npm run build

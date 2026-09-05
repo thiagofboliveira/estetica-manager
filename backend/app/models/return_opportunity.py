@@ -43,6 +43,13 @@ class ReturnOpportunity(TenantModel):
         nullable=True,
         index=True,
     )
+    source: Mapped[str] = mapped_column(
+        String(20),
+        nullable=False,
+        default="SYSTEM",
+        server_default="SYSTEM",
+        index=True,
+    )
     due_date: Mapped[date] = mapped_column(Date, nullable=False, index=True)
     status: Mapped[ReturnOpportunityStatus] = mapped_column(
         Enum(

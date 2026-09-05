@@ -165,7 +165,12 @@ def get_event_service(
 def get_patient_service(
     session: DbSession, professional_id: CurrentProfessional
 ) -> PatientService:
-    return PatientService(PatientRepository(session, professional_id))
+    return PatientService(
+        PatientRepository(session, professional_id),
+        procedure_repo=ProcedureRepository(session, professional_id),
+        return_opportunity_repo=ReturnOpportunityRepository(session, professional_id),
+        professional_repo=ProfessionalRepository(session, professional_id),
+    )
 
 
 def get_procedure_service(

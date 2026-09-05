@@ -92,6 +92,8 @@ class ReturnOpportunityRepository(TenantRepository[ReturnOpportunity]):
                 opp.contacted_at.is_not(None),
                 opp.resolved_by_sale_id.is_not(None),
                 Sale.status == SaleStatus.ACTIVE,
+                # G-12: Oportunidades de importação não contam como receita atribuível (§18.1)
+                opp.source != "IMPORT",
             )
         )
         if date_from:

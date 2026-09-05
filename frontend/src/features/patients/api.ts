@@ -31,9 +31,16 @@ export type PatientUpdateInput = Partial<PatientCreateInput> & {
   consent_whatsapp?: boolean;
 };
 
+export type BatchImportPayload = {
+  patients: { name: string; phone?: string | null }[];
+  default_procedure_id?: string | null;
+  generate_return_opportunities?: boolean;
+};
+
 export type BatchImportResult = {
   created_count: number;
   skipped_count: number;
+  opportunities_created_count?: number;
   errors: { line: number; reason: string }[];
   patients: Patient[];
 };
@@ -78,6 +85,6 @@ export const patientsApi = {
   anonymize: (id: string) => api.post<Patient>(`/patients/${id}/anonymize`, {}),
   optOut: (id: string) => api.post<Patient>(`/patients/${id}/opt-out`, {}),
   exportData: (id: string) => api.get<Record<string, unknown>>(`/patients/${id}/export`),
-  batchImport: (payload: { patients: { name: string; phone?: string | null }[] }) => 
+  batchImport: (payload: BatchImportPayload) => 
     api.post<BatchImportResult>("/patients/import", payload),
 };

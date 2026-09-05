@@ -66,6 +66,27 @@ def _sale_body(patient_id: str, procedure_id: str) -> dict:
     }
 
 
+def _find_procedure_row(
+    client: TestClient, auth_headers: dict[str, str], procedure_id: str
+) -> dict:
+    page = 1
+    while True:
+        resp = client.get(
+            f"/api/v1/reports/procedures?period=today&page={page}&page_size=100",
+            headers=auth_headers,
+        )
+        assert resp.status_code == 200, resp.text
+        data = resp.json()
+        for r in data["rows"]:
+            if r["procedure_id"] == procedure_id:
+                return r
+        if len(data["rows"]) < 100 or page * 100 >= data["total_count"]:
+            raise AssertionError(
+                f"Procedure {procedure_id} not found in ranking ({data['total_count']} total)"
+            )
+        page += 1
+
+
 class TestSessionCountEhSessaoCompletedNaoQuantidadeVendida:
     def test_sessao_scheduled_nao_conta_como_atendimento(
         self,
@@ -76,12 +97,7 @@ class TestSessionCountEhSessaoCompletedNaoQuantidadeVendida:
     ) -> None:
         client.post("/api/v1/sales", json=_sale_body(patient_id, procedure_id), headers=auth_headers)
 
-        resp = client.get(
-            "/api/v1/reports/procedures?period=today&page_size=100",
-            headers=auth_headers,
-        )
-        assert resp.status_code == 200, resp.text
-        row = next(r for r in resp.json()["rows"] if r["procedure_id"] == procedure_id)
+        row = _find_procedure_row(client, auth_headers, procedure_id)
         # A venda foi registrada e o item existe no ranking (gross_revenue > 0),
         # mas a sessão ainda está SCHEDULED — não é um atendimento realizado.
         assert row["gross_revenue"] == "1000.00"
@@ -106,11 +122,7 @@ class TestSessionCountEhSessaoCompletedNaoQuantidadeVendida:
         )
         assert patch_resp.status_code == 200, patch_resp.text
 
-        resp = client.get(
-            "/api/v1/reports/procedures?period=today&page_size=100",
-            headers=auth_headers,
-        )
-        row = next(r for r in resp.json()["rows"] if r["procedure_id"] == procedure_id)
+        row = _find_procedure_row(client, auth_headers, procedure_id)
         assert row["session_count"] == 1
 
 

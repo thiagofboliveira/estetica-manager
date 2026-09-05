@@ -75,6 +75,12 @@ class PatientBatchImportItem(InputSchema):
     phone: str | None = Field(default=None, description="Telefone ou WhatsApp com DDD")
     email: str | None = Field(default=None, description="E-mail de contato")
     notes: str | None = Field(default=None, description="Anotações / histórico prévio")
+    procedure_id: UUID | None = Field(
+        default=None, description="Procedimento de referência para oportunidade de retorno"
+    )
+    last_visit_date: date | None = Field(
+        default=None, description="Data da última visita para calcular data de retorno"
+    )
 
 
 class PatientBatchImportRequest(InputSchema):
@@ -82,6 +88,14 @@ class PatientBatchImportRequest(InputSchema):
         min_length=1,
         max_length=100,
         description="Lista de pacientes a importar (máximo 100 por lote)",
+    )
+    default_procedure_id: UUID | None = Field(
+        default=None,
+        description="Procedimento padrão a associar às pacientes importadas",
+    )
+    generate_return_opportunities: bool = Field(
+        default=False,
+        description="Se True, gera oportunidades de retorno retroativas (source=IMPORT) no dia 1",
     )
 
 
@@ -93,5 +107,6 @@ class PatientBatchImportError(OutputSchema):
 class PatientBatchImportResult(OutputSchema):
     created_count: int
     skipped_count: int
+    opportunities_created_count: int = 0
     errors: list[PatientBatchImportError]
     patients: list[PatientOut]
