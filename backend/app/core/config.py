@@ -16,7 +16,32 @@ class Settings(BaseSettings):
     SUPABASE_URL: str
     SUPABASE_JWT_AUDIENCE: str = "authenticated"
 
+    # Só usado por app/core/supabase_admin.py (B-01), para criar o
+    # usuário no Supabase Auth no fluxo de setup/signup — nunca para
+    # validar token de request normal (isso é via JWKS público, sem
+    # segredo nenhum, ver security.py). Chave MESTRA do projeto Supabase:
+    # ignora RLS de lá, cria/apaga qualquer usuário. Sem default de
+    # propósito — ausência deve falhar alto, não silenciar.
+    SUPABASE_SERVICE_ROLE_KEY: str | None = None
+
+    # URL do frontend para onde o link de convite/magic-link do Supabase
+    # redireciona após a pessoa definir a senha (B-01). Em dev, a própria
+    # tela de login local.
+    FRONTEND_URL: str = "http://localhost:5173"
+
     DEFAULT_TIMEZONE: str = "America/Sao_Paulo"
+
+    # B-04: domínios do frontend autorizados a chamar a API em produção
+    # (CORS). Lista separada por vírgula, ex.:
+    # "https://app.lumina.com.br,https://lumina-web.vercel.app". Vazio
+    # por padrão — sem isso configurado, front e back em domínios
+    # diferentes não se falam (o browser bloqueia), então esta variável
+    # É parte do checklist de deploy, não opcional.
+    ALLOWED_ORIGINS: str = ""
+
+    @property
+    def allowed_origins_list(self) -> list[str]:
+        return [o.strip() for o in self.ALLOWED_ORIGINS.split(",") if o.strip()]
 
     # Default DENIEGA, não concede (S-01a): variável ausente ou com typo
     # no painel de deploy faz o app subir em modo produção, onde /dev/login

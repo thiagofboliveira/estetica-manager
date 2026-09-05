@@ -6,7 +6,12 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
-from app.api.deps import _db, _system_db, get_current_professional_id
+from app.api.deps import (
+    _db,
+    _system_db,
+    get_current_professional_id,
+    get_system_service,
+)
 from app.main import app
 from app.models.clinic import Clinic
 from app.models.professional import Professional
@@ -49,9 +54,29 @@ def db_session():
         session.close()
 
 
+class _FakeSupabaseAdmin:
+    """B-01: setup_root() cria o usuário no Supabase Auth via Admin API
+    antes de gravar Clinic/User/Professional. Nos testes que não têm
+    Postgres real (SQLite in-memory, este arquivo), fake o convite —
+    o comportamento do Supabase em si é coberto por
+    tests/test_supabase_auth_integration.py contra o projeto real."""
+
+    def __init__(self):
+        self.invited_emails: list[str] = []
+        self.deleted_ids: list[UUID] = []
+
+    def invite_user_by_email(self, email: str, redirect_to: str | None = None) -> UUID:
+        self.invited_emails.append(email)
+        return uuid4()
+
+    def delete_user(self, user_id: UUID) -> None:
+        self.deleted_ids.append(user_id)
+
+
 def test_system_service_status_and_setup(db_session):
     repo = UserRepository(db_session)
-    system_svc = SystemService(repo, db_session)
+    fake_admin = _FakeSupabaseAdmin()
+    system_svc = SystemService(repo, db_session, supabase_admin=fake_admin)
 
     # 1. Status inicial vazio
     status = system_svc.get_status()
@@ -69,6 +94,8 @@ def test_system_service_status_and_setup(db_session):
     assert root_user.role == "superadmin"
     assert root_user.is_superuser is True
     assert root_user.email == "root@clinica.com"
+    # B-01: o id vem do Supabase Auth (mock aqui), nunca gerado localmente
+    assert fake_admin.invited_emails == ["root@clinica.com"]
 
     # 3. Status após setup
     status2 = system_svc.get_status()
@@ -82,6 +109,44 @@ def test_system_service_status_and_setup(db_session):
             admin_name="Tentativa",
             email="outro@clinica.com",
         )
+    # Não deve nem chegar a convidar — o guard de count() > 0 é antes.
+    assert fake_admin.invited_emails == ["root@clinica.com"]
+
+
+def test_setup_root_desfaz_convite_supabase_se_transacao_falhar(db_session, monkeypatch):
+    """Se algo falhar depois do convite (ex.: erro de integridade ao
+    gravar Professional), o usuário não pode ficar órfão no Supabase
+    Auth — sem User local correspondente, o login dele nunca resolveria
+    professional_id."""
+    repo = UserRepository(db_session)
+    fake_admin = _FakeSupabaseAdmin()
+    system_svc = SystemService(repo, db_session, supabase_admin=fake_admin)
+
+    # Simula uma falha depois que User já foi gravado (1º flush) mas
+    # antes de o setup terminar — força o 2º flush() (o de Professional)
+    # a levantar.
+    original_flush = db_session.flush
+    call_count = {"n": 0}
+
+    def flaky_flush(*args, **kwargs):
+        call_count["n"] += 1
+        if call_count["n"] == 2:
+            raise RuntimeError("falha simulada ao gravar Professional")
+        return original_flush(*args, **kwargs)
+
+    monkeypatch.setattr(db_session, "flush", flaky_flush)
+
+    with pytest.raises(RuntimeError, match="falha simulada"):
+        system_svc.setup_root(
+            clinic_name="Clínica X",
+            admin_name="Admin X",
+            email="novo@clinica.com",
+        )
+
+    assert fake_admin.invited_emails == ["novo@clinica.com"]
+    assert len(fake_admin.deleted_ids) == 1, (
+        "delete_user() não foi chamado — usuário ficaria órfão no Supabase Auth"
+    )
 
 
 def test_user_service_crud_rules(db_session):
@@ -135,7 +200,16 @@ def test_system_and_users_api_endpoints(db_session):
     def override_system_db():
         yield db_session
 
+    def override_system_service():
+        # B-01: setup_root() chama o Supabase Auth via Admin API — fake
+        # aqui, o comportamento real é coberto por
+        # tests/test_supabase_auth_integration.py.
+        return SystemService(
+            UserRepository(db_session), db_session, supabase_admin=_FakeSupabaseAdmin()
+        )
+
     app.dependency_overrides[_system_db] = override_system_db
+    app.dependency_overrides[get_system_service] = override_system_service
     client = TestClient(app)
 
     # 1. GET /api/v1/system/status
