@@ -10,12 +10,15 @@ from alembic import context
 from app.core.config import settings
 from app.models import Base  # noqa: F401 — importa todos os modelos p/ autogenerate
 
-# this is the Alembic Config object, which provides
-# access to the values within the .ini file in use.
+migration_url = settings.DATABASE_URL
+if settings.DATABASE_URL_MIGRATIONS and "db." not in settings.DATABASE_URL_MIGRATIONS:
+    migration_url = settings.DATABASE_URL_MIGRATIONS
+
+safe_target = migration_url.split("@")[-1] if "@" in migration_url else "local"
+print(f"[ALEMBIC] Conectando ao host de banco: {safe_target}")
+
 config = context.config
-config.set_main_option(
-    "sqlalchemy.url", settings.DATABASE_URL_MIGRATIONS or settings.DATABASE_URL
-)
+config.set_main_option("sqlalchemy.url", migration_url)
 
 # Interpret the config file for Python logging.
 # This line sets up loggers basically.
