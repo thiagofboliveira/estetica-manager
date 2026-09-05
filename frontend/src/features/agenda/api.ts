@@ -74,6 +74,7 @@ export type FreeSlots = {
 
 export type UnconfirmedSession = {
   session_id: string;
+  type: "SESSION" | "BOOKING";
   patient_name: string;
   patient_phone: string | null;
   procedure_name: string;
@@ -94,9 +95,16 @@ export const sessionsApi = {
     api.patch<void>(`/sessions/${id}`, payload),
   getUnconfirmed: () => api.get<UnconfirmedSession[]>("/sessions/unconfirmed"),
   confirmSession: (id: string) => api.post<void>(`/sessions/${id}/confirm`, {}),
+  confirmBooking: (id: string) => api.post<void>(`/bookings/${id}/confirm`, {}),
+  /** Roteia automaticamente para o endpoint correto conforme o tipo do item. */
+  confirmItem: (item: Pick<UnconfirmedSession, "session_id" | "type">) =>
+    item.type === "BOOKING"
+      ? api.post<void>(`/bookings/${item.session_id}/confirm`, {})
+      : api.post<void>(`/sessions/${item.session_id}/confirm`, {}),
   getFreeSlots: (date: string) =>
     api.get<FreeSlots>(`/free-slots?${new URLSearchParams({ date }).toString()}`),
 };
+
 
 export const bookingsApi = {
   create: (payload: BookingCreateInput) => api.post<void>("/bookings", payload),

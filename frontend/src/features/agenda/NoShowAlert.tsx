@@ -1,4 +1,4 @@
-﻿import { useUnconfirmedSessions, useConfirmSession } from "./hooks";
+import { useUnconfirmedSessions, useConfirmSession } from "./hooks";
 import { IconAlertTriangle, IconCheck, IconWhatsApp } from "@/ui/icons";
 import styles from "./NoShowAlert.module.css";
 
@@ -30,8 +30,8 @@ export function NoShowAlert() {
     });
   };
 
-  const handleConfirm = (id: string) => {
-    confirmMutation.mutate(id);
+  const handleConfirm = (session: { session_id: string; type: "SESSION" | "BOOKING" }) => {
+    confirmMutation.mutate(session);
   };
 
   return (
@@ -74,7 +74,7 @@ export function NoShowAlert() {
                   <>
                     <button 
                       className={styles.btnConfirm} 
-                      onClick={() => handleConfirm(session.session_id)}
+                      onClick={() => handleConfirm(session)}
                       title="Marcar como confirmada"
                       disabled={confirmMutation.isPending}
                     >

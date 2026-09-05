@@ -200,3 +200,12 @@ class BookingService:
         booking.status = BookingStatus.CANCELLED
         self._bookings.flush()
         return booking
+
+    def confirm(self, booking_id: UUID) -> Booking:
+        """Registra a confirmação de presença do booking público (anti-no-show)."""
+        booking = self.get(booking_id)
+        if booking.confirmed_at is not None:
+            return booking  # idempotente
+        booking.confirmed_at = datetime.now(UTC)
+        self._bookings.flush()
+        return booking

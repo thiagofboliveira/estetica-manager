@@ -69,6 +69,9 @@ class Booking(TenantModel):
         nullable=True,
         index=True,
     )
+    confirmed_at: Mapped[datetime | None] = mapped_column(
+        TIMESTAMP(timezone=True), nullable=True
+    )
 
     patient = relationship("Patient", lazy="joined")
     procedure = relationship("Procedure", lazy="joined")

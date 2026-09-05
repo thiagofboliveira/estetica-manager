@@ -42,6 +42,7 @@ class BookingOut(OutputSchema):
     status: BookingStatus
     management_token: str
     sale_id: UUID | None
+    confirmed_at: datetime | None
     created_at: datetime
     updated_at: datetime
 
