@@ -1,26 +1,33 @@
 .wrapper {
   min-height: 100vh;
   background: var(--bg);
+  padding: 40px 20px 80px;
+  font-family: var(--sans);
+  color: var(--text-h);
   display: flex;
   justify-content: center;
-  padding: 24px 16px 48px;
-  font-family: var(--sans);
 }
 
 .container {
   width: 100%;
-  max-width: 520px;
+  max-width: 680px;
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 24px;
 }
 
-.successCard {
+.voucherCard {
   background: var(--bg-card);
   border: 1px solid var(--border);
-  border-radius: 16px;
-  padding: 28px 24px;
-  box-shadow: var(--shadow-sm);
+  border-radius: 24px;
+  overflow: hidden;
+  box-shadow: var(--shadow-md);
+}
+
+.voucherHeader {
+  background: linear-gradient(135deg, var(--accent) 0%, #0d9488 100%);
+  color: #ffffff;
+  padding: 32px 24px;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -28,104 +35,116 @@
   gap: 12px;
 }
 
-.iconCircle {
+.voucherHeaderCancelled {
+  background: linear-gradient(135deg, #475569 0%, #334155 100%);
+}
+
+.statusIcon {
   width: 64px;
   height: 64px;
   border-radius: 50%;
-  background: var(--success-bg);
-  border: 1.5px solid var(--success-border);
-  color: var(--success);
-  font-size: 28px;
+  background: rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(8px);
   display: flex;
   align-items: center;
   justify-content: center;
+  font-size: 30px;
+  border: 2px solid rgba(255, 255, 255, 0.35);
 }
 
-.cancelledCircle {
-  background: var(--danger-bg);
-  border: 1.5px solid var(--danger-border);
-  color: var(--danger);
-}
-
-.title {
-  font-size: 1.35rem;
-  font-weight: 700;
-  color: var(--text-h);
+.voucherTitle {
+  font-size: 1.5rem;
+  font-weight: 800;
   margin: 0;
+  letter-spacing: -0.5px;
 }
 
-.subtitle {
+.voucherSubtitle {
   font-size: 0.95rem;
-  color: var(--text-muted);
+  opacity: 0.9;
   margin: 0;
+  max-width: 440px;
 }
 
-.detailsCard {
-  background: var(--bg-card);
-  border: 1px solid var(--border);
-  border-radius: 16px;
-  padding: 20px;
-  box-shadow: var(--shadow-sm);
+.voucherBody {
+  padding: 28px;
   display: flex;
   flex-direction: column;
+  gap: 20px;
+}
+
+.detailGrid {
+  display: grid;
+  grid-template-columns: 1fr;
   gap: 16px;
 }
 
-.detailRow {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 10px 0;
-  border-bottom: 1px solid var(--border);
+@media (min-width: 520px) {
+  .detailGrid {
+    grid-template-columns: 1fr 1fr;
+  }
 }
 
-.detailRow:last-child {
-  border-bottom: none;
-  padding-bottom: 0;
+.detailItem {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 14px;
+  background: var(--bg-subtle);
+  border-radius: 14px;
+  border: 1px solid var(--border);
 }
 
 .detailLabel {
-  font-size: 0.85rem;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
   color: var(--text-muted);
+  font-weight: 600;
 }
 
 .detailValue {
-  font-size: 0.95rem;
-  font-weight: 600;
+  font-size: 1.05rem;
+  font-weight: 700;
   color: var(--text-h);
-  text-align: right;
 }
 
 .actionGrid {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 12px;
 }
 
 .primaryBtn {
   background: var(--accent);
   color: #ffffff;
   border: none;
-  padding: 14px;
-  border-radius: 10px;
-  font-weight: 600;
-  font-size: 0.95rem;
+  padding: 16px;
+  border-radius: 14px;
+  font-weight: 700;
+  font-size: 1rem;
   cursor: pointer;
   text-decoration: none;
   text-align: center;
-  transition: background 0.15s ease;
+  transition: all 0.15s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  box-shadow: 0 4px 14px rgba(15, 118, 110, 0.3);
 }
 
 .primaryBtn:hover {
   background: var(--accent-hover);
+  transform: translateY(-1px);
 }
 
 .secondaryBtn {
-  background: transparent;
+  background: var(--bg-card);
   color: var(--text-h);
   border: 1.5px solid var(--border);
   padding: 14px;
-  border-radius: 10px;
+  border-radius: 14px;
   font-weight: 600;
   font-size: 0.95rem;
   cursor: pointer;
@@ -135,15 +154,15 @@
 
 .secondaryBtn:hover {
   background: var(--bg-subtle);
-  border-color: var(--accent-border);
+  border-color: var(--accent);
 }
 
 .dangerBtn {
   background: transparent;
   color: var(--danger);
-  border: 1px solid var(--danger-border);
+  border: 1.5px solid var(--danger-border);
   padding: 12px;
-  border-radius: 10px;
+  border-radius: 14px;
   font-size: 0.9rem;
   font-weight: 600;
   cursor: pointer;
@@ -154,32 +173,35 @@
   background: var(--danger-bg);
 }
 
-.rescheduleBox {
+.rescheduleCard {
   background: var(--bg-card);
-  border: 1px solid var(--accent);
-  border-radius: 16px;
-  padding: 20px;
-  box-shadow: var(--shadow-md);
+  border: 2px solid var(--accent);
+  border-radius: 20px;
+  padding: 24px;
+  box-shadow: var(--shadow-lg);
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 16px;
 }
 
 .errorBanner {
   background: var(--danger-bg);
   border: 1px solid var(--danger-border);
   color: var(--danger);
-  padding: 12px 14px;
-  border-radius: 10px;
+  padding: 12px 16px;
+  border-radius: 12px;
   font-size: 0.9rem;
 }
 
-.infoNotice {
+.infoBox {
   background: var(--accent-bg);
   border: 1px solid var(--accent-border);
   color: var(--text-h);
-  padding: 12px 14px;
-  border-radius: 10px;
-  font-size: 0.85rem;
-  line-height: 1.45;
+  padding: 16px 20px;
+  border-radius: 16px;
+  font-size: 0.9rem;
+  line-height: 1.5;
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
 }

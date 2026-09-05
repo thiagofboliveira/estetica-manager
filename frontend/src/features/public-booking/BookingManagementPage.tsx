@@ -46,7 +46,6 @@ export function BookingManagementPage() {
       .finally(() => setLoading(false));
   }, [id, token]);
 
-  // Carrega horários ao abrir modo remarcação
   useEffect(() => {
     if (!isRescheduling || !booking?.professional_slug || !newDate) return;
 
@@ -85,7 +84,7 @@ export function BookingManagementPage() {
 
   const handleCancelBooking = async () => {
     if (!id || !token) return;
-    if (!window.confirm("Deseja realmente cancelar este agendamento?")) return;
+    if (!window.confirm("Deseja realmente cancelar este agendamento? O horário será liberado na agenda.")) return;
 
     setCancelling(true);
     try {
@@ -109,7 +108,7 @@ export function BookingManagementPage() {
     try {
       const date = new Date(iso);
       return date.toLocaleString("pt-BR", {
-        weekday: "short",
+        weekday: "long",
         day: "2-digit",
         month: "short",
         year: "numeric",
@@ -124,8 +123,10 @@ export function BookingManagementPage() {
   if (loading) {
     return (
       <div className={styles.wrapper}>
-        <div className={styles.container} style={{ textAlign: "center", paddingTop: "80px" }}>
-          <p style={{ color: "var(--text-muted)" }}>Carregando dados do agendamento...</p>
+        <div style={{ textAlign: "center", paddingTop: "100px" }}>
+          <p style={{ color: "var(--text-muted)", fontSize: "1.1rem" }}>
+            Localizando seu agendamento...
+          </p>
         </div>
       </div>
     );
@@ -134,7 +135,7 @@ export function BookingManagementPage() {
   if (error || !booking) {
     return (
       <div className={styles.wrapper}>
-        <div className={styles.container} style={{ textAlign: "center", paddingTop: "80px" }}>
+        <div style={{ textAlign: "center", paddingTop: "100px", maxWidth: "480px" }}>
           <div className={styles.errorBanner}>
             {error || "Agendamento não encontrado."}
           </div>
@@ -145,10 +146,9 @@ export function BookingManagementPage() {
 
   const isCancelled = booking.status === "CANCELLED";
 
-  // Link para Google Agenda
   const getGoogleCalendarUrl = () => {
     const start = new Date(booking.scheduled_at);
-    const end = new Date(start.getTime() + 60 * 60 * 1000); // 1 hora
+    const end = new Date(start.getTime() + 60 * 60 * 1000);
     const formatGCal = (d: Date) => d.toISOString().replace(/-|:|\.\d\d\d/g, "");
 
     const title = encodeURIComponent(
@@ -166,187 +166,206 @@ export function BookingManagementPage() {
   return (
     <div className={styles.wrapper}>
       <div className={styles.container}>
-        {/* Card de Status */}
-        <div className={styles.successCard}>
+        {/* Cartão Estilo Voucher de Confirmação */}
+        <div className={styles.voucherCard}>
           <div
-            className={`${styles.iconCircle} ${
-              isCancelled ? styles.cancelledCircle : ""
+            className={`${styles.voucherHeader} ${
+              isCancelled ? styles.voucherHeaderCancelled : ""
             }`}
           >
-            {isCancelled ? "✕" : "✓"}
-          </div>
-          <h1 className={styles.title}>
-            {isCancelled ? "Agendamento Cancelado" : "Agendamento Confirmado!"}
-          </h1>
-          <p className={styles.subtitle}>
-            {isCancelled
-              ? "Este horário foi liberado com sucesso."
-              : "Seu horário está reservado com exclusividade."}
-          </p>
-        </div>
-
-        {/* Detalhes da Reserva */}
-        <div className={styles.detailsCard}>
-          <div className={styles.detailRow}>
-            <span className={styles.detailLabel}>Profissional</span>
-            <span className={styles.detailValue}>{booking.professional_name}</span>
-          </div>
-
-          <div className={styles.detailRow}>
-            <span className={styles.detailLabel}>Procedimento</span>
-            <span className={styles.detailValue}>{booking.procedure_name || "Procedimento"}</span>
-          </div>
-
-          <div className={styles.detailRow}>
-            <span className={styles.detailLabel}>Data e Horário</span>
-            <span className={styles.detailValue}>
-              {formatScheduledDateTime(booking.scheduled_at)}
-            </span>
-          </div>
-
-          <div className={styles.detailRow}>
-            <span className={styles.detailLabel}>Paciente</span>
-            <span className={styles.detailValue}>{booking.patient_name}</span>
-          </div>
-
-          {booking.procedure_price && (
-            <div className={styles.detailRow}>
-              <span className={styles.detailLabel}>Valor Previsto</span>
-              <span className={styles.detailValue} style={{ color: "var(--accent)" }}>
-                R$ {parseFloat(booking.procedure_price).toFixed(2).replace(".", ",")}
-              </span>
+            <div className={styles.statusIcon}>
+              {isCancelled ? "✕" : "✓"}
             </div>
-          )}
-        </div>
+            <h1 className={styles.voucherTitle}>
+              {isCancelled ? "Agendamento Cancelado" : "Horário Confirmado com Sucesso!"}
+            </h1>
+            <p className={styles.voucherSubtitle}>
+              {isCancelled
+                ? "Este horário foi liberado. Caso queira, você pode realizar um novo agendamento a qualquer momento."
+                : `Olá, ${booking.patient_name}! Seu horário foi reservado exclusivamente com ${booking.professional_name}.`}
+            </p>
+          </div>
 
-        {/* Caixa de Remarcação */}
-        {isRescheduling && !isCancelled && (
-          <div className={styles.rescheduleBox}>
-            <h3 style={{ margin: 0, fontSize: "1rem", color: "var(--text-h)" }}>
-              Escolha uma nova data e horário
-            </h3>
+          <div className={styles.voucherBody}>
+            {/* Grade de Detalhes em 2 Colunas */}
+            <div className={styles.detailGrid}>
+              <div className={styles.detailItem}>
+                <span className={styles.detailLabel}>Procedimento</span>
+                <span className={styles.detailValue}>
+                  {booking.procedure_name || "Procedimento Estético"}
+                </span>
+              </div>
 
-            <input
-              type="date"
-              style={{
-                padding: "10px",
-                borderRadius: "8px",
-                border: "1px solid var(--border)",
-                fontSize: "1rem",
-              }}
-              value={newDate}
-              min={new Date().toISOString().split("T")[0]}
-              onChange={(e) => setNewDate(e.target.value)}
-            />
+              <div className={styles.detailItem}>
+                <span className={styles.detailLabel}>Profissional Responsável</span>
+                <span className={styles.detailValue}>
+                  {booking.professional_name}
+                </span>
+              </div>
 
-            {loadingSlots ? (
-              <p style={{ color: "var(--text-muted)", fontSize: "0.9rem" }}>
-                Verificando horários livres...
-              </p>
-            ) : availableSlots.length === 0 ? (
-              <p style={{ color: "var(--text-muted)", fontSize: "0.9rem" }}>
-                Sem vagas disponíveis neste dia. Escolha outra data.
-              </p>
-            ) : (
-              <div
-                style={{
-                  display: "grid",
-                  gridTemplateColumns: "repeat(auto-fill, minmax(80px, 1fr))",
-                  gap: "8px",
-                }}
-              >
-                {availableSlots.map((slot) => (
-                  <button
-                    type="button"
-                    key={slot}
-                    onClick={() => setSelectedSlot(slot)}
+              <div className={styles.detailItem}>
+                <span className={styles.detailLabel}>Data e Horário</span>
+                <span className={styles.detailValue} style={{ color: "var(--accent)" }}>
+                  {formatScheduledDateTime(booking.scheduled_at)}
+                </span>
+              </div>
+
+              <div className={styles.detailItem}>
+                <span className={styles.detailLabel}>Paciente</span>
+                <span className={styles.detailValue}>
+                  {booking.patient_name}
+                </span>
+              </div>
+
+              {booking.procedure_price && (
+                <div className={styles.detailItem}>
+                  <span className={styles.detailLabel}>Valor Previsto</span>
+                  <span className={styles.detailValue} style={{ color: "var(--accent)" }}>
+                    R$ {parseFloat(booking.procedure_price).toFixed(2).replace(".", ",")}
+                  </span>
+                </div>
+              )}
+
+              <div className={styles.detailItem}>
+                <span className={styles.detailLabel}>Status da Reserva</span>
+                <span className={styles.detailValue}>
+                  {isCancelled ? "Cancelado" : "Confirmado"}
+                </span>
+              </div>
+            </div>
+
+            {/* Caixa de Remarcação */}
+            {isRescheduling && !isCancelled && (
+              <div className={styles.rescheduleCard}>
+                <h3 style={{ margin: 0, fontSize: "1.1rem", color: "var(--text-h)" }}>
+                  🔄 Escolha a Nova Data e Horário
+                </h3>
+
+                <input
+                  type="date"
+                  style={{
+                    padding: "12px 14px",
+                    borderRadius: "10px",
+                    border: "1.5px solid var(--border)",
+                    fontSize: "1rem",
+                  }}
+                  value={newDate}
+                  min={new Date().toISOString().split("T")[0]}
+                  onChange={(e) => setNewDate(e.target.value)}
+                />
+
+                {loadingSlots ? (
+                  <p style={{ color: "var(--text-muted)", fontSize: "0.9rem" }}>
+                    Verificando novos horários vagos...
+                  </p>
+                ) : availableSlots.length === 0 ? (
+                  <p style={{ color: "var(--text-muted)", fontSize: "0.9rem" }}>
+                    Nenhum horário livre neste dia. Escolha outra data no campo acima.
+                  </p>
+                ) : (
+                  <div
                     style={{
-                      padding: "8px",
-                      borderRadius: "6px",
-                      border: "1.5px solid",
-                      borderColor: selectedSlot === slot ? "var(--accent)" : "var(--border)",
-                      background: selectedSlot === slot ? "var(--accent)" : "var(--bg-card)",
-                      color: selectedSlot === slot ? "#ffffff" : "var(--text-h)",
-                      fontWeight: 600,
-                      cursor: "pointer",
+                      display: "grid",
+                      gridTemplateColumns: "repeat(auto-fill, minmax(84px, 1fr))",
+                      gap: "8px",
                     }}
                   >
-                    {slot}
+                    {availableSlots.map((slot) => (
+                      <button
+                        type="button"
+                        key={slot}
+                        onClick={() => setSelectedSlot(slot)}
+                        style={{
+                          padding: "10px",
+                          borderRadius: "8px",
+                          border: "1.5px solid",
+                          borderColor: selectedSlot === slot ? "var(--accent)" : "var(--border)",
+                          background: selectedSlot === slot ? "var(--accent)" : "var(--bg-card)",
+                          color: selectedSlot === slot ? "#ffffff" : "var(--text-h)",
+                          fontWeight: 700,
+                          cursor: "pointer",
+                        }}
+                      >
+                        {slot}
+                      </button>
+                    ))}
+                  </div>
+                )}
+
+                {rescheduleError && <div className={styles.errorBanner}>{rescheduleError}</div>}
+
+                <div style={{ display: "flex", gap: "10px", marginTop: "8px" }}>
+                  <button
+                    type="button"
+                    className={styles.primaryBtn}
+                    style={{ flex: 1 }}
+                    onClick={handleConfirmReschedule}
+                    disabled={rescheduling || !selectedSlot}
+                  >
+                    {rescheduling ? "Salvando..." : "Confirmar Novo Horário"}
                   </button>
-                ))}
+                  <button
+                    type="button"
+                    className={styles.secondaryBtn}
+                    onClick={() => setIsRescheduling(false)}
+                  >
+                    Voltar
+                  </button>
+                </div>
               </div>
             )}
 
-            {rescheduleError && <div className={styles.errorBanner}>{rescheduleError}</div>}
+            {/* Ações */}
+            {!isCancelled && !isRescheduling && (
+              <div className={styles.actionGrid}>
+                <a
+                  href={getGoogleCalendarUrl()}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className={styles.primaryBtn}
+                >
+                  📅 Adicionar ao Meu Google Agenda
+                </a>
 
-            <div style={{ display: "flex", gap: "10px", marginTop: "6px" }}>
-              <button
-                type="button"
+                <button type="button" className={styles.secondaryBtn} onClick={copyShareLink}>
+                  {copied ? "✓ Link Copiado com Sucesso!" : "🔗 Salvar Link Deste Agendamento (WhatsApp)"}
+                </button>
+
+                <button
+                  type="button"
+                  className={styles.secondaryBtn}
+                  onClick={() => setIsRescheduling(true)}
+                >
+                  🔄 Preciso Remarcar Meu Horário
+                </button>
+
+                <button
+                  type="button"
+                  className={styles.dangerBtn}
+                  onClick={handleCancelBooking}
+                  disabled={cancelling}
+                >
+                  {cancelling ? "Cancelando..." : "Cancelar Agendamento"}
+                </button>
+              </div>
+            )}
+
+            {isCancelled && booking.professional_slug && (
+              <Link
+                to={`/agendar/${booking.professional_slug}`}
                 className={styles.primaryBtn}
-                style={{ flex: 1 }}
-                onClick={handleConfirmReschedule}
-                disabled={rescheduling || !selectedSlot}
               >
-                {rescheduling ? "Salvando..." : "Confirmar Novo Horário"}
-              </button>
-              <button
-                type="button"
-                className={styles.secondaryBtn}
-                onClick={() => setIsRescheduling(false)}
-              >
-                Voltar
-              </button>
-            </div>
+                Fazer um Novo Agendamento
+              </Link>
+            )}
           </div>
-        )}
+        </div>
 
-        {/* Botões de Ação */}
-        {!isCancelled && !isRescheduling && (
-          <div className={styles.actionGrid}>
-            <a
-              href={getGoogleCalendarUrl()}
-              target="_blank"
-              rel="noopener noreferrer"
-              className={styles.primaryBtn}
-            >
-              📅 Adicionar ao Google Agenda
-            </a>
-
-            <button type="button" className={styles.secondaryBtn} onClick={copyShareLink}>
-              {copied ? "✓ Link copiado para a área de transferência!" : "🔗 Salvar Link Deste Agendamento"}
-            </button>
-
-            <button
-              type="button"
-              className={styles.secondaryBtn}
-              onClick={() => setIsRescheduling(true)}
-            >
-              🔄 Remarcar Data / Horário
-            </button>
-
-            <button
-              type="button"
-              className={styles.dangerBtn}
-              onClick={handleCancelBooking}
-              disabled={cancelling}
-            >
-              {cancelling ? "Cancelando..." : "Cancelar Agendamento"}
-            </button>
+        <div className={styles.infoBox}>
+          <span style={{ fontSize: "1.25rem" }}>💡</span>
+          <div>
+            <strong>Dica Importante:</strong> Guarde este link com você! Por meio dele você pode acompanhar, remarcar ou cancelar seu horário a qualquer momento sem precisar de senha ou aplicativo.
           </div>
-        )}
-
-        {isCancelled && booking.professional_slug && (
-          <Link
-            to={`/agendar/${booking.professional_slug}`}
-            className={styles.primaryBtn}
-            style={{ textAlign: "center", display: "block" }}
-          >
-            Fazer um Novo Agendamento
-          </Link>
-        )}
-
-        <div className={styles.infoNotice}>
-          💡 <strong>Dica:</strong> Guarde este link nos seus favoritos ou no WhatsApp para poder consultar, remarcar ou cancelar seu agendamento a qualquer momento.
         </div>
       </div>
     </div>
