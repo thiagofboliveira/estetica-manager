@@ -18,6 +18,7 @@ from app.db.session import get_tenant_session, unsafe_session_without_tenant
 from app.models.user import User
 from app.repositories.booking import BookingRepository
 from app.repositories.clinic import ClinicRepository
+from app.repositories.event import EventRepository
 from app.repositories.financial_settings import FinancialSettingsRepository
 from app.repositories.fixed_expense import FixedExpenseRepository
 from app.repositories.patient import PatientRepository
@@ -34,6 +35,7 @@ from app.services.attribution_service import AttributionService
 from app.services.booking_service import BookingService
 from app.services.clinic_service import ClinicService
 from app.services.dashboard_service import DashboardService
+from app.services.event_service import EventService
 from app.services.expenses_by_category_service import ExpensesByCategoryService
 from app.services.export_service import ExportService
 from app.services.financial_settings_service import FinancialSettingsService
@@ -152,6 +154,12 @@ def require_superadmin(user: CurrentUser) -> User:
 AdminUser = Annotated[User, Depends(require_admin)]
 SuperAdminUser = Annotated[User, Depends(require_superadmin)]
 GlobalSuperAdminUser = Annotated[User, Depends(require_superadmin)]
+
+
+def get_event_service(
+    session: DbSession, professional_id: CurrentProfessional
+) -> EventService:
+    return EventService(EventRepository(session, professional_id))
 
 
 def get_patient_service(
@@ -312,6 +320,7 @@ def get_export_service(
     )
 
 
+EventSvc = Annotated[EventService, Depends(get_event_service)]
 PatientSvc = Annotated[PatientService, Depends(get_patient_service)]
 ProcedureSvc = Annotated[ProcedureService, Depends(get_procedure_service)]
 FinancialSettingsSvc = Annotated[

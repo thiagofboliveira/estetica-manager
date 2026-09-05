@@ -3,7 +3,8 @@ from uuid import UUID
 
 from fastapi import APIRouter, Header, HTTPException, Response, status
 
-from app.api.deps import SaleSvc
+from app.api.deps import EventSvc, SaleSvc
+from app.domain.events import EventName
 from app.models.sale_item import SaleItem
 from app.models.session import Session as SessionModel
 from app.schemas.sale import SaleCreate, SaleItemOut, SaleOut, SessionOut
@@ -31,6 +32,7 @@ def create_sale(
     payload: SaleCreate,
     svc: SaleSvc,
     response: Response,
+    events: EventSvc,
     idempotency_key: Annotated[str | None, Header(alias="Idempotency-Key")] = None,
 ) -> SaleOut:
     """T-015/T-015a — contrato C-1 de idempotência: mesma Idempotency-Key
@@ -64,6 +66,10 @@ def create_sale(
     response.status_code = (
         status.HTTP_200_OK if was_existing else status.HTTP_201_CREATED
     )
+    if not was_existing:
+        # Só na criação genuína — idempotência devolvendo a mesma venda
+        # (200) não é uma "primeira venda" nova acontecendo de novo.
+        events.track_first(EventName.FIRST_SALE_RECORDED)
     return _to_sale_out(svc, sale)
 
 

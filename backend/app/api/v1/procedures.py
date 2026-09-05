@@ -2,8 +2,9 @@ from uuid import UUID
 
 from fastapi import APIRouter, HTTPException, Query, status
 
-from app.api.deps import ProcedureSvc
+from app.api.deps import EventSvc, ProcedureSvc
 from app.domain.catalog.procedure_templates import list_procedure_templates
+from app.domain.events import EventName
 from app.models.procedure import SessionPlan
 from app.schemas.procedure import (
     ProcedureCreate,
@@ -22,8 +23,14 @@ router = APIRouter(prefix="/procedures", tags=["procedures"])
 
 
 @router.post("", response_model=ProcedureOut, status_code=status.HTTP_201_CREATED)
-def create_procedure(payload: ProcedureCreate, svc: ProcedureSvc) -> ProcedureOut:
-    return ProcedureOut.model_validate(svc.create(payload))
+def create_procedure(
+    payload: ProcedureCreate, svc: ProcedureSvc, events: EventSvc
+) -> ProcedureOut:
+    procedure = svc.create(payload)
+    # G-13: emitido na rota, não no service — evita alterar a assinatura
+    # de ProcedureService (e seus testes) só para injetar telemetria.
+    events.track_first(EventName.FIRST_PROCEDURE_CREATED)
+    return ProcedureOut.model_validate(procedure)
 
 
 @router.get("/templates", response_model=list[ProcedureTemplateOut])
