@@ -68,7 +68,7 @@ export function BookingManagementPage() {
     setRescheduleError(null);
 
     try {
-      const scheduledDateTime = `${newDate}T${selectedSlot}:00Z`;
+      const scheduledDateTime = `${newDate}T${selectedSlot}:00`;
       const updated = await publicBookingApi.rescheduleBooking(id, token, {
         scheduled_at: scheduledDateTime,
       });

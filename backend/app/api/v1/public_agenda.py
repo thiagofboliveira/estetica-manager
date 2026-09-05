@@ -8,6 +8,7 @@ geram um `management_token` seguro para consulta, remarcação e cancelamento pe
 from datetime import UTC, date, datetime, timedelta
 from typing import Annotated
 from uuid import UUID
+from zoneinfo import ZoneInfo
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from sqlalchemy import select
@@ -213,6 +214,16 @@ def get_public_slots(
         return [s.strftime("%H:%M") for s in slots]
 
 
+def _normalize_to_utc(dt: datetime, tz: ZoneInfo) -> datetime:
+    """Normaliza um datetime para UTC.
+    Se naive (sem tzinfo), assume o fuso horário da profissional.
+    Se aware (com tzinfo), converte diretamente para UTC.
+    """
+    if dt.tzinfo is None:
+        return dt.replace(tzinfo=tz).astimezone(UTC)
+    return dt.astimezone(UTC)
+
+
 @router.post(
     "/agenda/{slug}/bookings",
     response_model=PublicBookingOut,
@@ -224,15 +235,21 @@ def create_public_booking(
     _rate_limit: PublicBookingRateLimit,
 ) -> PublicBookingOut:
     """Cria um agendamento público sem necessidade de senha para o paciente."""
-    if body.scheduled_at <= datetime.now(UTC):
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="O horário de agendamento deve ser futuro.",
-        )
-
     prof_id, prof_name, _, prof_slug, *_ = _resolve_slug(slug)
 
     with tenant_session(prof_id) as session:
+        prof_model = ProfessionalRepository(session, prof_id).get_by_id(prof_id)
+        tz_name = prof_model.timezone if prof_model and prof_model.timezone else "America/Sao_Paulo"
+        tz = ZoneInfo(tz_name)
+
+        scheduled_utc = _normalize_to_utc(body.scheduled_at, tz)
+
+        if scheduled_utc <= datetime.now(UTC):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="O horário de agendamento deve ser futuro.",
+            )
+
         # Valida se o procedimento existe e está ativo
         proc_repo = ProcedureRepository(session, prof_id)
         proc = proc_repo.get(body.procedure_id)
@@ -245,8 +262,8 @@ def create_public_booking(
         booking_svc = _build_booking_service(session, prof_id)
 
         # Checa conflito estrito para auto-agendamento de bio
-        session_conflicts = booking_svc._sessions.find_conflicts(body.scheduled_at)
-        booking_conflicts = booking_svc._bookings.find_conflicts(body.scheduled_at)
+        session_conflicts = booking_svc._sessions.find_conflicts(scheduled_utc)
+        booking_conflicts = booking_svc._bookings.find_conflicts(scheduled_utc)
         if session_conflicts or booking_conflicts:
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
@@ -257,7 +274,7 @@ def create_public_booking(
             patient_name_hint=body.patient_name.strip(),
             patient_phone=body.patient_phone.strip(),
             procedure_id=body.procedure_id,
-            scheduled_at=body.scheduled_at,
+            scheduled_at=scheduled_utc,
             note=body.note.strip() if body.note else None,
         )
 
@@ -334,10 +351,16 @@ def reschedule_public_booking(
                 )
 
         try:
+            prof_model = ProfessionalRepository(session, prof_id).get_by_id(prof_id)
+            tz_name = prof_model.timezone if prof_model and prof_model.timezone else "America/Sao_Paulo"
+            tz = ZoneInfo(tz_name)
+
+            new_time_utc = _normalize_to_utc(body.scheduled_at, tz) if body.scheduled_at else None
+
             booking = booking_svc.reschedule_by_token(
                 booking_id=booking_id,
                 token=token,
-                new_time=body.scheduled_at,
+                new_time=new_time_utc,
                 new_procedure_id=body.procedure_id,
                 note=body.note,
             )

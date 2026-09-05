@@ -187,7 +187,7 @@ class SessionService:
 
         scheduled_sessions = self._sessions.list_scheduled_in_range(start_dt, end_dt)
         scheduled_bookings = self._bookings.list_in_range(
-            start_dt, end_dt, status=SessionStatus.SCHEDULED
+            start_dt, end_dt, status=BookingStatus.SCHEDULED
         )
 
         agenda: list[AgendaItemOut] = []
@@ -237,6 +237,7 @@ class SessionService:
                     sequence_number=sess.sequence_number,
                     total_sessions=sale_item.quantity,
                     note=sess.notes,
+                    confirmed_at=sess.confirmed_at,
                 )
             )
 
@@ -244,7 +245,8 @@ class SessionService:
             p_name = (
                 b.patient.name if b.patient else (b.patient_name_hint or "Contato novo")
             )
-            p_phone = b.patient.phone if b.patient else None
+            p_phone = b.patient.phone if b.patient else (b.patient_phone or None)
+            proc_name = b.procedure.name if b.procedure else "Agendamento Provisório"
             agenda.append(
                 AgendaItemOut(
                     id=b.id,
@@ -252,11 +254,12 @@ class SessionService:
                     patient_id=b.patient_id,
                     patient_name=p_name,
                     patient_phone=p_phone,
-                    procedure_name="Agendamento Provisório",
+                    procedure_name=proc_name,
                     scheduled_at=b.scheduled_at,
                     modality=b.modality,
                     status=b.status.value,
                     note=b.note,
+                    confirmed_at=b.confirmed_at,
                 )
             )
 

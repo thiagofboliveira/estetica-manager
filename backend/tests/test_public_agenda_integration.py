@@ -65,8 +65,12 @@ def test_public_agenda_and_booking_flow():
     assert len(available_slots) >= 2, "A agenda deve retornar slots livres configurados"
 
     # 4. Cria agendamento público no primeiro slot disponível
+    # Os slots retornados por get_public_slots são horários locais da profissional (America/Sao_Paulo)
+    from zoneinfo import ZoneInfo
+    sp_tz = ZoneInfo("America/Sao_Paulo")
+
     first_slot_time = datetime.strptime(available_slots[0], "%H:%M").time()
-    scheduled_time = datetime.combine(target_day, first_slot_time).replace(tzinfo=UTC)
+    scheduled_time = datetime.combine(target_day, first_slot_time).replace(tzinfo=sp_tz).astimezone(UTC)
 
     booking_payload = {
         "procedure_id": procedure_id,
@@ -88,6 +92,60 @@ def test_public_agenda_and_booking_flow():
     assert booking["patient_phone"] == "11988887777"
     assert booking["status"] == "SCHEDULED"
     assert len(management_token) >= 20
+
+    # 4.1. O horário agendado DEVE SUMIR dos slots livres públicos daquele dia
+    updated_slots_resp = client.get(
+        f"/api/v1/public/agenda/{test_slug}/slots",
+        params={"date": target_day.isoformat()},
+    )
+    assert updated_slots_resp.status_code == 200
+    updated_slots = updated_slots_resp.json()
+    assert available_slots[0] not in updated_slots, (
+        f"O horário {available_slots[0]} deve ter sido removido dos slots públicos após ser agendado"
+    )
+
+    # 4.2. O agendamento DEVE APARECER na agenda privada da profissional
+    agenda_resp = client.get(
+        "/api/v1/sessions",
+        params={"from": target_day.isoformat(), "to": target_day.isoformat()},
+        headers=auth_headers,
+    )
+    assert agenda_resp.status_code == 200
+    private_agenda_items = agenda_resp.json()
+    matched_booking = next((item for item in private_agenda_items if item["id"] == str(booking_id)), None)
+    assert matched_booking is not None, "O booking público deve constar na agenda da profissional"
+    assert matched_booking["type"] == "BOOKING"
+    assert matched_booking["patient_name"] == "Juliana Silveira"
+    assert matched_booking["procedure_name"] == "Limpeza de Pele Profunda"
+    assert matched_booking["status"] == "SCHEDULED"
+    assert matched_booking["confirmed_at"] is None
+
+    # 4.3. Profissional confirma o agendamento
+    confirm_resp = client.post(
+        f"/api/v1/bookings/{booking_id}/confirm",
+        headers=auth_headers,
+    )
+    assert confirm_resp.status_code == 200, confirm_resp.text
+    confirmed_data = confirm_resp.json()
+    assert confirmed_data["confirmed_at"] is not None
+
+    # 4.4. A agenda privada agora deve refletir confirmed_at preenchido
+    agenda_resp_after_confirm = client.get(
+        "/api/v1/sessions",
+        params={"from": target_day.isoformat(), "to": target_day.isoformat()},
+        headers=auth_headers,
+    )
+    assert agenda_resp_after_confirm.status_code == 200
+    matched_confirmed = next((item for item in agenda_resp_after_confirm.json() if item["id"] == str(booking_id)), None)
+    assert matched_confirmed is not None
+    assert matched_confirmed["confirmed_at"] is not None
+
+    # 4.5. A agenda pública continua marcando o slot como ocupado
+    slots_resp_after_confirm = client.get(
+        f"/api/v1/public/agenda/{test_slug}/slots",
+        params={"date": target_day.isoformat()},
+    )
+    assert available_slots[0] not in slots_resp_after_confirm.json()
 
     # 5. Tentativa de agendamento duplicado no mesmo horário (deve retornar 409 Conflict)
     conflict_resp = client.post(
@@ -120,8 +178,8 @@ def test_public_agenda_and_booking_flow():
         # 7. Paciente remarca para outro slot disponível
         second_slot_time = datetime.strptime(available_slots[1], "%H:%M").time()
         new_scheduled_time = datetime.combine(target_day, second_slot_time).replace(
-            tzinfo=UTC
-        )
+            tzinfo=sp_tz
+        ).astimezone(UTC)
 
         reschedule_resp = client.patch(
             f"/api/v1/public/bookings/{booking_id}/reschedule",

@@ -1,4 +1,4 @@
-﻿import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect } from "react";
 import type { AgendaItem, SessionStatus } from "./api";
 import { formatLocalDate } from "@/lib/format/date";
 import { IconCalendar, IconCheck, IconPlus, IconSparkles, IconAlertTriangle } from "@/ui/icons";
@@ -431,9 +431,16 @@ export function VisualTimelineAgenda({
                                 <span style={{ fontSize: "13px", fontWeight: "700", color: "var(--text-h)" }}>{timeFormatted}</span>
                                 <span className={styles.patientName}>{item.patient_name}</span>
                               </div>
-                              <span className={styles.badgeModality}>
-                                {item.modality === "REMOTE" ? "Remoto" : "Presencial"}
-                              </span>
+                              <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                                {item.confirmed_at && (
+                                  <span style={{ fontSize: "11px", fontWeight: "600", padding: "2px 6px", borderRadius: "4px", background: "var(--success-bg)", color: "var(--success)", display: "inline-flex", alignItems: "center", gap: "3px" }}>
+                                    <IconCheck width="12" height="12" /> Confirmado
+                                  </span>
+                                )}
+                                <span className={styles.badgeModality}>
+                                  {item.modality === "REMOTE" ? "Remoto" : "Presencial"}
+                                </span>
+                              </div>
                             </div>
 
                             <div className={styles.cardBody}>

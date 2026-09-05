@@ -26,6 +26,7 @@ export type AgendaItem = {
   sequence_number: number | null;
   total_sessions: number | null;
   note: string | null;
+  confirmed_at: string | null;
 };
 
 export type OpenPackage = {

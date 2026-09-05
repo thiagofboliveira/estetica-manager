@@ -159,7 +159,7 @@ export function PublicBookingPage() {
     setSubmitError(null);
 
     try {
-      const scheduledDateTime = `${selectedDate}T${selectedSlot}:00Z`;
+      const scheduledDateTime = `${selectedDate}T${selectedSlot}:00`;
 
       const booking = await publicBookingApi.createBooking(slug, {
         procedure_id: selectedProcedure.id,
