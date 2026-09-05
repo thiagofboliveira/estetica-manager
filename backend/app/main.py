@@ -27,6 +27,24 @@ from app.core.config import settings
 from app.db.session import unsafe_session_without_tenant
 from app.repositories.user import UserRepository
 
+# G-08: Observabilidade e telemetria de erros via Sentry em produção.
+# Se SENTRY_DSN não for informado, a telemetria não é inicializada (fail-safe).
+if settings.SENTRY_DSN:
+    import sentry_sdk
+    from sentry_sdk.integrations.fastapi import FastApiIntegration
+    from sentry_sdk.integrations.sqlalchemy import SqlalchemyIntegration
+
+    sentry_sdk.init(
+        dsn=settings.SENTRY_DSN,
+        environment=settings.ENV,
+        traces_sample_rate=settings.SENTRY_TRACES_SAMPLE_RATE,
+        send_default_pii=False,  # LGPD: nunca coletar dados pessoais de pacientes/usuárias
+        integrations=[
+            FastApiIntegration(),
+            SqlalchemyIntegration(),
+        ],
+    )
+
 app = FastAPI(title="Estetica API", version="0.1.0")
 
 # B-04: sem isto, front e back em domínios diferentes (o cenário normal

@@ -13,6 +13,7 @@
   },
   "dependencies": {
     "@hookform/resolvers": "^5.9.1",
+    "@sentry/react": "^10.73.0",
     "@supabase/supabase-js": "^2.112.4",
     "@tanstack/react-query": "^5.102.8",
     "decimal.js": "^10.6.0",

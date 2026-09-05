@@ -50,6 +50,11 @@ class Settings(BaseSettings):
     # adivinhasse a URL. Configuração ausente nunca deve liberar.
     ENV: str = "production"
 
+    # G-08: Monitoramento de erros e telemetria via Sentry.
+    # Se vazio, a telemetria fica desativada de forma segura (fail-safe).
+    SENTRY_DSN: str = ""
+    SENTRY_TRACES_SAMPLE_RATE: float = 0.1
+
     # Só tem efeito com ENV=development — ver core/security.py.
     # Nunca definir em produção: nesse modo o token não é validado contra
     # o Supabase, só assinado com HS256 usando este segredo local.
