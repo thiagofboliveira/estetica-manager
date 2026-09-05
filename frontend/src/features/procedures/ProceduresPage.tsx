@@ -6,6 +6,7 @@ import { formatBRL } from "@/lib/money/format";
 import { money } from "@/lib/money/money";
 import type { SessionPlan } from "./api";
 import { useProceduresPage } from "./hooks";
+import { getProcedurePhoto } from "@/features/public-booking/procedureImages";
 
 const PAGE_SIZE = 20;
 
@@ -92,27 +93,42 @@ export function ProceduresPage() {
           return (
             <>
               <ul className="list">
-                {result.items.map((p) => (
-                  <li key={p.id} className="list__item">
-                    <button className="list__item-btn tap-target" onClick={() => navigate(p.id)}>
-                      <div className="list__item-main">
-                        <span className="list__item-title">{p.name}</span>
-                        <span className="list__item-badge">
-                          {p.type === "PRODUCT"
-                            ? "📦 Produto"
-                            : p.default_modality === "REMOTE"
-                              ? "💻 Remoto"
-                              : "📍 Presencial"}
-                        </span>
-                        {p.is_invasive && <span className="list__item-badge">⚠️ Invasivo</span>}
-                        {p.session_plan === "MULTIPLE" && (
-                          <span className="list__item-badge">🔁 Múltiplas sessões</span>
-                        )}
-                      </div>
-                      <span className="list__item-sub">{formatBRL(money(p.price))}</span>
-                    </button>
-                  </li>
-                ))}
+                {result.items.map((p) => {
+                  const photo = p.image_url || getProcedurePhoto(p.name);
+                  return (
+                    <li key={p.id} className="list__item">
+                      <button className="list__item-btn tap-target" onClick={() => navigate(p.id)} style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                        <img
+                          src={photo}
+                          alt=""
+                          style={{
+                            width: "44px",
+                            height: "44px",
+                            borderRadius: "8px",
+                            objectFit: "cover",
+                            flexShrink: 0,
+                            border: "1px solid #e2e8f0",
+                          }}
+                        />
+                        <div className="list__item-main" style={{ flex: 1 }}>
+                          <span className="list__item-title">{p.name}</span>
+                          <span className="list__item-badge">
+                            {p.type === "PRODUCT"
+                              ? "📦 Produto"
+                              : p.default_modality === "REMOTE"
+                                ? "💻 Remoto"
+                                : "📍 Presencial"}
+                          </span>
+                          {p.is_invasive && <span className="list__item-badge">⚠️ Invasivo</span>}
+                          {p.session_plan === "MULTIPLE" && (
+                            <span className="list__item-badge">🔁 Múltiplas sessões</span>
+                          )}
+                        </div>
+                        <span className="list__item-sub">{formatBRL(money(p.price))}</span>
+                      </button>
+                    </li>
+                  );
+                })}
               </ul>
 
               {totalPages > 1 && (

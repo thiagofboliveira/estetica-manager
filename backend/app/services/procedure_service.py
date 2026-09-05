@@ -36,6 +36,7 @@ class ProcedureService:
             else None,
             is_invasive=dto.is_invasive,
             session_plan=dto.session_plan,
+            image_url=dto.image_url,
         )
         return self._repo.add(procedure)
 
@@ -72,6 +73,7 @@ class ProcedureService:
             return_interval_days=return_interval_days,
             default_modality=dto.default_modality,
             split_override=dto.split_override,
+            image_url=dto.image_url,
         )
         return self.create(create_dto)
 

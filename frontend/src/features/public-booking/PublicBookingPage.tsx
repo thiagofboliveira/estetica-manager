@@ -34,6 +34,11 @@ export function PublicBookingPage() {
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
 
+  // Busca, Dropdown e Paginação de Procedimentos
+  const [searchTerm, setSearchTerm] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const ITEMS_PER_PAGE = 6;
+
   // Carrega informações públicas da profissional
   useEffect(() => {
     if (!slug) return;
@@ -51,6 +56,42 @@ export function PublicBookingPage() {
       })
       .finally(() => setLoadingProfile(false));
   }, [slug]);
+
+  // Lista filtrada por busca
+  const filteredProcedures = useMemo(() => {
+    if (!profile) return [];
+    const term = searchTerm.trim().toLowerCase();
+    if (!term) return profile.procedures;
+    return profile.procedures.filter((p) =>
+      p.name.toLowerCase().includes(term)
+    );
+  }, [profile, searchTerm]);
+
+  // Total de páginas
+  const totalPages = Math.max(1, Math.ceil(filteredProcedures.length / ITEMS_PER_PAGE));
+
+  // Itens da página atual
+  const paginatedProcedures = useMemo(() => {
+    const start = (currentPage - 1) * ITEMS_PER_PAGE;
+    return filteredProcedures.slice(start, start + ITEMS_PER_PAGE);
+  }, [filteredProcedures, currentPage]);
+
+  // Ao alterar a busca, reinicia para página 1
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm]);
+
+  const handleDropdownSelect = (procId: string) => {
+    if (!procId) return;
+    const found = profile?.procedures.find((p) => p.id === procId);
+    if (found) {
+      setSelectedProcedure(found);
+      const index = filteredProcedures.findIndex((p) => p.id === procId);
+      if (index !== -1) {
+        setCurrentPage(Math.floor(index / ITEMS_PER_PAGE) + 1);
+      }
+    }
+  };
 
   // Carrega horários disponíveis para a data selecionada
   useEffect(() => {
@@ -186,9 +227,22 @@ export function PublicBookingPage() {
               <div className={styles.profileCover} />
               <div className={styles.profileContent}>
                 <div className={styles.avatar}>
-                  {profile.name.charAt(0).toUpperCase()}
+                  {profile.avatar_url ? (
+                    <img
+                      src={profile.avatar_url}
+                      alt={profile.name}
+                      className={styles.avatarImg}
+                      onError={(e) => {
+                        (e.target as HTMLElement).style.display = "none";
+                      }}
+                    />
+                  ) : null}
+                  {!profile.avatar_url && profile.name.charAt(0).toUpperCase()}
                 </div>
                 <h1 className={styles.profName}>{profile.name}</h1>
+                <div className={styles.specialtyBadge}>
+                  {profile.specialty || "Especialista em Estética Avançada"}
+                </div>
                 <div className={styles.verifiedBadge}>
                   ✓ Agenda Verificada Lumina
                 </div>
@@ -231,7 +285,7 @@ export function PublicBookingPage() {
 
           {/* COLUNA DIREITA: Fluxo de Agendamento Harmonizado */}
           <main className={styles.contentCol}>
-            {/* 1. Seleção de Procedimento com Fotos */}
+            {/* 1. Seleção de Procedimento com Fotos, Busca e Paginação */}
             <section className={styles.sectionCard}>
               <div className={styles.sectionHeader}>
                 <h2 className={styles.sectionTitle}>
@@ -239,51 +293,160 @@ export function PublicBookingPage() {
                   Selecione o Procedimento
                 </h2>
                 <span style={{ fontSize: "0.85rem", color: "var(--text-muted)" }}>
-                  {profile.procedures.length} procedimentos disponíveis
+                  {filteredProcedures.length} {filteredProcedures.length === 1 ? "serviço" : "serviços"} disponíveis
                 </span>
               </div>
 
-              <div className={styles.procedureGrid}>
-                {profile.procedures.map((proc) => {
-                  const isSelected = selectedProcedure?.id === proc.id;
-                  const photoUrl = getProcedurePhoto(proc.name);
-
-                  return (
-                    <div
-                      key={proc.id}
-                      className={`${styles.procedureCard} ${
-                        isSelected ? styles.procedureCardSelected : ""
-                      }`}
-                      onClick={() => setSelectedProcedure(proc)}
+              {/* Barra de Busca e Dropdown de Lista Rápida */}
+              <div className={styles.procedureFilterBar}>
+                <div className={styles.searchBox}>
+                  <span className={styles.searchIcon}>🔍</span>
+                  <input
+                    type="text"
+                    className={styles.searchInput}
+                    placeholder="Pesquisar por nome do procedimento..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                  />
+                  {searchTerm && (
+                    <button
+                      type="button"
+                      onClick={() => setSearchTerm("")}
+                      style={{
+                        position: "absolute",
+                        right: "10px",
+                        top: "50%",
+                        transform: "translateY(-50%)",
+                        background: "none",
+                        border: "none",
+                        color: "var(--text-muted)",
+                        cursor: "pointer",
+                        fontSize: "0.85rem",
+                      }}
+                      title="Limpar pesquisa"
                     >
-                      <div className={styles.procImageWrapper}>
-                        <img
-                          src={photoUrl}
-                          alt={proc.name}
-                          className={styles.procImage}
-                          loading="lazy"
-                        />
-                        <span className={styles.planTag}>
-                          {proc.session_plan === "SINGLE" ? "Sessão Única" : "Plano de Sessões"}
-                        </span>
-                      </div>
+                      ✕
+                    </button>
+                  )}
+                </div>
 
-                      <div className={styles.procBody}>
-                        <h3 className={styles.procName}>{proc.name}</h3>
+                <select
+                  className={styles.filterSelect}
+                  value={selectedProcedure?.id || ""}
+                  onChange={(e) => handleDropdownSelect(e.target.value)}
+                  aria-label="Selecionar procedimento pelo menu"
+                >
+                  <option value="">-- Ou escolha na lista suspensa --</option>
+                  {profile.procedures.map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.name} (R$ {parseFloat(p.price).toFixed(2).replace(".", ",")})
+                    </option>
+                  ))}
+                </select>
+              </div>
 
-                        <div className={styles.procFooter}>
-                          <span className={styles.procPrice}>
-                            R$ {parseFloat(proc.price).toFixed(2).replace(".", ",")}
-                          </span>
-                          <span className={styles.selectIndicator}>
-                            {isSelected ? "● Selecionado" : "Selecionar"}
+              {/* Grid de Procedimentos Paginados */}
+              {paginatedProcedures.length > 0 ? (
+                <div className={styles.procedureGrid}>
+                  {paginatedProcedures.map((proc) => {
+                    const isSelected = selectedProcedure?.id === proc.id;
+                    const photoUrl = proc.image_url || getProcedurePhoto(proc.name);
+
+                    return (
+                      <div
+                        key={proc.id}
+                        className={`${styles.procedureCard} ${
+                          isSelected ? styles.procedureCardSelected : ""
+                        }`}
+                        onClick={() => {
+                          setSelectedProcedure(proc);
+                        }}
+                      >
+                        <div className={styles.procImageWrapper}>
+                          <img
+                            src={photoUrl}
+                            alt={proc.name}
+                            className={styles.procImage}
+                            loading="lazy"
+                          />
+                          <span className={styles.planTag}>
+                            {proc.session_plan === "SINGLE" ? "Sessão Única" : "Plano de Sessões"}
                           </span>
                         </div>
+
+                        <div className={styles.procBody}>
+                          <h3 className={styles.procName}>{proc.name}</h3>
+
+                          <div className={styles.procFooter}>
+                            <span className={styles.procPrice}>
+                              R$ {parseFloat(proc.price).toFixed(2).replace(".", ",")}
+                            </span>
+                            <span className={styles.selectIndicator}>
+                              {isSelected ? "● Selecionado" : "Selecionar"}
+                            </span>
+                          </div>
+                        </div>
                       </div>
-                    </div>
-                  );
-                })}
-              </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className={styles.emptySearch}>
+                  <p>Nenhum procedimento encontrado para "<strong>{searchTerm}</strong>".</p>
+                  <button
+                    type="button"
+                    className={styles.clearSearchBtn}
+                    onClick={() => setSearchTerm("")}
+                  >
+                    Limpar pesquisa
+                  </button>
+                </div>
+              )}
+
+              {/* Controles de Paginação */}
+              {totalPages > 1 && (
+                <div className={styles.paginationRow}>
+                  <span className={styles.paginationInfo}>
+                    Página {currentPage} de {totalPages} ({filteredProcedures.length} procedimentos)
+                  </span>
+
+                  <div className={styles.paginationControls}>
+                    <button
+                      type="button"
+                      className={styles.pageBtn}
+                      onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                      disabled={currentPage === 1}
+                    >
+                      ← Anterior
+                    </button>
+
+                    {Array.from({ length: totalPages }).map((_, idx) => {
+                      const pageNum = idx + 1;
+                      return (
+                        <button
+                          key={pageNum}
+                          type="button"
+                          className={`${styles.pageNumber} ${
+                            pageNum === currentPage ? styles.pageNumberActive : ""
+                          }`}
+                          onClick={() => setCurrentPage(pageNum)}
+                        >
+                          {pageNum}
+                        </button>
+                      );
+                    })}
+
+                    <button
+                      type="button"
+                      className={styles.pageBtn}
+                      onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                      disabled={currentPage === totalPages}
+                    >
+                      Próxima →
+                    </button>
+                  </div>
+                </div>
+              )}
             </section>
 
             {/* 2. Seleção de Data e Horário */}

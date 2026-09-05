@@ -9,6 +9,8 @@ export function PublicBookingBanner() {
 
   const [slugInput, setSlugInput] = useState(user?.slug || "");
   const [bioInput, setBioInput] = useState(user?.bio || "");
+  const [avatarUrlInput, setAvatarUrlInput] = useState(user?.avatar_url || "");
+  const [specialtyInput, setSpecialtyInput] = useState(user?.specialty || "");
   const [saving, setSaving] = useState(false);
   const [modalError, setModalError] = useState<string | null>(null);
 
@@ -42,7 +44,12 @@ export function PublicBookingBanner() {
         return;
       }
 
-      await updatePublicProfile(cleanSlug, bioInput.trim() || undefined);
+      await updatePublicProfile({
+        slug: cleanSlug,
+        bio: bioInput.trim() || undefined,
+        avatar_url: avatarUrlInput.trim() || undefined,
+        specialty: specialtyInput.trim() || undefined,
+      });
       setShowModal(false);
     } catch (err: unknown) {
       const error = err as Error;
@@ -83,6 +90,8 @@ export function PublicBookingBanner() {
             onClick={() => {
               setSlugInput(user.slug || "");
               setBioInput(user.bio || "");
+              setAvatarUrlInput(user.avatar_url || "");
+              setSpecialtyInput(user.specialty || "");
               setShowModal(true);
             }}
           >
@@ -94,10 +103,67 @@ export function PublicBookingBanner() {
       {showModal && (
         <div className={styles.modalBackdrop}>
           <form className={styles.modalContent} onSubmit={handleSaveProfile}>
-            <h2 className={styles.modalTitle}>Personalizar Link de Agendamento</h2>
+            <h2 className={styles.modalTitle}>Personalizar Perfil & Link de Agendamento</h2>
             <p className={styles.modalDescription}>
-              Este link é o que suas pacientes acessam para escolher serviços e agendar horários vagos direto pelo celular.
+              Personalize como sua clínica ou consultório aparece para os pacientes no link da bio e WhatsApp.
             </p>
+
+            <div className={styles.inputGroup}>
+              <label className={styles.label}>Foto de Perfil ou Logotipo da Clínica (URL)</label>
+              <div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
+                {avatarUrlInput.trim() ? (
+                  <img
+                    src={avatarUrlInput.trim()}
+                    alt="Preview avatar"
+                    style={{
+                      width: "48px",
+                      height: "48px",
+                      borderRadius: "50%",
+                      objectFit: "cover",
+                      border: "2px solid #d97706",
+                      flexShrink: 0,
+                    }}
+                  />
+                ) : (
+                  <div
+                    style={{
+                      width: "48px",
+                      height: "48px",
+                      borderRadius: "50%",
+                      background: "linear-gradient(135deg, #fef3c7, #fde68a)",
+                      color: "#92400e",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      fontSize: "18px",
+                      fontWeight: "bold",
+                      flexShrink: 0,
+                    }}
+                  >
+                    {user.name.charAt(0).toUpperCase()}
+                  </div>
+                )}
+                <input
+                  type="text"
+                  className={styles.input}
+                  style={{ flex: 1 }}
+                  placeholder="https://suafoto.com/perfil.jpg ou link da foto"
+                  value={avatarUrlInput}
+                  onChange={(e) => setAvatarUrlInput(e.target.value)}
+                />
+              </div>
+            </div>
+
+            <div className={styles.inputGroup}>
+              <label className={styles.label}>Especialidade / Título Profissional</label>
+              <input
+                type="text"
+                className={styles.input}
+                placeholder="Ex: Biomédica Esteta • Harmonização Facial"
+                value={specialtyInput}
+                onChange={(e) => setSpecialtyInput(e.target.value)}
+              />
+            </div>
 
             <div className={styles.inputGroup}>
               <label className={styles.label}>Link Personalizado (slug)</label>
@@ -122,7 +188,7 @@ export function PublicBookingBanner() {
               <textarea
                 className={styles.input}
                 rows={3}
-                placeholder="Ex: Biomédica esteta especializada em harmonização e cuidados com a pele."
+                placeholder="Ex: Consultório especializado em rejuvenescimento natural, estética facial e cuidados com a pele."
                 value={bioInput}
                 onChange={(e) => setBioInput(e.target.value)}
               />

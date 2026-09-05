@@ -28,6 +28,8 @@ def get_current_user_profile(
     if prof:
         out.slug = prof.slug
         out.bio = prof.bio
+        out.avatar_url = prof.avatar_url
+        out.specialty = prof.specialty
     return out
 
 
@@ -38,7 +40,7 @@ def update_public_profile(
     session: DbSession,
     professional_id: CurrentProfessional,
 ) -> UserOutput:
-    """Atualiza o link público (slug) e a bio da profissional para agendamento online."""
+    """Atualiza o link público (slug), bio, foto/logo e especialidade da profissional."""
     prof_repo = ProfessionalRepository(session, professional_id)
     prof = prof_repo.get_by_id(professional_id)
     if not prof:
@@ -64,11 +66,19 @@ def update_public_profile(
     if body.bio is not None:
         prof.bio = body.bio.strip()
 
+    if body.avatar_url is not None:
+        prof.avatar_url = body.avatar_url.strip() or None
+
+    if body.specialty is not None:
+        prof.specialty = body.specialty.strip() or None
+
     session.flush()
 
     out = UserOutput.model_validate(user)
     out.slug = prof.slug
     out.bio = prof.bio
+    out.avatar_url = prof.avatar_url
+    out.specialty = prof.specialty
     return out
 
 

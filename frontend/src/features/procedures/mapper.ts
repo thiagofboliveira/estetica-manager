@@ -14,5 +14,6 @@ export function toProcedurePayload(values: ProcedureFormValues) {
     default_modality: values.default_modality,
     is_invasive: values.is_invasive,
     session_plan: values.session_plan,
+    image_url: values.image_url ? values.image_url.trim() : null,
   };
 }

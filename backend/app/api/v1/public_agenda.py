@@ -76,7 +76,7 @@ PublicBookingRateLimit = Annotated[None, Depends(check_public_booking_limit)]
 PublicQueryRateLimit = Annotated[None, Depends(check_public_query_limit)]
 
 
-def _resolve_slug(slug: str) -> tuple[UUID, str, str | None, str]:
+def _resolve_slug(slug: str) -> tuple[UUID, str, str | None, str, str | None, str | None]:
     """Resolve o slug desautenticado na tabela professionals via bypass_tenant restrito."""
     clean_slug = slug.strip().lower()
     with unsafe_session_without_tenant("lookup public agenda slug") as sys_sess:
@@ -85,6 +85,8 @@ def _resolve_slug(slug: str) -> tuple[UUID, str, str | None, str]:
             Professional.name,
             Professional.bio,
             Professional.slug,
+            Professional.avatar_url,
+            Professional.specialty,
         ).where(
             Professional.slug == clean_slug,
             Professional.is_active.is_(True),
@@ -95,7 +97,7 @@ def _resolve_slug(slug: str) -> tuple[UUID, str, str | None, str]:
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Agenda não encontrada para este link.",
             )
-        return row[0], row[1], row[2], row[3]
+        return row[0], row[1], row[2], row[3], row[4], row[5]
 
 
 def _resolve_booking_tenant(booking_id: UUID, token: str) -> tuple[UUID, UUID]:
@@ -157,7 +159,7 @@ def get_public_agenda_profile(
     slug: str, _rate_limit: PublicQueryRateLimit
 ) -> PublicProfessionalInfo:
     """Retorna dados públicos da profissional e a lista de procedimentos disponíveis."""
-    prof_id, prof_name, prof_bio, prof_slug = _resolve_slug(slug)
+    prof_id, prof_name, prof_bio, prof_slug, prof_avatar, prof_specialty = _resolve_slug(slug)
 
     with tenant_session(prof_id) as session:
         proc_repo = ProcedureRepository(session, prof_id)
@@ -178,6 +180,7 @@ def get_public_agenda_profile(
                 price=p.price,
                 return_interval_days=p.return_interval_days,
                 session_plan=p.session_plan.value,
+                image_url=p.image_url,
             )
             for p in procedures
         ]
@@ -186,6 +189,8 @@ def get_public_agenda_profile(
             name=prof_name,
             slug=prof_slug,
             bio=prof_bio,
+            avatar_url=prof_avatar,
+            specialty=prof_specialty,
             procedures=proc_out,
         )
 
@@ -200,7 +205,7 @@ def get_public_slots(
     if target_date < date.today():
         return []
 
-    prof_id, _, _, _ = _resolve_slug(slug)
+    prof_id, *_ = _resolve_slug(slug)
 
     with tenant_session(prof_id) as session:
         agenda_svc = _build_agenda_service(session, prof_id)
@@ -225,7 +230,7 @@ def create_public_booking(
             detail="O horário de agendamento deve ser futuro.",
         )
 
-    prof_id, prof_name, _, prof_slug = _resolve_slug(slug)
+    prof_id, prof_name, _, prof_slug, *_ = _resolve_slug(slug)
 
     with tenant_session(prof_id) as session:
         # Valida se o procedimento existe e está ativo

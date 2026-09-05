@@ -66,12 +66,15 @@ class PublicProcedureOut(OutputSchema):
     price: Decimal
     return_interval_days: int | None = None
     session_plan: str
+    image_url: str | None = None
 
 
 class PublicProfessionalInfo(OutputSchema):
     name: str
     slug: str
     bio: str | None = None
+    avatar_url: str | None = None
+    specialty: str | None = None
     procedures: list[PublicProcedureOut]
 
 

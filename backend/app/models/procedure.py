@@ -10,7 +10,7 @@ mudar o procedimento depois não altera vendas passadas.
 from decimal import Decimal
 from enum import StrEnum
 
-from sqlalchemy import Enum, Numeric
+from sqlalchemy import Enum, Numeric, String
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.models.base import TenantModel
@@ -74,3 +74,5 @@ class Procedure(TenantModel):
         default=SessionPlan.SINGLE,
         nullable=False,
     )
+    image_url: Mapped[str | None] = mapped_column(String(500), nullable=True)
+

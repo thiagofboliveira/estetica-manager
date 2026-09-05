@@ -19,7 +19,16 @@ export interface UserSession {
   terms_version?: string | null;
   slug?: string | null;
   bio?: string | null;
+  avatar_url?: string | null;
+  specialty?: string | null;
 }
+
+export type UpdatePublicProfileParams = {
+  slug?: string;
+  bio?: string;
+  avatar_url?: string | null;
+  specialty?: string | null;
+};
 
 interface AuthContextValue {
   user: UserSession | null;
@@ -27,7 +36,7 @@ interface AuthContextValue {
   logout: () => Promise<void>;
   checkAuth: () => Promise<void>;
   acceptTerms: (termsVersion?: string) => Promise<void>;
-  updatePublicProfile: (slug?: string, bio?: string) => Promise<void>;
+  updatePublicProfile: (params: UpdatePublicProfileParams) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
@@ -61,11 +70,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(updated);
   }
 
-  async function updatePublicProfile(slug?: string, bio?: string) {
-    const updated = await api.patch<UserSession>("/users/me/public-profile", {
-      slug,
-      bio,
-    });
+  async function updatePublicProfile(params: UpdatePublicProfileParams) {
+    const updated = await api.patch<UserSession>("/users/me/public-profile", params);
     setUser(updated);
   }
 

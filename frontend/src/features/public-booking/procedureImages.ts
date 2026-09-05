@@ -22,6 +22,18 @@ const PROCEDURE_PHOTO_MAP: Record<string, string> = {
   facial: "https://images.unsplash.com/photo-1629732047847-50219e9c5aef?auto=format&fit=crop&w=600&q=80",
 };
 
+export const SUGGESTED_PROCEDURE_PHOTOS = [
+  { label: "Limpeza de Pele", url: "https://images.unsplash.com/photo-1570172619644-dfd03ed5d881?auto=format&fit=crop&w=600&q=80" },
+  { label: "Harmonização Facial", url: "https://images.unsplash.com/photo-1512290900672-1f55b91b9758?auto=format&fit=crop&w=600&q=80" },
+  { label: "Preenchimento Labial", url: "https://images.unsplash.com/photo-1588510906202-b0682ba7bbcf?auto=format&fit=crop&w=600&q=80" },
+  { label: "Botox / Toxina", url: "https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?auto=format&fit=crop&w=600&q=80" },
+  { label: "Peeling Químico", url: "https://images.unsplash.com/photo-1516975080664-ed2fc6a32937?auto=format&fit=crop&w=600&q=80" },
+  { label: "Microagulhamento", url: "https://images.unsplash.com/photo-1512290903422-92143003058b?auto=format&fit=crop&w=600&q=80" },
+  { label: "Laser / Depilação", url: "https://images.unsplash.com/photo-1560750588-73207b1ef5b8?auto=format&fit=crop&w=600&q=80" },
+  { label: "Drenagem Linfática", url: "https://images.unsplash.com/photo-1544161515-4ab6ce6db874?auto=format&fit=crop&w=600&q=80" },
+  { label: "Estética Corporal", url: "https://images.unsplash.com/photo-1519823551278-64ac92734fb1?auto=format&fit=crop&w=600&q=80" },
+];
+
 const DEFAULT_PROCEDURE_PHOTO =
   "https://images.unsplash.com/photo-1629732047847-50219e9c5aef?auto=format&fit=crop&w=600&q=80";
 

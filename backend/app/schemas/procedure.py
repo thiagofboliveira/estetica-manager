@@ -21,6 +21,7 @@ class ProcedureCreate(InputSchema):
     )
     is_invasive: bool = False
     session_plan: SessionPlan = SessionPlan.SINGLE
+    image_url: str | None = None
 
     @model_validator(mode="after")
     def _produto_sem_intervalo_de_retorno(self) -> "ProcedureCreate":
@@ -41,6 +42,7 @@ class ProcedureUpdate(InputSchema):
     is_active: bool | None = None
     is_invasive: bool | None = None
     session_plan: SessionPlan | None = None
+    image_url: str | None = None
 
 
 class ProcedureOut(OutputSchema):
@@ -55,6 +57,7 @@ class ProcedureOut(OutputSchema):
     is_active: bool
     is_invasive: bool
     session_plan: SessionPlan
+    image_url: str | None = None
     created_at: datetime
     updated_at: datetime
 
@@ -90,4 +93,7 @@ class ProcedureFromTemplateCreate(InputSchema):
     default_modality: Modality = Modality.IN_PERSON
     split_override: str | None = Field(
         default=None, description="Percentual de comissão customizado (opcional)"
+    )
+    image_url: str | None = Field(
+        default=None, description="URL da foto customizada do procedimento (opcional)"
     )

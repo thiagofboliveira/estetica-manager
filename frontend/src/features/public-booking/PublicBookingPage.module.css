@@ -72,6 +72,14 @@
   align-items: center;
   justify-content: center;
   box-shadow: 0 4px 14px rgba(15, 118, 110, 0.25);
+  overflow: hidden;
+}
+
+.avatarImg {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 50%;
 }
 
 .profName {
@@ -79,6 +87,13 @@
   font-weight: 700;
   color: var(--text-h);
   margin: 0;
+}
+
+.specialtyBadge {
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--accent);
+  margin-top: -6px;
 }
 
 .verifiedBadge {
@@ -538,4 +553,160 @@
   color: var(--text-muted);
   font-size: 0.85rem;
   margin-top: 32px;
+}
+
+/* Busca e Filtros de Procedimentos */
+.procedureFilterBar {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+@media (min-width: 640px) {
+  .procedureFilterBar {
+    flex-direction: row;
+    align-items: center;
+  }
+}
+
+.searchBox {
+  position: relative;
+  flex: 1;
+}
+
+.searchInput {
+  width: 100%;
+  padding: 10px 14px 10px 36px;
+  border-radius: 12px;
+  border: 1.5px solid var(--border);
+  background: var(--input-bg);
+  font-size: 0.9rem;
+  color: var(--text-h);
+  box-sizing: border-box;
+}
+
+.searchInput:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-bg);
+}
+
+.searchIcon {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 0.85rem;
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+.filterSelect {
+  padding: 10px 14px;
+  border-radius: 12px;
+  border: 1.5px solid var(--border);
+  background: var(--input-bg);
+  font-size: 0.88rem;
+  color: var(--text-h);
+  cursor: pointer;
+  box-sizing: border-box;
+}
+
+.filterSelect:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+/* Paginação */
+.paginationRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding-top: 14px;
+  border-top: 1px solid var(--border);
+  margin-top: 6px;
+}
+
+.paginationInfo {
+  font-size: 0.84rem;
+  color: var(--text-muted);
+}
+
+.paginationControls {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.pageBtn {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  color: var(--text-h);
+  padding: 6px 12px;
+  border-radius: 8px;
+  font-size: 0.84rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.pageBtn:hover:not(:disabled) {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.pageBtn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.pageNumber {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  font-size: 0.84rem;
+  font-weight: 600;
+  border: 1px solid var(--border);
+  background: var(--bg-card);
+  color: var(--text-h);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.pageNumber:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.pageNumberActive {
+  background: var(--accent);
+  color: #ffffff;
+  border-color: var(--accent);
+}
+
+.emptySearch {
+  text-align: center;
+  padding: 32px 16px;
+  background: var(--bg-main, #f8fafc);
+  border-radius: 14px;
+  border: 1px dashed var(--border);
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
+.clearSearchBtn {
+  margin-top: 8px;
+  background: none;
+  border: 1px solid var(--accent);
+  color: var(--accent);
+  padding: 6px 14px;
+  border-radius: 8px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
 }

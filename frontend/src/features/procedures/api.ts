@@ -15,6 +15,7 @@ export type Procedure = {
   is_active: boolean;
   is_invasive: boolean;
   session_plan: SessionPlan;
+  image_url?: string | null;
   created_at: string;
   updated_at: string;
 };
@@ -28,6 +29,7 @@ export type ProcedureCreateInput = {
   default_modality?: Modality;
   is_invasive?: boolean;
   session_plan?: SessionPlan;
+  image_url?: string | null;
 };
 
 export type ProcedureUpdateInput = Partial<

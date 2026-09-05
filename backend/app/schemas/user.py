@@ -38,6 +38,8 @@ class PublicProfileUpdate(InputSchema):
         default=None, min_length=3, max_length=100, pattern=r"^[a-z0-9-]+$"
     )
     bio: str | None = Field(default=None, max_length=1000)
+    avatar_url: str | None = Field(default=None, max_length=500)
+    specialty: str | None = Field(default=None, max_length=120)
 
 
 class UserOutput(OutputSchema):
@@ -51,6 +53,8 @@ class UserOutput(OutputSchema):
     is_active: bool
     slug: str | None = None
     bio: str | None = None
+    avatar_url: str | None = None
+    specialty: str | None = None
     terms_accepted_at: datetime | None = None
     terms_version: str | None = None
     created_at: datetime

@@ -6,12 +6,15 @@ export type PublicProcedure = {
   price: string;
   return_interval_days: number | null;
   session_plan: string;
+  image_url?: string | null;
 };
 
 export type PublicProfessionalInfo = {
   name: string;
   slug: string;
   bio: string | null;
+  avatar_url?: string | null;
+  specialty?: string | null;
   procedures: PublicProcedure[];
 };
 
