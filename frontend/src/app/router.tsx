@@ -28,53 +28,57 @@ import { SuperAdminClinicsPage } from "@/features/admin/SuperAdminClinicsPage";
 import { SuperAdminUsersPage } from "@/features/admin/SuperAdminUsersPage";
 
 export const router = createBrowserRouter([
-  { path: "/", element: <LandingPage /> },
-  { path: "/como-calculamos", element: <HowWeCalculatePage /> },
-  { path: "/login", element: <LoginPage /> },
-  { path: "/setup", element: <SetupWizardPage /> },
   {
-    element: (
-      <GlobalErrorBoundary>
-        <RequireAuth />
-      </GlobalErrorBoundary>
-    ),
+    // G-08a: o boundary agora envolve a árvore INTEIRA, não só a
+    // autenticada — /login e /setup são as telas do primeiro contato;
+    // um erro de render nelas dava tela branca sem recuperação antes.
+    element: <GlobalErrorBoundary />,
     children: [
+      { path: "/", element: <LandingPage /> },
+      { path: "/como-calculamos", element: <HowWeCalculatePage /> },
+      { path: "/login", element: <LoginPage /> },
+      { path: "/setup", element: <SetupWizardPage /> },
       {
-        path: "/super-admin",
-        element: <SuperAdminLayout />,
+        element: <RequireAuth />,
         children: [
-          { path: "clinicas", element: <SuperAdminClinicsPage /> },
-          { path: "usuarios", element: <SuperAdminUsersPage /> },
-          { index: true, element: <Navigate to="clinicas" replace /> },
-        ]
-      },
-      {
-        element: <AppLayout />,
-        children: [
-          { path: "/dashboard", element: <DashboardPage /> },
-          { path: "/retornos", element: <RetentionPage /> },
-          { path: "/pacientes", element: <PatientsPage /> },
-          { path: "/pacientes/novo", element: <NewPatientPage /> },
-          { path: "/pacientes/importar", element: <PatientImportPage /> },
-          { path: "/pacientes/:id", element: <PatientDetailPage /> },
-          { path: "/procedimentos", element: <ProceduresPage /> },
-          { path: "/procedimentos/novo", element: <NewProcedurePage /> },
-          { path: "/procedimentos/:id", element: <ProcedureDetailPage /> },
-          { path: "/vendas/nova", element: <NewSalePage /> },
-          { path: "/vendas/nova-pacote", element: <NewPackageSalePage /> },
-          { path: "/agenda", element: <AgendaPage /> },
-          { path: "/agenda/rapido", element: <ModoOcupadoPage /> },
-          { path: "/financeiro", element: <FinancialSettingsPage /> },
-          { path: "/despesas-fixas", element: <FixedExpensesPage /> },
-          { path: "*", element: <Navigate to="/dashboard" replace /> },
-        ],
-      },
-      {
-        path: "/admin",
-        element: <AdminLayout />,
-        children: [
-          { path: "usuarios", element: <AdminUsersPage /> },
-          { index: true, element: <Navigate to="usuarios" replace /> },
+          {
+            path: "/super-admin",
+            element: <SuperAdminLayout />,
+            children: [
+              { path: "clinicas", element: <SuperAdminClinicsPage /> },
+              { path: "usuarios", element: <SuperAdminUsersPage /> },
+              { index: true, element: <Navigate to="clinicas" replace /> },
+            ]
+          },
+          {
+            element: <AppLayout />,
+            children: [
+              { path: "/dashboard", element: <DashboardPage /> },
+              { path: "/retornos", element: <RetentionPage /> },
+              { path: "/pacientes", element: <PatientsPage /> },
+              { path: "/pacientes/novo", element: <NewPatientPage /> },
+              { path: "/pacientes/importar", element: <PatientImportPage /> },
+              { path: "/pacientes/:id", element: <PatientDetailPage /> },
+              { path: "/procedimentos", element: <ProceduresPage /> },
+              { path: "/procedimentos/novo", element: <NewProcedurePage /> },
+              { path: "/procedimentos/:id", element: <ProcedureDetailPage /> },
+              { path: "/vendas/nova", element: <NewSalePage /> },
+              { path: "/vendas/nova-pacote", element: <NewPackageSalePage /> },
+              { path: "/agenda", element: <AgendaPage /> },
+              { path: "/agenda/rapido", element: <ModoOcupadoPage /> },
+              { path: "/financeiro", element: <FinancialSettingsPage /> },
+              { path: "/despesas-fixas", element: <FixedExpensesPage /> },
+              { path: "*", element: <Navigate to="/dashboard" replace /> },
+            ],
+          },
+          {
+            path: "/admin",
+            element: <AdminLayout />,
+            children: [
+              { path: "usuarios", element: <AdminUsersPage /> },
+              { index: true, element: <Navigate to="usuarios" replace /> },
+            ],
+          },
         ],
       },
     ],

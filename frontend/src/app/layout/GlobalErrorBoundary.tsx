@@ -1,9 +1,14 @@
 import { Component } from "react";
 import type { ErrorInfo, ReactNode } from "react";
+import { Outlet } from "react-router-dom";
 
 import { Logger } from "@/lib/telemetry/logger";
 
 interface Props {
+  // G-08a: usado como elemento de rota (sem children explícito) — o
+  // fallback de renderização usa <Outlet /> nesse caso. Continua
+  // aceitando children explícito para quem quiser envolver uma árvore
+  // fora do router (nenhum uso assim hoje, mas não quebra retrocompat).
   children?: ReactNode;
 }
 
@@ -45,6 +50,6 @@ export class GlobalErrorBoundary extends Component<Props, State> {
       );
     }
 
-    return this.props.children;
+    return this.props.children ?? <Outlet />;
   }
 }
