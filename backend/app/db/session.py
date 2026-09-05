@@ -45,6 +45,8 @@ def _reset_tenant_on_checkin(dbapi_conn, connection_record) -> None:
     try:
         with dbapi_conn.cursor() as cur:
             cur.execute("RESET app.professional_id")
+            cur.execute("RESET app.clinic_id")
+            cur.execute("RESET app.bypass_tenant")
         dbapi_conn.commit()
     except Exception:
         pass  # conexão já morta: o pool a descarta de qualquer forma
@@ -55,6 +57,16 @@ def _set_tenant(session: Session, professional_id: UUID) -> None:
         text("SELECT set_config('app.professional_id', :pid, true)"),
         {"pid": str(professional_id)},
     )
+    # S-02a: busca o clinic_id do Professional logado para isolamento de plataforma
+    clinic_id = session.execute(
+        text("SELECT clinic_id FROM professionals WHERE id = :pid"),
+        {"pid": str(professional_id)},
+    ).scalar()
+    if clinic_id is not None:
+        session.execute(
+            text("SELECT set_config('app.clinic_id', :cid, true)"),
+            {"cid": str(clinic_id)},
+        )
 
 
 def get_tenant_session(professional_id: UUID) -> Iterator[Session]:
@@ -76,9 +88,12 @@ def get_tenant_session(professional_id: UUID) -> Iterator[Session]:
 
 @contextmanager
 def unsafe_session_without_tenant(reason: str) -> Iterator[Session]:
-    """⚠️ Sessão SEM contexto de tenant. RLS retorna VAZIO (fail-closed),
-    então isto só serve com uma role privilegiada separada — jobs de
-    manutenção, migrations, seeds. NUNCA em código de request.
+    """⚠️ Sessão SEM contexto de tenant. Utilizada para jobs de manutenção,
+    setup inicial do sistema (/system/setup) ou gestão multi-clínica do Super Admin.
+
+    Seta app.bypass_tenant localmente para permitir visão de plataforma nas tabelas
+    users/clinics/professionals. As tabelas de negócio (patients, procedures, etc.)
+    continuam exigindo app.professional_id explícito.
 
     `reason` é obrigatório de propósito: força quem chama a justificar,
     e torna trivial auditar via grep por "unsafe_session_without_tenant".
@@ -87,6 +102,7 @@ def unsafe_session_without_tenant(reason: str) -> Iterator[Session]:
         raise ValueError("reason é obrigatório")
     session = SessionLocal()
     try:
+        session.execute(text("SELECT set_config('app.bypass_tenant', 'true', true)"))
         yield session
         session.commit()
     except Exception:

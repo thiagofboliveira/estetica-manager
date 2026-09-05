@@ -7,7 +7,7 @@ from fastapi.testclient import TestClient
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.db.session import engine
+from app.db.session import engine, unsafe_session_without_tenant
 from app.main import app
 from app.models.terms_acceptance import TermsAcceptance
 from app.schemas.user import CURRENT_TERMS_VERSION
@@ -52,13 +52,19 @@ def test_terms_acceptance_flow_integration():
     assert me_after.json()["terms_accepted"] is True
     assert me_after.json()["terms_version"] == CURRENT_TERMS_VERSION
 
-    # 4. Verifica na base de dados (tabela terms_acceptances)
-    with Session(engine) as session:
+    # 4. Contraprova de segurança: conexão crua sem tenant é bloqueada pelo RLS
+    with Session(engine) as raw_session:
         stmt = (
             select(TermsAcceptance)
             .where(TermsAcceptance.user_id == user_id)
             .order_by(TermsAcceptance.accepted_at.desc())
         )
+        assert raw_session.scalars(stmt).first() is None, (
+            "RLS deve impedir leitura anônima sem contexto"
+        )
+
+    # 5. Com sessão administrativa de sistema, a auditoria é confirmada
+    with unsafe_session_without_tenant("test terms audit verification") as session:
         audit = session.scalars(stmt).first()
         assert audit is not None
         assert audit.terms_version == CURRENT_TERMS_VERSION

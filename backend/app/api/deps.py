@@ -282,9 +282,13 @@ def get_booking_service(
     )
 
 
-def get_user_service(session: DbSession) -> UserService:
+def get_user_service(
+    session: DbSession, professional_id: CurrentProfessional
+) -> UserService:
+    prof = ProfessionalRepository(session, professional_id).get_by_id(professional_id)
+    clinic_id = prof.clinic_id if prof else None
     return UserService(
-        user_repo=UserRepository(session),
+        user_repo=UserRepository(session, clinic_id=clinic_id),
         terms_repo=TermsAcceptanceRepository(session),
     )
 
@@ -293,8 +297,12 @@ def get_system_service(session: SystemDbSession) -> SystemService:
     return SystemService(UserRepository(session), session)
 
 
-def get_clinic_service(session: DbSession) -> ClinicService:
-    return ClinicService(ClinicRepository(session))
+def get_clinic_service(
+    session: DbSession, professional_id: CurrentProfessional
+) -> ClinicService:
+    prof = ProfessionalRepository(session, professional_id).get_by_id(professional_id)
+    clinic_id = prof.clinic_id if prof else None
+    return ClinicService(ClinicRepository(session, clinic_id=clinic_id))
 
 
 def get_system_clinic_service(session: SystemDbSession) -> ClinicService:
