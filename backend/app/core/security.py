@@ -37,11 +37,18 @@ def _decode_dev(token: str) -> dict:
     """Modo dev local: token HS256 assinado com dev_secret, sem
     Supabase. SÓ é alcançado quando ENV=development — em produção esta função nunca é chamada (ver _decode).
     """
-    dev_secret = settings.DEV_AUTH_SECRET or "dev-secret-estetica-local-key-superadmin-2026"
+    # S-01b: sem fallback. Um segredo com default hardcoded é um segredo
+    # público — e este assina tokens de superadmin. Falhar ruidosamente em
+    # dev é barato; conceder acesso com segredo conhecido não é.
+    if not settings.DEV_AUTH_SECRET:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="DEV_AUTH_SECRET não configurado — defina no .env para usar o modo dev",
+        )
     try:
         return jwt.decode(
             token,
-            dev_secret,
+            settings.DEV_AUTH_SECRET,
             algorithms=["HS256"],
             audience=settings.SUPABASE_JWT_AUDIENCE,
             options={"require": ["exp", "sub", "aud"], "verify_exp": True},

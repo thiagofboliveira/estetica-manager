@@ -18,11 +18,17 @@ class Settings(BaseSettings):
 
     DEFAULT_TIMEZONE: str = "America/Sao_Paulo"
 
-    ENV: str = "development"
+    # Default DENIEGA, não concede (S-01a): variável ausente ou com typo
+    # no painel de deploy faz o app subir em modo produção, onde /dev/login
+    # não existe e o token é validado contra o Supabase. O inverso —
+    # default "development" — abria acesso de superadmin sem senha a quem
+    # adivinhasse a URL. Configuração ausente nunca deve liberar.
+    ENV: str = "production"
 
     # Só tem efeito com ENV=development — ver core/security.py.
     # Nunca definir em produção: nesse modo o token não é validado contra
     # o Supabase, só assinado com HS256 usando este segredo local.
+    # Sem default (S-01b): segredo com fallback é segredo público.
     DEV_AUTH_SECRET: str | None = None
 
 

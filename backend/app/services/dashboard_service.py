@@ -23,12 +23,12 @@ from app.domain.financial.period import (
     last_n_closed_months_range,
     resolve_period,
 )
-
-RECENT_TICKET_MONTHS = 3
 from app.repositories.fixed_expense import FixedExpenseRepository
 from app.repositories.professional import ProfessionalRepository
 from app.repositories.sale import SaleRepository
 from app.repositories.session import SessionRepository
+
+RECENT_TICKET_MONTHS = 3
 
 
 class DashboardService:

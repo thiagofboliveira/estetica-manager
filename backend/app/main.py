@@ -3,6 +3,7 @@ import time
 import jwt
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel
 
 from app.api.v1 import (
     bookings,
@@ -22,6 +23,8 @@ from app.api.v1 import (
     users,
 )
 from app.core.config import settings
+from app.db.session import unsafe_session_without_tenant
+from app.repositories.user import UserRepository
 
 app = FastAPI(title="Estetica API", version="0.1.0")
 
@@ -44,19 +47,19 @@ def health() -> dict[str, str]:
     return {"status": "ok"}
 
 
-from pydantic import BaseModel
-
-from app.db.session import unsafe_session_without_tenant
-from app.repositories.user import UserRepository
-
-
 class DevLoginPayload(BaseModel):
     email: str | None = None
     password: str | None = None
 
 
 if settings.ENV == "development":
-    dev_secret = settings.DEV_AUTH_SECRET or "dev-secret-estetica-local-key-superadmin-2026"
+    # S-01b: sem fallback hardcoded — ver core/security.py._decode_dev().
+    if not settings.DEV_AUTH_SECRET:
+        raise RuntimeError(
+            "ENV=development exige DEV_AUTH_SECRET no .env "
+            "(sem default: um segredo hardcoded que assina token de superadmin é público)"
+        )
+    dev_secret = settings.DEV_AUTH_SECRET
 
     @app.post("/dev/login", tags=["dev"])
     def dev_login(payload: DevLoginPayload | None = None) -> dict[str, str]:
