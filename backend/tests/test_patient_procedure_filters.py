@@ -85,8 +85,12 @@ class TestFiltroGenero:
         self, client: TestClient, auth_headers: dict[str, str]
     ) -> None:
         marker = uuid.uuid4().hex
-        male_id = _create_patient(client, auth_headers, f"Paciente M {marker}", gender="MALE")
-        female_id = _create_patient(client, auth_headers, f"Paciente F {marker}", gender="FEMALE")
+        male_id = _create_patient(
+            client, auth_headers, f"Paciente M {marker}", gender="MALE"
+        )
+        female_id = _create_patient(
+            client, auth_headers, f"Paciente F {marker}", gender="FEMALE"
+        )
 
         resp = client.get(
             "/api/v1/patients",
@@ -101,7 +105,9 @@ class TestFiltroGenero:
     def test_paciente_sem_genero_definido_nao_aparece_em_filtro_algum(
         self, client: TestClient, auth_headers: dict[str, str]
     ) -> None:
-        patient_id = _create_patient(client, auth_headers, f"Paciente Sem Genero {uuid.uuid4()}")
+        patient_id = _create_patient(
+            client, auth_headers, f"Paciente Sem Genero {uuid.uuid4()}"
+        )
         resp = client.get(f"/api/v1/patients/{patient_id}", headers=auth_headers)
         assert resp.json()["gender"] is None
 
@@ -118,7 +124,9 @@ class TestFiltroJaTratou:
     def test_paciente_sem_venda_nem_sessao_nao_conta_como_ja_tratou(
         self, client: TestClient, auth_headers: dict[str, str]
     ) -> None:
-        patient_id = _create_patient(client, auth_headers, f"Nunca Tratou {uuid.uuid4()}")
+        patient_id = _create_patient(
+            client, auth_headers, f"Nunca Tratou {uuid.uuid4()}"
+        )
 
         resp = client.get(
             "/api/v1/patients",
@@ -143,15 +151,24 @@ class TestFiltroJaTratou:
         como "já tratou" — não precisa esperar Session COMPLETED."""
         marker = uuid.uuid4().hex
         patient_id = _create_patient(client, auth_headers, f"Comprou Produto {marker}")
-        procedure_id = _create_procedure(client, auth_headers, f"Produto {uuid.uuid4()}")
-        client.post("/api/v1/sales", json=_sale_body(patient_id, procedure_id), headers=auth_headers)
+        procedure_id = _create_procedure(
+            client, auth_headers, f"Produto {uuid.uuid4()}"
+        )
+        client.post(
+            "/api/v1/sales",
+            json=_sale_body(patient_id, procedure_id),
+            headers=auth_headers,
+        )
 
         # Busca combinada com o filtro isola o resultado do volume
         # acumulado de outras execuções de teste (não confiar em
         # page_size cobrir "todos" os pacientes do tenant).
         resp = client.get(
             "/api/v1/patients",
-            params={"search": f"Comprou Produto {marker}", "has_completed_treatment": "true"},
+            params={
+                "search": f"Comprou Produto {marker}",
+                "has_completed_treatment": "true",
+            },
             headers=auth_headers,
         )
         ids = {p["id"] for p in resp.json()["items"]}
@@ -162,18 +179,27 @@ class TestFiltroJaTratou:
     ) -> None:
         marker = uuid.uuid4().hex
         patient_id = _create_patient(client, auth_headers, f"Sessao Completa {marker}")
-        procedure_id = _create_procedure(client, auth_headers, f"Servico {uuid.uuid4()}")
+        procedure_id = _create_procedure(
+            client, auth_headers, f"Servico {uuid.uuid4()}"
+        )
         sale_resp = client.post(
-            "/api/v1/sales", json=_sale_body(patient_id, procedure_id), headers=auth_headers
+            "/api/v1/sales",
+            json=_sale_body(patient_id, procedure_id),
+            headers=auth_headers,
         )
         session_id = sale_resp.json()["sessions"][0]["id"]
         client.patch(
-            f"/api/v1/sessions/{session_id}", json={"status": "COMPLETED"}, headers=auth_headers
+            f"/api/v1/sessions/{session_id}",
+            json={"status": "COMPLETED"},
+            headers=auth_headers,
         )
 
         resp = client.get(
             "/api/v1/patients",
-            params={"search": f"Sessao Completa {marker}", "has_completed_treatment": "true"},
+            params={
+                "search": f"Sessao Completa {marker}",
+                "has_completed_treatment": "true",
+            },
             headers=auth_headers,
         )
         ids = {p["id"] for p in resp.json()["items"]}
@@ -208,11 +234,17 @@ class TestFiltroTemAgendamento:
     ) -> None:
         """Decisão E1: Booking futuro ainda não convertido conta como
         "tem agendamento", mesmo sem venda associada."""
-        patient_id = _create_patient(client, auth_headers, f"Com Booking {uuid.uuid4()}")
+        patient_id = _create_patient(
+            client, auth_headers, f"Com Booking {uuid.uuid4()}"
+        )
         future = (datetime.now(UTC) + timedelta(days=3)).strftime("%Y-%m-%dT%H:%M:%S")
         resp = client.post(
             "/api/v1/bookings",
-            json={"patient_id": patient_id, "scheduled_at": future, "modality": "IN_PERSON"},
+            json={
+                "patient_id": patient_id,
+                "scheduled_at": future,
+                "modality": "IN_PERSON",
+            },
             headers=auth_headers,
         )
         assert resp.status_code == 201, resp.text
@@ -250,7 +282,9 @@ class TestFiltroInvasivo:
     def test_default_is_invasive_false_quando_nao_informado(
         self, client: TestClient, auth_headers: dict[str, str]
     ) -> None:
-        procedure_id = _create_procedure(client, auth_headers, f"Sem Campo {uuid.uuid4()}")
+        procedure_id = _create_procedure(
+            client, auth_headers, f"Sem Campo {uuid.uuid4()}"
+        )
         resp = client.get(f"/api/v1/procedures/{procedure_id}", headers=auth_headers)
         assert resp.json()["is_invasive"] is False
 

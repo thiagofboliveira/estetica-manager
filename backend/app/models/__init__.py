@@ -26,6 +26,7 @@ from app.models.return_opportunity import (
 from app.models.sale import Sale, SaleStatus, SaleType
 from app.models.sale_item import SaleItem
 from app.models.session import Session, SessionStatus
+from app.models.terms_acceptance import TermsAcceptance
 from app.models.user import User
 
 __all__ = [
@@ -57,4 +58,5 @@ __all__ = [
     "ContactChannel",
     "Booking",
     "BookingStatus",
+    "TermsAcceptance",
 ]

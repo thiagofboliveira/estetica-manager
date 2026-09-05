@@ -18,10 +18,7 @@ class ClinicRepository:
 
     def list_all(self, *, limit: int = 100, offset: int = 0) -> list[Clinic]:
         stmt = (
-            select(Clinic)
-            .order_by(Clinic.created_at.asc())
-            .limit(limit)
-            .offset(offset)
+            select(Clinic).order_by(Clinic.created_at.asc()).limit(limit).offset(offset)
         )
         return list(self._session.scalars(stmt).all())
 

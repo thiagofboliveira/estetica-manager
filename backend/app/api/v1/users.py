@@ -1,9 +1,14 @@
 from uuid import UUID
 
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, HTTPException, Request, status
 
 from app.api.deps import AdminUser, CurrentUser, UserSvc
-from app.schemas.user import UserCreateInput, UserOutput, UserUpdateInput
+from app.schemas.user import (
+    TermsAcceptInput,
+    UserCreateInput,
+    UserOutput,
+    UserUpdateInput,
+)
 from app.services.user_service import UserServiceError
 
 router = APIRouter(prefix="/users", tags=["users"])
@@ -13,6 +18,25 @@ router = APIRouter(prefix="/users", tags=["users"])
 def get_current_user_profile(user: CurrentUser) -> UserOutput:
     """Retorna os dados do usuário autenticado na sessão atual."""
     return UserOutput.model_validate(user)
+
+
+@router.post("/me/accept-terms", response_model=UserOutput)
+def accept_terms(
+    body: TermsAcceptInput,
+    user: CurrentUser,
+    service: UserSvc,
+    request: Request,
+) -> UserOutput:
+    """Registra formalmente o aceite dos Termos de Uso e DPA/LGPD pelo usuário (G-10)."""
+    ip = request.client.host if request.client else None
+    user_agent = request.headers.get("user-agent")
+    updated_user = service.accept_terms(
+        user_id=user.id,
+        terms_version=body.terms_version,
+        ip_address=ip,
+        user_agent=user_agent,
+    )
+    return UserOutput.model_validate(updated_user)
 
 
 @router.get("", response_model=list[UserOutput])
@@ -29,7 +53,9 @@ def create_user(
     service: UserSvc,
 ) -> UserOutput:
     """Cria um novo usuário na clínica do administrador. Exige permissão de administrador."""
-    target_clinic_id = admin.clinic_id if admin.clinic_id is not None else body.clinic_id
+    target_clinic_id = (
+        admin.clinic_id if admin.clinic_id is not None else body.clinic_id
+    )
     try:
         user = service.create_user(
             name=body.name,

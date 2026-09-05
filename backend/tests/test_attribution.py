@@ -186,7 +186,9 @@ def test_attribution_service_get_roi():
         financial_settings_service=mock_financial_settings_svc,
     )
 
-    result, period_name, d_from, d_to, is_estimated = svc.get_roi(filter_name="this_month")
+    result, period_name, d_from, d_to, is_estimated = svc.get_roi(
+        filter_name="this_month"
+    )
 
     assert result.attributed_revenue == Decimal("0.00")
     assert result.attributed_sale_count == 0

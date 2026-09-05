@@ -54,7 +54,9 @@ def get_procedure_templates() -> list[ProcedureTemplateOut]:
     ]
 
 
-@router.post("/from-template", response_model=ProcedureOut, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/from-template", response_model=ProcedureOut, status_code=status.HTTP_201_CREATED
+)
 def create_procedure_from_template(
     payload: ProcedureFromTemplateCreate, svc: ProcedureSvc
 ) -> ProcedureOut:
@@ -78,7 +80,10 @@ def list_procedures(
 ) -> ProcedureListOut:
     offset = (page - 1) * page_size
     items = svc.list(
-        limit=page_size, offset=offset, is_invasive=is_invasive, session_plan=session_plan
+        limit=page_size,
+        offset=offset,
+        is_invasive=is_invasive,
+        session_plan=session_plan,
     )
     return ProcedureListOut(
         items=[ProcedureOut.model_validate(p) for p in items],

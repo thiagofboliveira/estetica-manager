@@ -319,7 +319,15 @@ export function LoginPage() {
           )}
 
           <div className={styles.termsNote}>
-            Plataforma protegida e em conformidade com as diretrizes de privacidade LGPD.
+            Ao acessar, você concorda com nossos{" "}
+            <Link to="/termos" target="_blank" rel="noopener noreferrer">
+              Termos de Uso
+            </Link>{" "}
+            e nossa{" "}
+            <Link to="/privacidade" target="_blank" rel="noopener noreferrer">
+              Política de Privacidade (LGPD)
+            </Link>
+            .
           </div>
         </div>
       </div>

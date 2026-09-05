@@ -31,7 +31,9 @@ class ProcedureService:
             estimated_cost=money(dto.estimated_cost),
             return_interval_days=dto.return_interval_days,
             default_modality=dto.default_modality,
-            split_override=money(dto.split_override) if dto.split_override is not None else None,
+            split_override=money(dto.split_override)
+            if dto.split_override is not None
+            else None,
             is_invasive=dto.is_invasive,
             session_plan=dto.session_plan,
         )
@@ -46,7 +48,9 @@ class ProcedureService:
         name = dto.name.strip() if dto.name else template.name
         existing = self._repo.find_by_name(name)
         if existing:
-            raise ProcedureAlreadyExistsError(f"Procedimento '{name}' já está cadastrado.")
+            raise ProcedureAlreadyExistsError(
+                f"Procedimento '{name}' já está cadastrado."
+            )
 
         price = dto.price if dto.price is not None else str(template.suggested_price)
         estimated_cost = (
@@ -86,11 +90,17 @@ class ProcedureService:
         session_plan: SessionPlan | None = None,
     ) -> list[Procedure]:
         return self._repo.list(
-            limit=limit, offset=offset, is_invasive=is_invasive, session_plan=session_plan
+            limit=limit,
+            offset=offset,
+            is_invasive=is_invasive,
+            session_plan=session_plan,
         )
 
     def count(
-        self, *, is_invasive: bool | None = None, session_plan: SessionPlan | None = None
+        self,
+        *,
+        is_invasive: bool | None = None,
+        session_plan: SessionPlan | None = None,
     ) -> int:
         return self._repo.count(is_invasive=is_invasive, session_plan=session_plan)
 

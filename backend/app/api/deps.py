@@ -29,6 +29,7 @@ from app.repositories.return_opportunity import ReturnOpportunityRepository
 from app.repositories.sale import SaleRepository
 from app.repositories.sale_item import SaleItemRepository
 from app.repositories.session import SessionRepository
+from app.repositories.terms_acceptance import TermsAcceptanceRepository
 from app.repositories.user import UserRepository
 from app.services.agenda_service import AgendaService
 from app.services.attribution_service import AttributionService
@@ -113,9 +114,7 @@ def _system_db():
 SystemDbSession = Annotated[Session, Depends(_system_db)]
 
 
-def get_current_user(
-    session: DbSession, professional_id: CurrentProfessional
-) -> User:
+def get_current_user(session: DbSession, professional_id: CurrentProfessional) -> User:
     user = UserRepository(session).get_by_id(professional_id)
     if user is None:
         raise HTTPException(
@@ -284,7 +283,10 @@ def get_booking_service(
 
 
 def get_user_service(session: DbSession) -> UserService:
-    return UserService(UserRepository(session))
+    return UserService(
+        user_repo=UserRepository(session),
+        terms_repo=TermsAcceptanceRepository(session),
+    )
 
 
 def get_system_service(session: SystemDbSession) -> SystemService:
@@ -300,7 +302,10 @@ def get_system_clinic_service(session: SystemDbSession) -> ClinicService:
 
 
 def get_system_user_service(session: SystemDbSession) -> UserService:
-    return UserService(UserRepository(session))
+    return UserService(
+        user_repo=UserRepository(session),
+        terms_repo=TermsAcceptanceRepository(session),
+    )
 
 
 def get_attribution_service(
@@ -309,7 +314,9 @@ def get_attribution_service(
     return AttributionService(
         opportunity_repo=ReturnOpportunityRepository(session, professional_id),
         professional_repo=ProfessionalRepository(session, professional_id),
-        financial_settings_service=get_financial_settings_service(session, professional_id),
+        financial_settings_service=get_financial_settings_service(
+            session, professional_id
+        ),
         session_repo=SessionRepository(session, professional_id),
     )
 
@@ -368,4 +375,3 @@ SystemClinicSvc = Annotated[ClinicService, Depends(get_system_clinic_service)]
 SystemUserSvc = Annotated[UserService, Depends(get_system_user_service)]
 AttributionSvc = Annotated[AttributionService, Depends(get_attribution_service)]
 ExportSvc = Annotated[ExportService, Depends(get_export_service)]
-

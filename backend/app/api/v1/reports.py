@@ -75,7 +75,9 @@ def get_expenses_by_category(svc: ExpensesByCategorySvc) -> ExpensesByCategoryOu
     rows = svc.get_breakdown()
     return ExpensesByCategoryOut(
         rows=[
-            ExpenseByCategoryRowOut(category=row.category, monthly_amount=row.monthly_amount)
+            ExpenseByCategoryRowOut(
+                category=row.category, monthly_amount=row.monthly_amount
+            )
             for row in rows
         ]
     )

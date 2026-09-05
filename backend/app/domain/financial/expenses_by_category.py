@@ -37,7 +37,9 @@ def build_expenses_by_category(
     accumulated: dict[str, Decimal] = {}
     for expense in expenses:
         label = (expense.category or "").strip() or SEM_CATEGORIA
-        accumulated[label] = money(accumulated.get(label, ZERO) + monthly_equivalent(expense))
+        accumulated[label] = money(
+            accumulated.get(label, ZERO) + monthly_equivalent(expense)
+        )
 
     rows = [
         ExpenseByCategoryRow(category=category, monthly_amount=amount)

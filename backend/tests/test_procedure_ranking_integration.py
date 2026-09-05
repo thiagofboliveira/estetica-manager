@@ -95,7 +95,11 @@ class TestSessionCountEhSessaoCompletedNaoQuantidadeVendida:
         patient_id: str,
         procedure_id: str,
     ) -> None:
-        client.post("/api/v1/sales", json=_sale_body(patient_id, procedure_id), headers=auth_headers)
+        client.post(
+            "/api/v1/sales",
+            json=_sale_body(patient_id, procedure_id),
+            headers=auth_headers,
+        )
 
         row = _find_procedure_row(client, auth_headers, procedure_id)
         # A venda foi registrada e o item existe no ranking (gross_revenue > 0),
@@ -111,7 +115,9 @@ class TestSessionCountEhSessaoCompletedNaoQuantidadeVendida:
         procedure_id: str,
     ) -> None:
         sale_resp = client.post(
-            "/api/v1/sales", json=_sale_body(patient_id, procedure_id), headers=auth_headers
+            "/api/v1/sales",
+            json=_sale_body(patient_id, procedure_id),
+            headers=auth_headers,
         )
         session_id = sale_resp.json()["sessions"][0]["id"]
 

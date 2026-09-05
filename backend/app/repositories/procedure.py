@@ -35,7 +35,10 @@ class ProcedureRepository(TenantRepository[Procedure]):
         return list(self._session.scalars(stmt))
 
     def count(
-        self, *, is_invasive: bool | None = None, session_plan: SessionPlan | None = None
+        self,
+        *,
+        is_invasive: bool | None = None,
+        session_plan: SessionPlan | None = None,
     ) -> int:
         stmt = select(func.count()).select_from(
             self._filtered(is_invasive, session_plan).subquery()

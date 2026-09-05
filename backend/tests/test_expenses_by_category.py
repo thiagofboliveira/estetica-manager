@@ -11,9 +11,15 @@ from app.domain.financial.expenses_by_category import (
 
 def test_agrupa_por_categoria_somando_despesas_mensais() -> None:
     expenses = [
-        FixedExpenseForDashboard(amount=D("800.00"), periodicity="MONTHLY", category="aluguel"),
-        FixedExpenseForDashboard(amount=D("400.00"), periodicity="MONTHLY", category="aluguel"),
-        FixedExpenseForDashboard(amount=D("150.00"), periodicity="MONTHLY", category="água/luz"),
+        FixedExpenseForDashboard(
+            amount=D("800.00"), periodicity="MONTHLY", category="aluguel"
+        ),
+        FixedExpenseForDashboard(
+            amount=D("400.00"), periodicity="MONTHLY", category="aluguel"
+        ),
+        FixedExpenseForDashboard(
+            amount=D("150.00"), periodicity="MONTHLY", category="água/luz"
+        ),
     ]
     rows = build_expenses_by_category(expenses)
     assert len(rows) == 2
@@ -25,8 +31,12 @@ def test_agrupa_por_categoria_somando_despesas_mensais() -> None:
 
 def test_despesa_sem_categoria_vira_balde_sem_categoria() -> None:
     expenses = [
-        FixedExpenseForDashboard(amount=D("100.00"), periodicity="MONTHLY", category=None),
-        FixedExpenseForDashboard(amount=D("50.00"), periodicity="MONTHLY", category="  "),
+        FixedExpenseForDashboard(
+            amount=D("100.00"), periodicity="MONTHLY", category=None
+        ),
+        FixedExpenseForDashboard(
+            amount=D("50.00"), periodicity="MONTHLY", category="  "
+        ),
     ]
     rows = build_expenses_by_category(expenses)
     assert len(rows) == 1
@@ -47,8 +57,12 @@ def test_despesa_yearly_entra_ratada_por_12() -> None:
 
 def test_ordenado_por_valor_mensal_decrescente() -> None:
     expenses = [
-        FixedExpenseForDashboard(amount=D("50.00"), periodicity="MONTHLY", category="pequena"),
-        FixedExpenseForDashboard(amount=D("900.00"), periodicity="MONTHLY", category="grande"),
+        FixedExpenseForDashboard(
+            amount=D("50.00"), periodicity="MONTHLY", category="pequena"
+        ),
+        FixedExpenseForDashboard(
+            amount=D("900.00"), periodicity="MONTHLY", category="grande"
+        ),
     ]
     rows = build_expenses_by_category(expenses)
     assert [r.category for r in rows] == ["grande", "pequena"]

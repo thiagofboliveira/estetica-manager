@@ -14,6 +14,9 @@ export interface UserSession {
   role: Role;
   is_superuser: boolean;
   is_active?: boolean;
+  terms_accepted?: boolean;
+  terms_accepted_at?: string | null;
+  terms_version?: string | null;
 }
 
 interface AuthContextValue {
@@ -21,6 +24,7 @@ interface AuthContextValue {
   isLoading: boolean;
   logout: () => Promise<void>;
   checkAuth: () => Promise<void>;
+  acceptTerms: (termsVersion?: string) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
@@ -40,11 +44,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       
       const res = await api.get<UserSession>("/users/me");
       setUser(res);
-    } catch (e) {
+    } catch {
       setUser(null);
     } finally {
       setIsLoading(false);
     }
+  }
+
+  async function acceptTerms(termsVersion: string = "2026-09-v1") {
+    const updated = await api.post<UserSession>("/users/me/accept-terms", {
+      terms_version: termsVersion,
+    });
+    setUser(updated);
   }
 
   async function logout() {
@@ -58,7 +69,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   return (
-    <AuthContext.Provider value={{ user, isLoading, logout, checkAuth }}>
+    <AuthContext.Provider value={{ user, isLoading, logout, checkAuth, acceptTerms }}>
       {children}
     </AuthContext.Provider>
   );

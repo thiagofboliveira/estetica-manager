@@ -55,7 +55,10 @@ class TestCorsProducao:
 
         resp = client.get(
             "/health",
-            headers={"Origin": "https://qualquer-site.com", "Access-Control-Request-Method": "GET"},
+            headers={
+                "Origin": "https://qualquer-site.com",
+                "Access-Control-Request-Method": "GET",
+            },
         )
         assert "access-control-allow-origin" not in resp.headers
 
@@ -77,7 +80,10 @@ class TestCorsProducao:
                 "Access-Control-Request-Method": "GET",
             },
         )
-        assert resp_ok.headers.get("access-control-allow-origin") == "https://app.lumina.com.br"
+        assert (
+            resp_ok.headers.get("access-control-allow-origin")
+            == "https://app.lumina.com.br"
+        )
 
         resp_blocked = client.options(
             "/health",

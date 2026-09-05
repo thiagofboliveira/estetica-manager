@@ -54,7 +54,9 @@ class TestPaginacaoProcedures:
         _create_procedure(client, auth_headers, f"Proc Pag {uuid.uuid4()}")
 
         resp = client.get(
-            "/api/v1/procedures", params={"page": 1, "page_size": 5}, headers=auth_headers
+            "/api/v1/procedures",
+            params={"page": 1, "page_size": 5},
+            headers=auth_headers,
         )
         assert resp.status_code == 200, resp.text
         body = resp.json()
@@ -73,7 +75,9 @@ class TestPaginacaoProcedures:
             _create_procedure(client, auth_headers, f"Proc {marker} {i}")
 
         resp = client.get(
-            "/api/v1/procedures", params={"page": 1, "page_size": 2}, headers=auth_headers
+            "/api/v1/procedures",
+            params={"page": 1, "page_size": 2},
+            headers=auth_headers,
         )
         assert resp.status_code == 200, resp.text
         assert len(resp.json()["items"]) == 2
@@ -93,13 +97,20 @@ class TestPaginacaoProcedures:
         self, client: TestClient, auth_headers: dict[str, str]
     ) -> None:
         marker = str(uuid.uuid4())
-        ids = {_create_procedure(client, auth_headers, f"Proc {marker} {i}") for i in range(3)}
+        ids = {
+            _create_procedure(client, auth_headers, f"Proc {marker} {i}")
+            for i in range(3)
+        }
 
         page1 = client.get(
-            "/api/v1/procedures", params={"page": 1, "page_size": 1}, headers=auth_headers
+            "/api/v1/procedures",
+            params={"page": 1, "page_size": 1},
+            headers=auth_headers,
         ).json()
         page2 = client.get(
-            "/api/v1/procedures", params={"page": 2, "page_size": 1}, headers=auth_headers
+            "/api/v1/procedures",
+            params={"page": 2, "page_size": 1},
+            headers=auth_headers,
         ).json()
 
         id1 = page1["items"][0]["id"]

@@ -59,7 +59,9 @@ def _sale_body(patient_id: str, procedure_id: str) -> dict:
     }
 
 
-def _complete_first_session(client: TestClient, headers: dict[str, str], sale_resp: dict) -> str:
+def _complete_first_session(
+    client: TestClient, headers: dict[str, str], sale_resp: dict
+) -> str:
     session_id = sale_resp["sessions"][0]["id"]
     resp = client.patch(
         f"/api/v1/sessions/{session_id}", json={"status": "COMPLETED"}, headers=headers
@@ -68,7 +70,9 @@ def _complete_first_session(client: TestClient, headers: dict[str, str], sale_re
     return session_id
 
 
-def _backdate_completed_at(professional_id: str, session_id: str, days_ago: int) -> None:
+def _backdate_completed_at(
+    professional_id: str, session_id: str, days_ago: int
+) -> None:
     """Testa "parado há X dias" sem esperar X dias de verdade — recua
     completed_at direto no Postgres (não existe campo editável via API
     para isso, é derivado do momento real da conclusão). RLS exige o GUC
@@ -79,7 +83,9 @@ def _backdate_completed_at(professional_id: str, session_id: str, days_ago: int)
             {"pid": professional_id},
         )
         conn.execute(
-            text("UPDATE sessions SET completed_at = now() - (:days || ' days')::interval WHERE id = :id"),
+            text(
+                "UPDATE sessions SET completed_at = now() - (:days || ' days')::interval WHERE id = :id"
+            ),
             {"days": days_ago, "id": session_id},
         )
 
@@ -89,7 +95,9 @@ class TestNuncaTratados:
         self, client: TestClient, auth_headers: dict[str, str]
     ) -> None:
         marker = uuid.uuid4().hex
-        patient_id = _create_patient(client, auth_headers, f"Nunca Tratou Reeng {marker}")
+        patient_id = _create_patient(
+            client, auth_headers, f"Nunca Tratou Reeng {marker}"
+        )
 
         resp = client.get(
             "/api/v1/retention/reengagement",
@@ -105,8 +113,14 @@ class TestNuncaTratados:
     ) -> None:
         marker = uuid.uuid4().hex
         patient_id = _create_patient(client, auth_headers, f"Ja Comprou Reeng {marker}")
-        procedure_id = _create_procedure(client, auth_headers, f"Produto Reeng {uuid.uuid4()}")
-        client.post("/api/v1/sales", json=_sale_body(patient_id, procedure_id), headers=auth_headers)
+        procedure_id = _create_procedure(
+            client, auth_headers, f"Produto Reeng {uuid.uuid4()}"
+        )
+        client.post(
+            "/api/v1/sales",
+            json=_sale_body(patient_id, procedure_id),
+            headers=auth_headers,
+        )
 
         resp = client.get("/api/v1/retention/reengagement", headers=auth_headers)
         ids = {p["patient_id"] for p in resp.json()["never_treated"]}
@@ -119,9 +133,13 @@ class TestInativoPorDias:
     ) -> None:
         marker = uuid.uuid4().hex
         patient_id = _create_patient(client, auth_headers, f"Parado Ha Muito {marker}")
-        procedure_id = _create_procedure(client, auth_headers, f"Servico Antigo {uuid.uuid4()}")
+        procedure_id = _create_procedure(
+            client, auth_headers, f"Servico Antigo {uuid.uuid4()}"
+        )
         sale_resp = client.post(
-            "/api/v1/sales", json=_sale_body(patient_id, procedure_id), headers=auth_headers
+            "/api/v1/sales",
+            json=_sale_body(patient_id, procedure_id),
+            headers=auth_headers,
         )
         session_id = _complete_first_session(client, auth_headers, sale_resp.json())
         token = auth_headers["Authorization"].removeprefix("Bearer ")
@@ -142,9 +160,13 @@ class TestInativoPorDias:
     ) -> None:
         marker = uuid.uuid4().hex
         patient_id = _create_patient(client, auth_headers, f"Tratou Recente {marker}")
-        procedure_id = _create_procedure(client, auth_headers, f"Servico Recente {uuid.uuid4()}")
+        procedure_id = _create_procedure(
+            client, auth_headers, f"Servico Recente {uuid.uuid4()}"
+        )
         sale_resp = client.post(
-            "/api/v1/sales", json=_sale_body(patient_id, procedure_id), headers=auth_headers
+            "/api/v1/sales",
+            json=_sale_body(patient_id, procedure_id),
+            headers=auth_headers,
         )
         _complete_first_session(client, auth_headers, sale_resp.json())
 

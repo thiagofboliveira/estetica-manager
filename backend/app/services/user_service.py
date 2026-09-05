@@ -1,10 +1,14 @@
+from datetime import UTC, datetime
 from uuid import UUID
 
 from app.core.config import settings
 from app.core.supabase_admin import SupabaseAdminClient, SupabaseAdminError
 from app.models.professional import Professional
+from app.models.terms_acceptance import TermsAcceptance
 from app.models.user import User
+from app.repositories.terms_acceptance import TermsAcceptanceRepository
 from app.repositories.user import UserRepository
+from app.schemas.user import CURRENT_TERMS_VERSION
 
 
 class UserServiceError(Exception):
@@ -17,11 +21,13 @@ class UserService:
         self,
         user_repo: UserRepository,
         supabase_admin: SupabaseAdminClient | None = None,
+        terms_repo: TermsAcceptanceRepository | None = None,
     ) -> None:
         self._user_repo = user_repo
         # Injetável para teste (mock) — nunca instanciado aqui na falta de
         # SUPABASE_SERVICE_ROLE_KEY, mesmo motivo de SystemService.
         self._supabase_admin = supabase_admin
+        self._terms_repo = terms_repo
 
     def list_users(self, clinic_id: UUID | None = None) -> list[User]:
         if clinic_id is not None:
@@ -151,3 +157,31 @@ class UserService:
             current_user_id=current_user_id,
             is_active=False,
         )
+
+    def accept_terms(
+        self,
+        user_id: UUID,
+        terms_version: str = CURRENT_TERMS_VERSION,
+        ip_address: str | None = None,
+        user_agent: str | None = None,
+    ) -> User:
+        user = self.get_user(user_id)
+        now = datetime.now(UTC)
+        user.terms_accepted_at = now
+        user.terms_version = terms_version
+
+        if self._terms_repo is not None:
+            self._terms_repo.record_acceptance(
+                user_id=user_id,
+                terms_version=terms_version,
+                ip_address=ip_address,
+                user_agent=user_agent,
+            )
+
+        self._user_repo.flush()
+        return user
+
+    def list_terms_acceptances(self, user_id: UUID) -> list[TermsAcceptance]:
+        if self._terms_repo is not None:
+            return self._terms_repo.list_by_user(user_id)
+        return []

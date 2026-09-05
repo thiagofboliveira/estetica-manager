@@ -121,7 +121,6 @@ if settings.ENV == "development":
     from fastapi.security import HTTPAuthorizationCredentials as _HTTPCreds
     from fastapi.security import HTTPBearer as _HTTPBearer
 
-
     @app.post("/dev/impersonate/{user_id}", tags=["dev"])
     def dev_impersonate(
         user_id: str,

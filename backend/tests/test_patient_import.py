@@ -49,10 +49,18 @@ def test_batch_import_deduplicates_existing_and_in_batch():
 
     req = PatientBatchImportRequest(
         patients=[
-            PatientBatchImportItem(name="Juliana Duplicada", phone="(11) 98765-4321"),  # existe na base -> skip
-            PatientBatchImportItem(name="Carla Nova", phone="(21) 91234-5678"),         # novo -> cria
-            PatientBatchImportItem(name="Carla Repetida", phone="(21) 91234-5678"),     # duplicado no lote -> skip
-            PatientBatchImportItem(name="Sem Telefone", phone=None),                    # sem telefone -> cria
+            PatientBatchImportItem(
+                name="Juliana Duplicada", phone="(11) 98765-4321"
+            ),  # existe na base -> skip
+            PatientBatchImportItem(
+                name="Carla Nova", phone="(21) 91234-5678"
+            ),  # novo -> cria
+            PatientBatchImportItem(
+                name="Carla Repetida", phone="(21) 91234-5678"
+            ),  # duplicado no lote -> skip
+            PatientBatchImportItem(
+                name="Sem Telefone", phone=None
+            ),  # sem telefone -> cria
         ]
     )
 
@@ -75,7 +83,9 @@ def test_batch_import_atomic_rollback_on_high_error_rate():
         patients=[
             PatientBatchImportItem(name="Valido 1", phone=None),
             PatientBatchImportItem(name="", phone=None),  # erro
-            PatientBatchImportItem(name="", phone=None),  # erro (2/3 = 66% de erros > 20%)
+            PatientBatchImportItem(
+                name="", phone=None
+            ),  # erro (2/3 = 66% de erros > 20%)
         ]
     )
 
@@ -144,8 +154,12 @@ def test_batch_import_generates_return_opportunities_with_source_import():
 
     req = PatientBatchImportRequest(
         patients=[
-            PatientBatchImportItem(name="Paciente com Retorno 1", phone="(11) 91111-2222"),
-            PatientBatchImportItem(name="Paciente com Retorno 2", phone="(11) 93333-4444"),
+            PatientBatchImportItem(
+                name="Paciente com Retorno 1", phone="(11) 91111-2222"
+            ),
+            PatientBatchImportItem(
+                name="Paciente com Retorno 2", phone="(11) 93333-4444"
+            ),
         ],
         default_procedure_id=proc_id,
         generate_return_opportunities=True,
@@ -178,7 +192,9 @@ def test_import_integration_generates_retroactive_opportunities_not_attributed()
     from app.repositories.return_opportunity import ReturnOpportunityRepository
 
     # Isola o rate limiter para este teste
-    deps._patient_import_rate_limiter = InMemoryRateLimiter(max_calls=10, window=timedelta(hours=1))
+    deps._patient_import_rate_limiter = InMemoryRateLimiter(
+        max_calls=10, window=timedelta(hours=1)
+    )
 
     client = TestClient(app)
     login = client.post("/dev/login")
@@ -204,7 +220,9 @@ def test_import_integration_generates_retroactive_opportunities_not_attributed()
     import_resp = client.post(
         "/api/v1/patients/import",
         json={
-            "patients": [{"name": f"Paciente G12 {uuid.uuid4()}", "phone": unique_phone}],
+            "patients": [
+                {"name": f"Paciente G12 {uuid.uuid4()}", "phone": unique_phone}
+            ],
             "default_procedure_id": proc_id,
             "generate_return_opportunities": True,
         },
@@ -223,7 +241,11 @@ def test_import_integration_generates_retroactive_opportunities_not_attributed()
     session = next(gen)
     try:
         repo = ReturnOpportunityRepository(session, prof_id)
-        opp = session.query(ReturnOpportunity).filter_by(patient_id=uuid.UUID(patient_id)).first()
+        opp = (
+            session.query(ReturnOpportunity)
+            .filter_by(patient_id=uuid.UUID(patient_id))
+            .first()
+        )
         assert opp is not None
         assert opp.source == "IMPORT"
 

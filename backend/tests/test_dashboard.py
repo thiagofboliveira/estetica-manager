@@ -131,7 +131,7 @@ class TestLucroRealDoMes:
                 fixed_expenses=expenses,
                 period_kind=kind,
                 today=date(2026, 3, 15),
-            date_to=date(2026, 3, 15),
+                date_to=date(2026, 3, 15),
                 has_any_sale_ever=True,
             )
             assert result.fixed_expenses_total is None, kind

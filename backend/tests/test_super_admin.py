@@ -115,7 +115,9 @@ def test_system_service_status_and_setup(db_session):
     assert fake_admin.invited_emails == ["root@clinica.com"]
 
 
-def test_setup_root_desfaz_convite_supabase_se_transacao_falhar(db_session, monkeypatch):
+def test_setup_root_desfaz_convite_supabase_se_transacao_falhar(
+    db_session, monkeypatch
+):
     """Se algo falhar depois do convite (ex.: erro de integridade ao
     gravar Professional), o usuário não pode ficar órfão no Supabase
     Auth — sem User local correspondente, o login dele nunca resolveria
@@ -213,7 +215,9 @@ def test_system_and_users_api_endpoints(db_session):
     def override_user_service():
         # create_user() também chama o Supabase Auth via Admin API — mesmo
         # motivo do override acima.
-        return UserService(UserRepository(db_session), supabase_admin=_FakeSupabaseAdmin())
+        return UserService(
+            UserRepository(db_session), supabase_admin=_FakeSupabaseAdmin()
+        )
 
     app.dependency_overrides[_system_db] = override_system_db
     app.dependency_overrides[get_system_service] = override_system_service
@@ -284,13 +288,19 @@ def test_system_and_users_api_endpoints(db_session):
     # 7. Admin cria usuário -> 201
     res_create = client.post(
         "/api/v1/users",
-        json={"name": "Recepção", "email": "recepcao@lumiere.com", "role": "receptionist"},
+        json={
+            "name": "Recepção",
+            "email": "recepcao@lumiere.com",
+            "role": "receptionist",
+        },
     )
     assert res_create.status_code == 201
     created_id = res_create.json()["id"]
 
     # 8. Admin edita usuário -> 200
-    res_update = client.put(f"/api/v1/users/{created_id}", json={"name": "Recepção Central"})
+    res_update = client.put(
+        f"/api/v1/users/{created_id}", json={"name": "Recepção Central"}
+    )
     assert res_update.status_code == 200
     assert res_update.json()["name"] == "Recepção Central"
 

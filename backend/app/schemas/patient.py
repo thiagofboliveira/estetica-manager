@@ -25,7 +25,9 @@ class PatientCreate(InputSchema):
         try:
             return normalize_br_phone(v)
         except InvalidPhoneError as exc:
-            raise ValueError("Número de telefone inválido (deve conter DDD + número)") from exc
+            raise ValueError(
+                "Número de telefone inválido (deve conter DDD + número)"
+            ) from exc
 
 
 class PatientUpdate(InputSchema):
@@ -45,7 +47,9 @@ class PatientUpdate(InputSchema):
         try:
             return normalize_br_phone(v)
         except InvalidPhoneError as exc:
-            raise ValueError("Número de telefone inválido (deve conter DDD + número)") from exc
+            raise ValueError(
+                "Número de telefone inválido (deve conter DDD + número)"
+            ) from exc
 
 
 class PatientOut(OutputSchema):
@@ -76,7 +80,8 @@ class PatientBatchImportItem(InputSchema):
     email: str | None = Field(default=None, description="E-mail de contato")
     notes: str | None = Field(default=None, description="Anotações / histórico prévio")
     procedure_id: UUID | None = Field(
-        default=None, description="Procedimento de referência para oportunidade de retorno"
+        default=None,
+        description="Procedimento de referência para oportunidade de retorno",
     )
     last_visit_date: date | None = Field(
         default=None, description="Data da última visita para calcular data de retorno"

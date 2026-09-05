@@ -178,9 +178,7 @@ class TestReceivablesRespeitaAntecipacaoCongelada:
         patient_id: str,
         procedure_id: str,
     ) -> None:
-        original = client.get(
-            "/api/v1/financial-settings", headers=auth_headers
-        ).json()
+        original = client.get("/api/v1/financial-settings", headers=auth_headers).json()
 
         patch = client.patch(
             "/api/v1/financial-settings",

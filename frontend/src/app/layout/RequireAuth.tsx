@@ -9,6 +9,8 @@ interface SystemStatus {
   users_count: number;
 }
 
+import { TermsAcceptanceModal } from "@/features/legal/TermsAcceptanceModal";
+
 export function RequireAuth() {
   const { user, isLoading } = useAuth();
   const location = useLocation();
@@ -65,5 +67,10 @@ export function RequireAuth() {
     return <Navigate to="/super-admin/clinicas" replace />;
   }
 
-  return <Outlet />;
+  return (
+    <>
+      <TermsAcceptanceModal />
+      <Outlet />
+    </>
+  );
 }

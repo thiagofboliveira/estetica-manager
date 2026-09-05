@@ -183,7 +183,8 @@ def calculate_sale(items: list[LineItem], params: SaleParams) -> SaleCalculation
     )
 
     nets_of_discount = [
-        money(lt - alloc) for lt, alloc in zip(line_totals, discount_allocations, strict=True)
+        money(lt - alloc)
+        for lt, alloc in zip(line_totals, discount_allocations, strict=True)
     ]
 
     # Taxa: calcula sobre o TOTAL, não por item (backend/ENGENHARIA.md §5).
@@ -198,7 +199,9 @@ def calculate_sale(items: list[LineItem], params: SaleParams) -> SaleCalculation
         and params.anticipation_rate_per_installment is not None
         and params.installments > 0
     ):
-        anticipation_fee = params.anticipation_rate_per_installment * Decimal(params.installments)
+        anticipation_fee = params.anticipation_rate_per_installment * Decimal(
+            params.installments
+        )
         fee_rate = fee_rate + anticipation_fee
 
     fee_amount = money(apply_rate(gross_amount, fee_rate / Decimal(100)) + fixed_fee)
@@ -209,7 +212,9 @@ def calculate_sale(items: list[LineItem], params: SaleParams) -> SaleCalculation
         # Rateio item a item com split customizado
         if params.split_base is SplitBase.NET_OF_FEE:
             fee_allocations = (
-                allocate(fee_amount, nets_of_discount) if fee_amount > ZERO else [ZERO] * len(items)
+                allocate(fee_amount, nets_of_discount)
+                if fee_amount > ZERO
+                else [ZERO] * len(items)
             )
         else:
             fee_allocations = [ZERO] * len(items)
@@ -217,7 +222,12 @@ def calculate_sale(items: list[LineItem], params: SaleParams) -> SaleCalculation
         item_results = []
         item_splits = []
         for item, line_total, disc_alloc, net_disc, fee_alloc in zip(
-            items, line_totals, discount_allocations, nets_of_discount, fee_allocations, strict=True
+            items,
+            line_totals,
+            discount_allocations,
+            nets_of_discount,
+            fee_allocations,
+            strict=True,
         ):
             base_split_item = money(net_disc - fee_alloc)
             item_split_rate = (

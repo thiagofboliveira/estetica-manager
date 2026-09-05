@@ -47,7 +47,9 @@ class AttributionService:
         aceito para simulação/teste, mas o caminho normal (None) sempre
         lê a config."""
         if subscription_fee is None:
-            subscription_fee = self._financial_settings.get_or_create_default().subscription_fee
+            subscription_fee = (
+                self._financial_settings.get_or_create_default().subscription_fee
+            )
 
         professional = self._professional_repo.get_current()
         today = today_in_timezone(professional.timezone)

@@ -19,7 +19,9 @@ class SaleReceivableInput:
     sold_at: date
     payment_method: str  # "CREDIT", "PIX", etc.
     installments: int
-    net_received_amount: Decimal  # Valor líquido que a profissional recebe após taxas da adquirente
+    net_received_amount: (
+        Decimal  # Valor líquido que a profissional recebe após taxas da adquirente
+    )
     is_anticipated: bool = False
 
 

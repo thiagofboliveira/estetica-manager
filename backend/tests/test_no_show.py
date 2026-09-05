@@ -94,7 +94,9 @@ def test_session_confirm_invalid_status_raises_error():
         professional_repo=MagicMock(),
     )
 
-    with pytest.raises(ValueError, match="Apenas sessões agendadas podem ser confirmadas"):
+    with pytest.raises(
+        ValueError, match="Apenas sessões agendadas podem ser confirmadas"
+    ):
         svc.confirm(session_id)
 
 
@@ -114,7 +116,9 @@ def test_dashboard_no_show_metrics():
         ],
         session_count=4,
         no_show_count=1,
-        fixed_expenses=[FixedExpenseForDashboard(amount=Decimal("100.00"), periodicity="MONTHLY")],
+        fixed_expenses=[
+            FixedExpenseForDashboard(amount=Decimal("100.00"), periodicity="MONTHLY")
+        ],
         period_kind=PeriodKind.MONTH,
         today=today,
         date_to=today,

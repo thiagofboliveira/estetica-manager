@@ -347,7 +347,9 @@ class SessionService:
             start_dt.astimezone(UTC), end_dt.astimezone(UTC)
         )
         bookings = self._bookings.list_in_range(
-            start_dt.astimezone(UTC), end_dt.astimezone(UTC), status=BookingStatus.SCHEDULED
+            start_dt.astimezone(UTC),
+            end_dt.astimezone(UTC),
+            status=BookingStatus.SCHEDULED,
         )
 
         result: list[UnconfirmedSessionOut] = []
@@ -371,7 +373,9 @@ class SessionService:
             time_str = sched_local.strftime("%H:%M")
 
             msg = build_confirmation_message(pat_name, proc_name, time_str)
-            link = build_whatsapp_link(pat_phone, msg) if consent and pat_phone else None
+            link = (
+                build_whatsapp_link(pat_phone, msg) if consent and pat_phone else None
+            )
 
             result.append(
                 UnconfirmedSessionOut(
@@ -392,12 +396,16 @@ class SessionService:
             sched_local = b.scheduled_at.astimezone(tz)
             time_str = sched_local.strftime("%H:%M")
 
-            pat_name = b.patient.name if b.patient else (b.patient_name_hint or "Contato novo")
+            pat_name = (
+                b.patient.name if b.patient else (b.patient_name_hint or "Contato novo")
+            )
             pat_phone = b.patient.phone if b.patient else None
             consent = b.patient.consent_whatsapp if b.patient else False
 
             msg = build_confirmation_message(pat_name, "Atendimento", time_str)
-            link = build_whatsapp_link(pat_phone, msg) if consent and pat_phone else None
+            link = (
+                build_whatsapp_link(pat_phone, msg) if consent and pat_phone else None
+            )
 
             result.append(
                 UnconfirmedSessionOut(

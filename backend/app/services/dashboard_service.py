@@ -91,12 +91,15 @@ class DashboardService:
             )
             recent_sales = self._sales.list_in_period(recent_from, recent_to)
             average_ticket_recent = calculate_recent_average_ticket(
-                [SaleForDashboard(
-                    gross_amount=s.gross_amount,
-                    net_profit=s.net_profit,
-                    expected_receipt_date=s.expected_receipt_date,
-                    sold_at=s.sold_at,
-                ) for s in recent_sales]
+                [
+                    SaleForDashboard(
+                        gross_amount=s.gross_amount,
+                        net_profit=s.net_profit,
+                        expected_receipt_date=s.expected_receipt_date,
+                        sold_at=s.sold_at,
+                    )
+                    for s in recent_sales
+                ]
             )
 
         result = build_dashboard(
@@ -112,9 +115,7 @@ class DashboardService:
         )
         return result, period
 
-    def get_receivables_projection(
-        self, *, months_ahead: int = 12
-    ):
+    def get_receivables_projection(self, *, months_ahead: int = 12):
         from app.domain.financial.receivables import (
             SaleReceivableInput,
             project_monthly_receivables,
@@ -146,4 +147,3 @@ class DashboardService:
             reference_date=today,
             months_ahead=months_ahead,
         )
-

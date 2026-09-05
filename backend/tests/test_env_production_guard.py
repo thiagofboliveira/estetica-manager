@@ -184,6 +184,4 @@ class TestSegredoSemFallback:
             for p in app_dir.rglob("*.py")
             if "dev-secret-estetica-local-key" in p.read_text(encoding="utf-8")
         ]
-        assert ofensores == [], (
-            f"segredo hardcoded ainda presente em: {ofensores}"
-        )
+        assert ofensores == [], f"segredo hardcoded ainda presente em: {ofensores}"

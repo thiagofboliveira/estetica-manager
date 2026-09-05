@@ -12,9 +12,14 @@ from app.domain.financial.dashboard import (
 )
 
 
-def _sale(gross: str, profit: str, sold_at: date = date(2026, 3, 10)) -> SaleForDashboard:
+def _sale(
+    gross: str, profit: str, sold_at: date = date(2026, 3, 10)
+) -> SaleForDashboard:
     return SaleForDashboard(
-        gross_amount=D(gross), net_profit=D(profit), expected_receipt_date=None, sold_at=sold_at
+        gross_amount=D(gross),
+        net_profit=D(profit),
+        expected_receipt_date=None,
+        sold_at=sold_at,
     )
 
 
@@ -115,7 +120,9 @@ class TestBreakevenRemainingSessionsEstimate:
         )
         assert result.breakeven_remaining_sessions_estimate == 0
 
-    def test_ja_bateu_o_breakeven_e_zero_mesmo_sem_historico_de_ticket_medio(self) -> None:
+    def test_ja_bateu_o_breakeven_e_zero_mesmo_sem_historico_de_ticket_medio(
+        self,
+    ) -> None:
         result = build_dashboard(
             sales=[_sale("2000.00", "1200.00")],
             session_count=1,

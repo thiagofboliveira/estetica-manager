@@ -30,7 +30,9 @@ from app.models.base import TenantModel
 class Event(TenantModel):
     __tablename__ = "events"
 
-    id: Mapped[UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, default=uuid4)
+    id: Mapped[UUID] = mapped_column(
+        PGUUID(as_uuid=True), primary_key=True, default=uuid4
+    )
     # Nome curto e estável — ver EventName em domain/events.py para o
     # catálogo fechado de nomes válidos (evita string solta espalhada
     # pelo código, que é impossível de auditar depois).

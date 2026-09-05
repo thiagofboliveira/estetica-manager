@@ -37,7 +37,9 @@ def _create_patient(client: TestClient, headers: dict[str, str], name: str) -> s
     return resp.json()["id"]
 
 
-def _create_procedure(client: TestClient, headers: dict[str, str], name: str, price: str) -> str:
+def _create_procedure(
+    client: TestClient, headers: dict[str, str], name: str, price: str
+) -> str:
     resp = client.post(
         "/api/v1/procedures",
         json={"name": name, "price": price, "estimated_cost": "30.00"},
@@ -67,7 +69,9 @@ class TestNoShowEvitado:
             client, auth_headers, f"Servico Confirmado {uuid.uuid4()}", "280.00"
         )
         sale_resp = client.post(
-            "/api/v1/sales", json=_sale_body(patient_id, procedure_id), headers=auth_headers
+            "/api/v1/sales",
+            json=_sale_body(patient_id, procedure_id),
+            headers=auth_headers,
         )
         session_id = sale_resp.json()["sessions"][0]["id"]
 
@@ -78,12 +82,16 @@ class TestNoShowEvitado:
         assert resp_confirm.status_code == 200, resp_confirm.text
 
         resp_complete = client.patch(
-            f"/api/v1/sessions/{session_id}", json={"status": "COMPLETED"}, headers=auth_headers
+            f"/api/v1/sessions/{session_id}",
+            json={"status": "COMPLETED"},
+            headers=auth_headers,
         )
         assert resp_complete.status_code == 200, resp_complete.text
 
         resp_roi = client.get(
-            "/api/v1/dashboard/roi", params={"period": "this_month"}, headers=auth_headers
+            "/api/v1/dashboard/roi",
+            params={"period": "this_month"},
+            headers=auth_headers,
         )
         assert resp_roi.status_code == 200, resp_roi.text
         body = resp_roi.json()
@@ -105,17 +113,23 @@ class TestNoShowEvitado:
             client, auth_headers, f"Servico Sem Confirmar {uuid.uuid4()}", "500.00"
         )
         sale_resp = client.post(
-            "/api/v1/sales", json=_sale_body(patient_id, procedure_id), headers=auth_headers
+            "/api/v1/sales",
+            json=_sale_body(patient_id, procedure_id),
+            headers=auth_headers,
         )
         session_id = sale_resp.json()["sessions"][0]["id"]
 
         # Completa direto, sem passar por /confirm.
         client.patch(
-            f"/api/v1/sessions/{session_id}", json={"status": "COMPLETED"}, headers=auth_headers
+            f"/api/v1/sessions/{session_id}",
+            json={"status": "COMPLETED"},
+            headers=auth_headers,
         )
 
         resp_roi = client.get(
-            "/api/v1/dashboard/roi", params={"period": "this_month"}, headers=auth_headers
+            "/api/v1/dashboard/roi",
+            params={"period": "this_month"},
+            headers=auth_headers,
         )
         assert resp_roi.status_code == 200, resp_roi.text
         # Não afirma count==0 (outros testes no banco compartilhado
@@ -129,7 +143,9 @@ class TestNoShowEvitado:
         """Confirma a separação na resposta real da API — os dois
         campos existem e são distintos, não um substituindo o outro."""
         resp_roi = client.get(
-            "/api/v1/dashboard/roi", params={"period": "this_month"}, headers=auth_headers
+            "/api/v1/dashboard/roi",
+            params={"period": "this_month"},
+            headers=auth_headers,
         )
         assert resp_roi.status_code == 200, resp_roi.text
         body = resp_roi.json()

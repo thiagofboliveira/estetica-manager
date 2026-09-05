@@ -27,6 +27,9 @@ import { SuperAdminLayout } from "@/features/admin/SuperAdminLayout";
 import { SuperAdminClinicsPage } from "@/features/admin/SuperAdminClinicsPage";
 import { SuperAdminUsersPage } from "@/features/admin/SuperAdminUsersPage";
 
+import { TermsOfServicePage } from "@/features/legal/TermsOfServicePage";
+import { PrivacyPolicyPage } from "@/features/legal/PrivacyPolicyPage";
+
 export const router = createBrowserRouter([
   {
     // G-08a: o boundary agora envolve a árvore INTEIRA, não só a
@@ -36,6 +39,8 @@ export const router = createBrowserRouter([
     children: [
       { path: "/", element: <LandingPage /> },
       { path: "/como-calculamos", element: <HowWeCalculatePage /> },
+      { path: "/termos", element: <TermsOfServicePage /> },
+      { path: "/privacidade", element: <PrivacyPolicyPage /> },
       { path: "/login", element: <LoginPage /> },
       { path: "/setup", element: <SetupWizardPage /> },
       {

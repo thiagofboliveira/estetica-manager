@@ -89,7 +89,9 @@ def test_toda_tabela_com_professional_id_tem_rls_nas_migrations():
 
         # Localiza todas as tabelas criadas no arquivo: op.create_table("nome", ...)
         # Usamos regex para capturar o nome da tabela e o bloco de criação até o próximo op. ou fim da função
-        tabelas_criadas = re.findall(r'op\.create_table\(\s*["\']([^"\']+)["\']', conteudo)
+        tabelas_criadas = re.findall(
+            r'op\.create_table\(\s*["\']([^"\']+)["\']', conteudo
+        )
 
         for tabela in tabelas_criadas:
             # Localiza exatamente o bloco de colunas daquela chamada create_table
@@ -111,22 +113,26 @@ def test_toda_tabela_com_professional_id_tem_rls_nas_migrations():
                     rf"ALTER\s+TABLE\s+{re.escape(tabela)}\s+ENABLE\s+ROW\s+LEVEL\s+SECURITY",
                     conteudo,
                     re.IGNORECASE,
-                ), f"Migration {mig_file.name} cria tabela '{tabela}' com professional_id mas não executa ENABLE ROW LEVEL SECURITY nela."
+                ), (
+                    f"Migration {mig_file.name} cria tabela '{tabela}' com professional_id mas não executa ENABLE ROW LEVEL SECURITY nela."
+                )
 
                 assert re.search(
                     rf"ALTER\s+TABLE\s+{re.escape(tabela)}\s+FORCE\s+ROW\s+LEVEL\s+SECURITY",
                     conteudo,
                     re.IGNORECASE,
-                ), f"Migration {mig_file.name} cria tabela '{tabela}' com professional_id mas não executa FORCE ROW LEVEL SECURITY nela."
+                ), (
+                    f"Migration {mig_file.name} cria tabela '{tabela}' com professional_id mas não executa FORCE ROW LEVEL SECURITY nela."
+                )
 
                 assert re.search(
                     rf"CREATE\s+POLICY\s+\w+\s+ON\s+{re.escape(tabela)}",
                     conteudo,
                     re.IGNORECASE,
-                ), f"Migration {mig_file.name} cria tabela '{tabela}' com professional_id mas não cria POLICY específica nela."
+                ), (
+                    f"Migration {mig_file.name} cria tabela '{tabela}' com professional_id mas não cria POLICY específica nela."
+                )
 
                 assert "app.professional_id" in conteudo, (
                     f"Migration {mig_file.name} não utiliza o setting 'app.professional_id' na definição de segurança."
                 )
-
-

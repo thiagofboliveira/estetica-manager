@@ -50,7 +50,11 @@ def calculate_no_show_avoided_revenue(
     anti-no-show (confirmed_at) e foram COMPLETED, não NO_SHOW. Função
     isolada e testável sem banco — o repositório já filtra o critério,
     aqui só soma com o rigor de Decimal (I1)."""
-    total = money(sum(session_values, Decimal("0.00"))) if session_values else Decimal("0.00")
+    total = (
+        money(sum(session_values, Decimal("0.00")))
+        if session_values
+        else Decimal("0.00")
+    )
     return len(session_values), total
 
 
@@ -64,12 +68,24 @@ def calculate_attributed_revenue(
     reactivated_patients: set[UUID] = set()
 
     for item in candidates:
-        if not item.contacted_at or not item.resolved_by_sale_id or not item.sale_sold_at:
+        if (
+            not item.contacted_at
+            or not item.resolved_by_sale_id
+            or not item.sale_sold_at
+        ):
             continue
 
         # Janela de atribuição de 21 dias (contacted_at <= sold_at <= contacted_at + 21d)
-        contact_date = item.contacted_at.date() if isinstance(item.contacted_at, datetime) else item.contacted_at
-        sale_date = item.sale_sold_at.date() if isinstance(item.sale_sold_at, datetime) else item.sale_sold_at
+        contact_date = (
+            item.contacted_at.date()
+            if isinstance(item.contacted_at, datetime)
+            else item.contacted_at
+        )
+        sale_date = (
+            item.sale_sold_at.date()
+            if isinstance(item.sale_sold_at, datetime)
+            else item.sale_sold_at
+        )
 
         if sale_date < contact_date:
             continue
@@ -82,7 +98,11 @@ def calculate_attributed_revenue(
             continue
 
         sale_id = item.resolved_by_sale_id
-        profit = money(item.sale_net_profit) if item.sale_net_profit is not None else Decimal("0.00")
+        profit = (
+            money(item.sale_net_profit)
+            if item.sale_net_profit is not None
+            else Decimal("0.00")
+        )
 
         # Deduplicação: se a mesma venda resolveu mais de uma oportunidade, conta o lucro apenas 1 vez
         if sale_id not in attributed_sales:

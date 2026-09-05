@@ -16,7 +16,8 @@ class ProcedureCreate(InputSchema):
     return_interval_days: int | None = Field(default=None, ge=0)
     default_modality: Modality = Modality.IN_PERSON
     split_override: str | None = Field(
-        default=None, description="Percentual de comissão customizado, ex: '30.00' (E6 / P1)"
+        default=None,
+        description="Percentual de comissão customizado, ex: '30.00' (E6 / P1)",
     )
     is_invasive: bool = False
     session_plan: SessionPlan = SessionPlan.SINGLE
@@ -80,7 +81,9 @@ class ProcedureFromTemplateCreate(InputSchema):
     template_id: str = Field(description="Identificador do template (slug)")
     name: str | None = Field(default=None, description="Nome customizado (opcional)")
     price: str | None = Field(default=None, description="Preço customizado (opcional)")
-    estimated_cost: str | None = Field(default=None, description="Custo customizado (opcional)")
+    estimated_cost: str | None = Field(
+        default=None, description="Custo customizado (opcional)"
+    )
     return_interval_days: int | None = Field(
         default=None, ge=0, description="Intervalo de retorno customizado (opcional)"
     )

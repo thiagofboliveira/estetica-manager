@@ -40,10 +40,18 @@ class PatientRepository(TenantRepository[Patient]):
             stmt = stmt.where(Patient.gender == gender)
         if has_upcoming_booking is not None:
             upcoming = self._upcoming_booking_subquery()
-            stmt = stmt.where(Patient.id.in_(upcoming) if has_upcoming_booking else Patient.id.not_in(upcoming))
+            stmt = stmt.where(
+                Patient.id.in_(upcoming)
+                if has_upcoming_booking
+                else Patient.id.not_in(upcoming)
+            )
         if has_completed_treatment is not None:
             treated = self._completed_treatment_subquery()
-            stmt = stmt.where(Patient.id.in_(treated) if has_completed_treatment else Patient.id.not_in(treated))
+            stmt = stmt.where(
+                Patient.id.in_(treated)
+                if has_completed_treatment
+                else Patient.id.not_in(treated)
+            )
         return stmt
 
     def _upcoming_booking_subquery(self):
@@ -58,7 +66,11 @@ class PatientRepository(TenantRepository[Patient]):
             .join(Sale, Sale.id == SaleItem.sale_id)
             .where(SessionModel.professional_id == self._professional_id)
             .where(SessionModel.scheduled_at >= func.now())
-            .where(SessionModel.status.in_([SessionStatus.SCHEDULED, SessionStatus.CONFIRMED]))
+            .where(
+                SessionModel.status.in_(
+                    [SessionStatus.SCHEDULED, SessionStatus.CONFIRMED]
+                )
+            )
         )
         upcoming_bookings = (
             select(Booking.patient_id)
@@ -81,7 +93,9 @@ class PatientRepository(TenantRepository[Patient]):
             .where(SessionModel.professional_id == self._professional_id)
             .where(SessionModel.status == SessionStatus.COMPLETED)
         )
-        sales = select(Sale.patient_id).where(Sale.professional_id == self._professional_id)
+        sales = select(Sale.patient_id).where(
+            Sale.professional_id == self._professional_id
+        )
         return completed_sessions.union(sales)
 
     def list(
@@ -97,7 +111,9 @@ class PatientRepository(TenantRepository[Patient]):
         """Lista ativos, com busca opcional por nome (case/acento-insensível
         via unaccent — requer a extensão habilitada na migration)."""
         stmt = (
-            self._filtered(search, gender, has_upcoming_booking, has_completed_treatment)
+            self._filtered(
+                search, gender, has_upcoming_booking, has_completed_treatment
+            )
             .order_by(Patient.name)
             .limit(limit)
             .offset(offset)
@@ -113,13 +129,19 @@ class PatientRepository(TenantRepository[Patient]):
         has_completed_treatment: bool | None = None,
     ) -> int:
         stmt = select(func.count()).select_from(
-            self._filtered(search, gender, has_upcoming_booking, has_completed_treatment).subquery()
+            self._filtered(
+                search, gender, has_upcoming_booking, has_completed_treatment
+            ).subquery()
         )
         return self._session.scalar(stmt) or 0
 
     def list_existing_phones(self) -> set[str]:
         """Retorna todos os números de telefone de pacientes cadastrados do tenant (TASK-BACK-S2-14)."""
-        stmt = self._scoped().where(Patient.phone.is_not(None)).with_only_columns(Patient.phone)
+        stmt = (
+            self._scoped()
+            .where(Patient.phone.is_not(None))
+            .with_only_columns(Patient.phone)
+        )
         return {p for p in self._session.scalars(stmt) if p}
 
     def list_never_treated(self, *, limit: int = 20, offset: int = 0) -> list[Patient]:
@@ -147,7 +169,10 @@ class PatientRepository(TenantRepository[Patient]):
         dias". Só considera pacientes que JÁ trataram ao menos uma vez;
         quem nunca tratou pertence a list_never_treated(), não aqui."""
         return (
-            select(Sale.patient_id.label("patient_id"), func.max(SessionModel.completed_at).label("last_treated_at"))
+            select(
+                Sale.patient_id.label("patient_id"),
+                func.max(SessionModel.completed_at).label("last_treated_at"),
+            )
             .select_from(SessionModel)
             .join(SaleItem, SaleItem.id == SessionModel.sale_item_id)
             .join(Sale, Sale.id == SaleItem.sale_id)
@@ -190,5 +215,7 @@ class PatientRepository(TenantRepository[Patient]):
         return [(row[0], row[1]) for row in self._session.execute(stmt)]
 
     def count_inactive_for_days(self, days: int) -> int:
-        stmt = select(func.count()).select_from(self._inactive_for_days_base(days).subquery())
+        stmt = select(func.count()).select_from(
+            self._inactive_for_days_base(days).subquery()
+        )
         return self._session.scalar(stmt) or 0

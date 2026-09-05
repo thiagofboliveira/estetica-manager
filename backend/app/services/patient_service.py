@@ -53,7 +53,9 @@ class PatientService:
         )
         return self._repo.add(patient)
 
-    def batch_import(self, request: PatientBatchImportRequest) -> PatientBatchImportResult:
+    def batch_import(
+        self, request: PatientBatchImportRequest
+    ) -> PatientBatchImportResult:
         """Importação em lote de pacientes com deduplicação por telefone e validação atômica (EPIC-S2-03, TASK-BACK-S2-14)."""
         existing_phones = self._repo.list_existing_phones()
         seen_batch_phones: set[str] = set()
@@ -122,7 +124,10 @@ class PatientService:
         # G-12: Gerar oportunidades de retorno retroativas (source=IMPORT)
         opportunities_created_count = 0
         if (
-            (request.generate_return_opportunities or request.default_procedure_id is not None)
+            (
+                request.generate_return_opportunities
+                or request.default_procedure_id is not None
+            )
             and self._return_opportunities is not None
             and self._procedures is not None
         ):

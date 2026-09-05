@@ -186,9 +186,7 @@ def list_global_users(
     return result
 
 
-@router.post(
-    "/users", response_model=UserOutput, status_code=status.HTTP_201_CREATED
-)
+@router.post("/users", response_model=UserOutput, status_code=status.HTTP_201_CREATED)
 def create_global_user(
     body: UserCreateInput,
     _superadmin: GlobalSuperAdminUser,
