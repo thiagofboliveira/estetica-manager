@@ -2,7 +2,7 @@ from uuid import UUID
 
 from fastapi import APIRouter, HTTPException, Query, status
 
-from app.api.deps import PatientSvc
+from app.api.deps import PatientImportRateLimit, PatientSvc
 from app.models.patient import Gender
 from app.schemas.patient import (
     PatientBatchImportRequest,
@@ -24,9 +24,13 @@ def create_patient(payload: PatientCreate, svc: PatientSvc) -> PatientOut:
 
 @router.post("/import", response_model=PatientBatchImportResult)
 def import_patients(
-    payload: PatientBatchImportRequest, svc: PatientSvc
+    payload: PatientBatchImportRequest,
+    svc: PatientSvc,
+    _rate_limit: PatientImportRateLimit,
 ) -> PatientBatchImportResult:
-    """Importa pacientes em lote com deduplicação por telefone (EPIC-S2-03, TASK-BACK-S2-15)."""
+    """Importa pacientes em lote com deduplicação por telefone (EPIC-S2-03, TASK-BACK-S2-15).
+
+    Limitado a 3 chamadas/hora por profissional (AC-07)."""
     return svc.batch_import(payload)
 
 

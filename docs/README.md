@@ -24,6 +24,7 @@ Documentos **atemporais** (não têm estado de execução) ficam na raiz de `doc
 | Arquivo | Conteúdo | Estado |
 |---|---|---|
 | [`BACKLOG_SPRINT3_backend.md`](finished/BACKLOG_SPRINT3_backend.md) | Split por procedimento (E6), Exportação CSV, Projeção de recebíveis, Antecipação (E7) | 16/16 ✅ |
+| [`BACKLOG_SPRINT2_backend.md`](finished/BACKLOG_SPRINT2_backend.md) | ROI, Anti-No-Show, Importação em lote, Templates + 3 ações corretivas (AC-01, AC-02, AC-07) | 23/23 ✅ |
 | [`BACKLOG_SPRINT2_frontend.md`](finished/BACKLOG_SPRINT2_frontend.md) | ROI, Anti-No-Show, Importação em lote, Templates, PWA + 4 ações corretivas | 27/27 ✅ |
 | [`BACKLOG_V2_frontend.md`](finished/BACKLOG_V2_frontend.md) | CSS Modules, Error Boundaries, Templates de mensagem, Telemetria | 13/13 ✅ |
 | [`QA_CONSOLIDADO.md`](finished/QA_CONSOLIDADO.md) | Relatório de QA das Sprints 1-3 | Histórico |
@@ -46,15 +47,7 @@ Documentos **atemporais** (não têm estado de execução) ficam na raiz de `doc
 
 ## in_progress/
 
-| Arquivo | Conteúdo | Estado |
-|---|---|---|
-| [`BACKLOG_SPRINT2_backend.md`](in_progress/BACKLOG_SPRINT2_backend.md) | ROI, Anti-No-Show, Importação, Templates | **20/23** — features prontas, 3 fixes de code review abertos |
-
-**Os 3 itens abertos** (verificados no código em 2026-09-03, genuinamente pendentes):
-
-1. **`query()` cru no repositório de retenção** — `return_opportunity.py:82` usa `self._session.query(ReturnOpportunity, Sale)` em vez de `select()` com `_scoped()`. Viola o padrão SQLAlchemy 2.0 que o `test_architecture.py` protege no resto do código.
-2. **`GET /templates` com dependência desnecessária** — `procedures.py:27` injeta `ProcedureSvc` para chamar uma função pura de catálogo. Rota de leitura de constante não precisa de sessão de banco.
-3. **Rate limiting na importação em lote** — ausente. Sem isso, um loop no cliente pode disparar importações ilimitadas.
+Nenhum documento em andamento no momento — `BACKLOG_SPRINT2_backend.md` moveu para `finished/` em 2026-09-04 após as 3 ações corretivas (AC-01, AC-02, AC-07) serem corrigidas e testadas.
 
 ---
 
@@ -62,22 +55,28 @@ Documentos **atemporais** (não têm estado de execução) ficam na raiz de `doc
 
 | Arquivo | Conteúdo | Escopo |
 |---|---|---|
-| [`BACKLOG_VERSAO_COMPLETA.md`](pending/BACKLOG_VERSAO_COMPLETA.md) | Backlog da versão completa — 74 tasks em 8 épicos (V1 a V8) | Do estado atual até SaaS vendável |
+| [`BACKLOG_GO_LIVE.md`](pending/BACKLOG_GO_LIVE.md) | 🔴 **Comece aqui.** Go-live: 5 bloqueadores do primeiro login + 3 de segurança + pesquisa de concorrência e preço | Do MVP pronto ao primeiro uso real |
+| [`BACKLOG_VERSAO_COMPLETA.md`](pending/BACKLOG_VERSAO_COMPLETA.md) | Backlog da versão completa — 74 tasks em 8 épicos (V1 a V8) | Do go-live até SaaS em escala |
+| [`BACKLOG_FILTROS_E_LAYOUT.md`](pending/BACKLOG_FILTROS_E_LAYOUT.md) | Filtros, sidebar, carrosséis, reengajamento (E1-E6) | ✅ Entregue — só `F6-05` aberto (decisão de escopo) |
 
-**As 4 lacunas que ele endereça:**
+**As 4 lacunas do `BACKLOG_VERSAO_COMPLETA.md`** — reauditadas em 2026-09-04:
 
-| # | Lacuna | Evidência |
+| # | Lacuna | Estado real (auditado no código) |
 |---|---|---|
-| L-1 | Não sabe cobrar | Zero `subscription`/`billing` no backend; `clinics.plan` é string livre |
-| L-2 | Não tem cadastro público | `/system/setup` só com zero usuários; `POST /users` exige admin |
-| L-3 | Não tem produção | Nenhum Dockerfile de app, CI ou deploy |
-| L-4 | Não se mede | Nenhuma tabela de eventos, funil ou cohort |
+| L-1 | Não sabe cobrar | ✅ **Confirmada.** Zero `subscription`/`billing`; `clinics.plan` é string livre e nunca verificado em request |
+| L-2 | Não tem cadastro público | ✅ **Confirmada.** Os 3 caminhos exigem privilégio preexistente |
+| L-3 | Não tem produção | ⚠️ **Parcialmente desatualizada.** `backend/Dockerfile` e `railway.json` **existem**. Falta CI e infra do frontend |
+| L-4 | Não se mede | ✅ **Confirmada, e pior:** o produto não mede o no-show evitado, que é seu maior alvo econômico |
+
+> 🔴 **A auditoria de 2026-09-04 encontrou 5 bloqueadores que nenhum documento registrava** —
+> entre eles, a senha do setup ser coletada pela tela e descartada pelo backend
+> (`system_service.py:29`). Estão todos em [`BACKLOG_GO_LIVE.md`](pending/BACKLOG_GO_LIVE.md).
 
 ---
 
 ## Onde fica o backlog vivo
 
-O índice de coordenação continua em [`../BACKLOG.md`](../BACKLOG.md) — features já entregues (Super Admin, Multi-Tenant SaaS, Sprints 2 e 3) com links para esta pasta.
+O índice de coordenação de features entregues está em [`finished/BACKLOG.md`](finished/BACKLOG.md) — Super Admin, Multi-Tenant SaaS, Sprints 2 e 3, com links para esta pasta.
 
 ## Manutenção
 

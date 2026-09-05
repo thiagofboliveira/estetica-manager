@@ -57,8 +57,6 @@ self._session.query(Modelo)   # ruff banned-api barra isso
 
 Três camadas: ruff `banned-api` + `test_nenhum_query_cru_fora_do_repositorio` + RLS no Postgres.
 
-> ⚠️ **Dívida conhecida:** `app/repositories/return_opportunity.py:82` ainda usa `query()` cru. Está registrada em `docs/in_progress/BACKLOG_SPRINT2_backend.md`. Não copie esse padrão.
-
 ### 4. Snapshot congelado é imutável (I3)
 
 Ao concluir uma venda, os valores **e a fórmula** são copiados para a `Sale` e nunca recalculados a partir da config atual.

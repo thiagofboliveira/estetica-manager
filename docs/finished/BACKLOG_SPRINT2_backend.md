@@ -5,9 +5,9 @@ Todas as features endereçam riscos concretos identificados na entrevista com a 
 
 ## 📊 Progresso Geral
 
-- **Total de Tarefas:** 20 implementadas + 3 ações corretivas pendentes
-- **Aprovadas no Code Review:** 17/20 (85%)
-- **Ações Corretivas Pendentes:** 3
+- **Total de Tarefas:** 20 implementadas + 3 ações corretivas — **todas corrigidas** (2026-09-04)
+- **Aprovadas no Code Review:** 20/20 (100%)
+- **Ações Corretivas Pendentes:** 0
 
 ---
 
@@ -25,7 +25,7 @@ Precisamos calcular e expor isso como API. Segue a regra de atribuição conserv
 ### Tarefas
 
 - [x] `[BACK-S2-01]` **Domain: Motor de Atribuição de Receita** — ✅ Aprovado no review.
-- [x] `[BACK-S2-02]` **Repository: Query de Oportunidades Atribuíveis** — 🐛 **BUG ENCONTRADO — ver AC-01**
+- [x] `[BACK-S2-02]` **Repository: Query de Oportunidades Atribuíveis** — ✅ Corrigido, ver AC-01
 - [x] `[BACK-S2-03]` **Service: `AttributionService`** — ✅ Aprovado no review.
 - [x] `[BACK-S2-04]` **API: `GET /api/v1/dashboard/roi`** — ✅ Aprovado no review.
 - [x] `[BACK-S2-05]` **Testes: Attribution Domain** — ✅ Aprovado no review.
@@ -56,7 +56,7 @@ Precisamos calcular e expor isso como API. Segue a regra de atribuição conserv
 
 - [x] `[BACK-S2-13]` **Schema: `PatientBatchImport`** — ✅ Aprovado no review.
 - [x] `[BACK-S2-14]` **Service: `PatientService.batch_import()`** — ✅ Aprovado no review.
-- [x] `[BACK-S2-15]` **API: `POST /api/v1/patients/import`** — ⚠️ **PARCIAL — ver AC-07**
+- [x] `[BACK-S2-15]` **API: `POST /api/v1/patients/import`** — ✅ Corrigido, ver AC-07
 - [x] `[BACK-S2-16]` **Testes: Importação em Lote** — ✅ Aprovado no review.
 
 ---
@@ -67,7 +67,7 @@ Precisamos calcular e expor isso como API. Segue a regra de atribuição conserv
 
 ### Tarefas
 
-- [x] `[BACK-S2-17]` **API: `GET /api/v1/procedures/templates`** — 🐛 **BUG ENCONTRADO — ver AC-02**
+- [x] `[BACK-S2-17]` **API: `GET /api/v1/procedures/templates`** — ✅ Corrigido, ver AC-02
 - [x] `[BACK-S2-18]` **Domain: Catálogo de Templates** — ✅ Aprovado no review.
 - [x] `[BACK-S2-19]` **API: `POST /api/v1/procedures/from-template`** — ✅ Aprovado no review.
 - [x] `[BACK-S2-20]` **Testes: Templates** — ✅ Aprovado no review.
@@ -78,7 +78,7 @@ Precisamos calcular e expor isso como API. Segue a regra de atribuição conserv
 
 *Itens identificados na revisão de código que devem ser corrigidos antes do deploy em produção.*
 
-### 🔴 AC-01: Query sem tenant scope na atribuição de ROI (SEVERIDADE ALTA)
+### ✅ AC-01: Query sem tenant scope na atribuição de ROI — CORRIGIDO (2026-09-04)
 **Origem:** `BACK-S2-02`
 **Arquivo:** `app/repositories/return_opportunity.py` — método `list_attributed()` (linha ~81)
 
@@ -87,16 +87,18 @@ Precisamos calcular e expor isso como API. Segue a regra de atribuição conserv
 **Risco:** Violação da Invariante I2. Se alguém remover o where manual no futuro (refactoring), haverá vazamento cross-tenant de dados financeiros.
 
 **Fix requerido:**
-- [ ] Substituir `self._session.query(ReturnOpportunity, Sale)` por uma query usando `select()` com `self._scoped()` como base.
+- [x] Substituir `self._session.query(ReturnOpportunity, Sale)` por uma query usando `select()` com `self._scoped()` como base.
 - Usar `select(ReturnOpportunity, Sale).select_from(self._scoped().subquery()).join(Sale, ...)` ou equivalente que mantenha o padrão 2.0-style do SQLAlchemy.
 - Remover o `.where(ReturnOpportunity.professional_id == ...)` redundante — `_scoped()` já garante isso.
 - Manter o `.where(Sale.professional_id == self._professional_id)` como defesa em profundidade para o join.
 
 **Teste de validação:** O teste existente em `tests/test_attribution.py` deve continuar passando. Adicionalmente, confirmar que o teste de isolamento genérico (T-046) cobre esta rota.
 
+**Evidência:** `app/repositories/return_opportunity.py::list_attributed` agora usa `aliased(ReturnOpportunity, self._scoped().subquery())` — o filtro de tenant vem do `_scoped()` padrão do `TenantRepository`, sem `.query()` cru e sem `where` manual redundante. `Sale.professional_id == self._professional_id` mantido como defesa em profundidade no join. `.venv/bin/pytest -q -k attribution` → 6 passed.
+
 ---
 
-### 🔴 AC-02: Rota de templates exigindo autenticação (SEVERIDADE ALTA)
+### ✅ AC-02: Rota de templates exigindo autenticação — CORRIGIDO (2026-09-04)
 **Origem:** `BACK-S2-17`
 **Arquivo:** `app/api/v1/procedures.py` — rota `GET /api/v1/procedures/templates` (linha ~27)
 
@@ -105,7 +107,7 @@ Precisamos calcular e expor isso como API. Segue a regra de atribuição conserv
 **Requisito original:** A rota deveria ser **pública** (sem autenticação) para uso na landing page e no onboarding pré-login.
 
 **Fix requerido:**
-- [ ] Remover a dependência `svc: ProcedureSvc` da rota `GET /templates`.
+- [x] Remover a dependência `svc: ProcedureSvc` da rota `GET /templates`.
 - Importar e chamar diretamente `list_procedure_templates()` de `app/domain/catalog/procedure_templates.py`.
 - Converter os `ProcedureTemplateData` retornados para `ProcedureTemplateOut` diretamente no controller.
 - A rota NÃO deve ter nenhum parâmetro que resolva para `CurrentProfessional` ou `DbSession`.
@@ -123,16 +125,18 @@ def get_procedure_templates() -> list[ProcedureTemplateOut]:
 
 **Teste de validação:** Adicionar teste em `tests/test_procedure_templates.py` que faz `GET /templates` **sem header Authorization** e espera 200.
 
+**Evidência:** `app/api/v1/procedures.py::get_procedure_templates` não declara `ProcedureSvc` nem `DbSession` — chama `list_procedure_templates()` do domínio diretamente e converte para `ProcedureTemplateOut` no controller. `ProcedureService.list_templates()` (agora morto) foi removido. Teste `test_get_templates_route_is_public` em `tests/test_procedure_templates.py` chama `GET /api/v1/procedures/templates` sem header e confirma 200. `.venv/bin/pytest -q -k procedure_templates` → 5 passed.
+
 ---
 
-### 🟢 AC-07: Rate limit ausente na importação em lote (SEVERIDADE BAIXA)
+### ✅ AC-07: Rate limit ausente na importação em lote — CORRIGIDO (2026-09-04)
 **Origem:** `BACK-S2-15`
 **Arquivo:** `app/api/v1/patients.py` — rota `POST /api/v1/patients/import` (linha ~23)
 
 **Problema:** O backlog pedia rate limit suave de **3 chamadas/hora** por profissional para prevenir loops acidentais de importação. Não foi implementado.
 
 **Fix requerido:**
-- [ ] Implementar rate limiting in-memory simples (aceitável para MVP):
+- [x] Implementar rate limiting in-memory simples (aceitável para MVP):
   - `dict[UUID, list[datetime]]` mapeando `professional_id` → timestamps das últimas chamadas.
   - Antes de processar, verificar se houve ≥ 3 chamadas nos últimos 60 minutos.
   - Se excedido, retornar **HTTP 429 Too Many Requests** com header `Retry-After`.
@@ -141,14 +145,16 @@ def get_procedure_templates() -> list[ProcedureTemplateOut]:
 
 **Teste de validação:** Adicionar teste que faz 4 chamadas consecutivas e verifica que a 4ª retorna 429.
 
+**Evidência:** `app/core/rate_limit.py::InMemoryRateLimiter` (dict `professional_id` → timestamps, janela deslizante de 1h) plugado via dependência `PatientImportRateLimit` em `app/api/deps.py` e usado em `POST /api/v1/patients/import`. Excedido o limite, retorna 429 com header `Retry-After`. Teste `test_import_route_rate_limited_after_3_calls_per_hour` em `tests/test_patient_import.py` faz 4 chamadas reais contra a API e confirma a 4ª como 429. `.venv/bin/pytest -q -k patient_import` → 4 passed.
+
 ---
 
 ## Referência Cruzada: Riscos Endereçados
 
 | Risco (Análise PO/PM) | EPIC que endereça | Status |
 |---|---|---|
-| R1 — Unit Economics Apertada | EPIC-S2-01 (Widget ROI) | ✅ (1 fix pendente: AC-01) |
-| R2 — Cold Start / Dia Zero | EPIC-S2-03 + EPIC-S2-04 | ✅ (2 fixes: AC-02, AC-07) |
+| R1 — Unit Economics Apertada | EPIC-S2-01 (Widget ROI) | ✅ Completo (AC-01 corrigido) |
+| R2 — Cold Start / Dia Zero | EPIC-S2-03 + EPIC-S2-04 | ✅ Completo (AC-02, AC-07 corrigidos) |
 | R5 — Anti-No-Show Ausente | EPIC-S2-02 (Lembretes D-1) | ✅ Completo |
 
 ---

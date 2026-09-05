@@ -3,6 +3,7 @@ from uuid import UUID
 from fastapi import APIRouter, HTTPException, Query, status
 
 from app.api.deps import ProcedureSvc
+from app.domain.catalog.procedure_templates import list_procedure_templates
 from app.models.procedure import SessionPlan
 from app.schemas.procedure import (
     ProcedureCreate,
@@ -26,9 +27,24 @@ def create_procedure(payload: ProcedureCreate, svc: ProcedureSvc) -> ProcedureOu
 
 
 @router.get("/templates", response_model=list[ProcedureTemplateOut])
-def list_procedure_templates(svc: ProcedureSvc) -> list[ProcedureTemplateOut]:
-    """Retorna templates de procedimentos do mercado de estética (EPIC-S2-04, TASK-BACK-S2-17)."""
-    return svc.list_templates()
+def get_procedure_templates() -> list[ProcedureTemplateOut]:
+    """Templates públicos de procedimentos do mercado de estética, sem
+    autenticação, para uso na landing page e no onboarding pré-login
+    (EPIC-S2-04, TASK-BACK-S2-17)."""
+    templates = list_procedure_templates()
+    return [
+        ProcedureTemplateOut(
+            template_id=t.template_id,
+            name=t.name,
+            type=t.type,
+            suggested_price=t.suggested_price,
+            suggested_cost=t.suggested_cost,
+            suggested_return_interval_days=t.suggested_return_interval_days,
+            category=t.category,
+            is_suggested=t.is_suggested,
+        )
+        for t in templates
+    ]
 
 
 @router.post("/from-template", response_model=ProcedureOut, status_code=status.HTTP_201_CREATED)

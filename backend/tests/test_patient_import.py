@@ -1,5 +1,12 @@
 from unittest.mock import MagicMock
 
+import pytest
+from fastapi.testclient import TestClient
+
+from app.api import deps
+from app.core.config import settings
+from app.core.rate_limit import InMemoryRateLimiter
+from app.main import app
 from app.schemas.patient import (
     PatientBatchImportItem,
     PatientBatchImportRequest,
@@ -77,3 +84,28 @@ def test_batch_import_atomic_rollback_on_high_error_rate():
     assert res.created_count == 0
     assert len(res.errors) == 2
     assert mock_repo.add.call_count == 0
+
+
+@pytest.mark.skipif(
+    not settings.DEV_AUTH_SECRET, reason="requer DEV_AUTH_SECRET + Postgres real"
+)
+def test_import_route_rate_limited_after_3_calls_per_hour():
+    """A 4a chamada de POST /patients/import na mesma hora deve retornar 429 (AC-07)."""
+    deps._patient_import_rate_limiter = InMemoryRateLimiter(
+        max_calls=3, window=deps._patient_import_rate_limiter._window
+    )
+
+    client = TestClient(app)
+    login = client.post("/dev/login")
+    assert login.status_code == 200
+    headers = {"Authorization": f"Bearer {login.json()['access_token']}"}
+
+    payload = {"patients": [{"name": "Paciente Rate Limit", "phone": None}]}
+
+    for _ in range(3):
+        resp = client.post("/api/v1/patients/import", json=payload, headers=headers)
+        assert resp.status_code == 200, resp.text
+
+    resp = client.post("/api/v1/patients/import", json=payload, headers=headers)
+    assert resp.status_code == 429
+    assert "Retry-After" in resp.headers

@@ -1,16 +1,12 @@
 from uuid import UUID
 
 from app.core.money import money
-from app.domain.catalog.procedure_templates import (
-    find_procedure_template,
-    list_procedure_templates,
-)
+from app.domain.catalog.procedure_templates import find_procedure_template
 from app.models.procedure import Procedure, ProcedureType, SessionPlan
 from app.repositories.procedure import ProcedureRepository
 from app.schemas.procedure import (
     ProcedureCreate,
     ProcedureFromTemplateCreate,
-    ProcedureTemplateOut,
     ProcedureUpdate,
 )
 
@@ -40,23 +36,6 @@ class ProcedureService:
             session_plan=dto.session_plan,
         )
         return self._repo.add(procedure)
-
-    def list_templates(self) -> list[ProcedureTemplateOut]:
-        """Retorna templates de procedimentos do catálogo de domínio (EPIC-S2-04, TASK-BACK-S2-17)."""
-        templates = list_procedure_templates()
-        return [
-            ProcedureTemplateOut(
-                template_id=t.template_id,
-                name=t.name,
-                type=t.type,
-                suggested_price=t.suggested_price,
-                suggested_cost=t.suggested_cost,
-                suggested_return_interval_days=t.suggested_return_interval_days,
-                category=t.category,
-                is_suggested=t.is_suggested,
-            )
-            for t in templates
-        ]
 
     def create_from_template(self, dto: ProcedureFromTemplateCreate) -> Procedure:
         """Cria procedimento a partir de template com overrides opcionais (TASK-BACK-S2-19)."""

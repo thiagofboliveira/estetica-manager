@@ -5,12 +5,14 @@ do JWT — não existe caminho no código que produza sessão sem tenant.
 Rotas públicas (/health) simplesmente não declaram DbSession.
 """
 
+from datetime import timedelta
 from typing import Annotated
 from uuid import UUID
 
 from fastapi import Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
+from app.core.rate_limit import InMemoryRateLimiter
 from app.core.security import get_current_professional_id
 from app.db.session import get_tenant_session, unsafe_session_without_tenant
 from app.models.user import User
@@ -47,6 +49,25 @@ from app.services.system_service import SystemService
 from app.services.user_service import UserService
 
 CurrentProfessional = Annotated[UUID, Depends(get_current_professional_id)]
+
+
+_patient_import_rate_limiter = InMemoryRateLimiter(
+    max_calls=3, window=timedelta(hours=1)
+)
+
+
+def check_patient_import_rate_limit(professional_id: CurrentProfessional) -> None:
+    """3 chamadas/hora por profissional para POST /patients/import (AC-07)."""
+    retry_after = _patient_import_rate_limiter.check(professional_id)
+    if retry_after is not None:
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail="Limite de importações em lote excedido. Tente novamente em breve.",
+            headers={"Retry-After": str(max(1, int(retry_after.total_seconds())))},
+        )
+
+
+PatientImportRateLimit = Annotated[None, Depends(check_patient_import_rate_limit)]
 
 
 def _db(professional_id: CurrentProfessional):

@@ -1,6 +1,9 @@
 from datetime import date
 from uuid import UUID
 
+from sqlalchemy import select
+from sqlalchemy.orm import aliased
+
 from app.domain.retention.enums import ReturnOpportunityStatus
 from app.models.return_opportunity import ReturnOpportunity
 from app.models.sale import Sale, SaleStatus
@@ -78,14 +81,16 @@ class ReturnOpportunityRepository(TenantRepository[ReturnOpportunity]):
         self, date_from: date | None = None, date_to: date | None = None
     ) -> list[tuple[ReturnOpportunity, Sale]]:
         """Busca oportunidades resolvidas por vendas no período com join na Sale (EPIC-S2-01, TASK-BACK-S2-02)."""
+        opp = aliased(ReturnOpportunity, self._scoped().subquery())
         stmt = (
-            self._session.query(ReturnOpportunity, Sale)
-            .join(Sale, ReturnOpportunity.resolved_by_sale_id == Sale.id)
+            select(opp, Sale)
+            .join(Sale, opp.resolved_by_sale_id == Sale.id)
             .where(
-                ReturnOpportunity.professional_id == self._professional_id,
+                # Defesa em profundidade no join: _scoped() já filtra
+                # a oportunidade pelo tenant via subquery.
                 Sale.professional_id == self._professional_id,
-                ReturnOpportunity.contacted_at.is_not(None),
-                ReturnOpportunity.resolved_by_sale_id.is_not(None),
+                opp.contacted_at.is_not(None),
+                opp.resolved_by_sale_id.is_not(None),
                 Sale.status == SaleStatus.ACTIVE,
             )
         )
@@ -93,4 +98,4 @@ class ReturnOpportunityRepository(TenantRepository[ReturnOpportunity]):
             stmt = stmt.where(Sale.sold_at >= date_from)
         if date_to:
             stmt = stmt.where(Sale.sold_at <= date_to)
-        return stmt.all()
+        return list(self._session.execute(stmt).all())
