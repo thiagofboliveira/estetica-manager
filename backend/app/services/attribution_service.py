@@ -12,8 +12,7 @@ from app.domain.financial.attribution import (
 from app.domain.financial.period import resolve_period
 from app.repositories.professional import ProfessionalRepository
 from app.repositories.return_opportunity import ReturnOpportunityRepository
-
-DEFAULT_SUBSCRIPTION_FEE = Decimal("97.00")
+from app.services.financial_settings_service import FinancialSettingsService
 
 
 class AttributionService:
@@ -21,9 +20,11 @@ class AttributionService:
         self,
         opportunity_repo: ReturnOpportunityRepository,
         professional_repo: ProfessionalRepository,
+        financial_settings_service: FinancialSettingsService,
     ) -> None:
         self._opportunity_repo = opportunity_repo
         self._professional_repo = professional_repo
+        self._financial_settings = financial_settings_service
 
     def get_roi(
         self,
@@ -31,8 +32,17 @@ class AttributionService:
         filter_name: str = "this_month",
         custom_from: date | None = None,
         custom_to: date | None = None,
-        subscription_fee: Decimal = DEFAULT_SUBSCRIPTION_FEE,
+        subscription_fee: Decimal | None = None,
     ) -> tuple[AttributionResult, str, date, date, bool]:
+        """G-09: subscription_fee vem da configuração real do tenant
+        (financial_settings.subscription_fee), não de uma constante
+        hardcoded — o ROI exibido dividia por um valor fixo que podia
+        divergir do preço real cobrado (I7). Parâmetro explícito segue
+        aceito para simulação/teste, mas o caminho normal (None) sempre
+        lê a config."""
+        if subscription_fee is None:
+            subscription_fee = self._financial_settings.get_or_create_default().subscription_fee
+
         professional = self._professional_repo.get_current()
         today = today_in_timezone(professional.timezone)
 

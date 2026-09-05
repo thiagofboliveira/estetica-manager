@@ -171,9 +171,18 @@ def test_attribution_service_get_roi():
     )
     mock_prof_repo.get_current.return_value = mock_prof
 
+    # G-09: subscription_fee vem de financial_settings, não mais de uma
+    # constante hardcoded — mock retornando o mesmo valor usado antes
+    # (R$97) para não recalcular as asserções de ROI deste teste.
+    mock_financial_settings_svc = MagicMock()
+    mock_financial_settings_svc.get_or_create_default.return_value = MagicMock(
+        subscription_fee=Decimal("97.00")
+    )
+
     svc = AttributionService(
         opportunity_repo=mock_opp_repo,
         professional_repo=mock_prof_repo,
+        financial_settings_service=mock_financial_settings_svc,
     )
 
     result, period_name, d_from, d_to, is_estimated = svc.get_roi(filter_name="this_month")

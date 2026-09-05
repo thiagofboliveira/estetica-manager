@@ -296,6 +296,7 @@ def get_attribution_service(
     return AttributionService(
         opportunity_repo=ReturnOpportunityRepository(session, professional_id),
         professional_repo=ProfessionalRepository(session, professional_id),
+        financial_settings_service=get_financial_settings_service(session, professional_id),
     )
 
 

@@ -87,3 +87,12 @@ class FinancialSettings(TenantModel):
     )
     slot_duration_minutes: Mapped[int] = mapped_column(nullable=False, default=30)
     buffer_minutes: Mapped[int] = mapped_column(nullable=False, default=15)
+
+    # G-09: preço real da mensalidade — o ROI exibido (GET /dashboard/roi)
+    # divide por este valor, nunca por uma constante hardcoded. Até
+    # existir uma tabela de assinatura real (V2), este é o valor de
+    # configuração; default técnico de migration, não o preço oficial do
+    # produto (ver docs/pending/BACKLOG_GO_LIVE.md §4.3).
+    subscription_fee: Mapped[Decimal] = mapped_column(
+        Numeric(12, 2, asdecimal=True), nullable=False, default=Decimal("39.00")
+    )
