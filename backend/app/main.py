@@ -1,9 +1,10 @@
 import time
 
 import jwt
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
+from sqlalchemy import text
 
 from app.api.v1 import (
     bookings,
@@ -52,7 +53,20 @@ if _cors_origins:
 @app.get("/health", tags=["health"])
 def health() -> dict[str, str]:
     """Rota pública — não declara DbSession, então não passa pela
-    validação de JWT nem exige tenant."""
+    validação de JWT nem exige tenant.
+
+    G-06: antes respondia "ok" mesmo com o Postgres caído (não tocava o
+    banco) — o Railway (railway.json healthcheckPath) nunca detectaria
+    e nunca reiniciaria o container. Um SELECT 1 trivial (sem tenant,
+    sem dado de negócio) prova que a conexão real está de pé; falha aqui
+    vira 503, que o orquestrador entende como "não saudável"."""
+    try:
+        with unsafe_session_without_tenant("healthcheck") as session:
+            session.execute(text("SELECT 1"))
+    except Exception:
+        raise HTTPException(
+            status_code=503, detail="Banco de dados indisponível"
+        ) from None
     return {"status": "ok"}
 
 
