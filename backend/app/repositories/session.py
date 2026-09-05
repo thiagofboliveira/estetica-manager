@@ -1,4 +1,5 @@
 from datetime import date, datetime
+from decimal import Decimal
 from uuid import UUID
 
 from sqlalchemy import func, select
@@ -131,3 +132,40 @@ class SessionRepository(TenantRepository[Session]):
             .where(local_date <= date_to)
         )
         return int(self._session.scalar(stmt) or 0)
+
+    def list_no_show_avoided_in_period(
+        self, date_from: date, date_to: date, timezone_name: str
+    ) -> list[tuple[Session, Decimal]]:
+        """G-11: sessões que passaram pelo fluxo anti-no-show
+        (confirmed_at preenchido — a profissional confirmou via
+        NoShowAlert, ver GET /sessions/unconfirmed) e terminaram
+        COMPLETED, não NO_SHOW. É o proxy mais direto disponível hoje de
+        "no-show evitado": sem essa confirmação explícita, não há como
+        diferenciar uma sessão que "não faltaria de qualquer jeito" de
+        uma que só compareceu por causa do lembrete — este critério é
+        conservador (conta só quem passou pelo fluxo de risco), não
+        universal (não conta confirmações informais fora do produto).
+
+        Retorna junto o valor da sessão (SaleItem.unit_price, congelado
+        no momento da venda — I3, I5: dinheiro nunca vive na Session).
+
+        Usa COALESCE(completed_at, scheduled_at) para a data local, não
+        só scheduled_at: venda avulsa completada na hora tem
+        scheduled_at NULL (nunca foi "agendada" antes de acontecer) —
+        completed_at é quando ela de fato ocorreu, a data que importa
+        para "isto aconteceu neste período".
+        """
+        event_ts = func.coalesce(Session.completed_at, Session.scheduled_at)
+        local_date = func.date(event_ts.op("AT TIME ZONE")(timezone_name))
+        stmt = (
+            select(Session, SaleItem.unit_price)
+            .select_from(Session)
+            .join(SaleItem, SaleItem.id == Session.sale_item_id)
+            .where(Session.professional_id == self._professional_id)
+            .where(Session.status == SessionStatus.COMPLETED)
+            .where(Session.confirmed_at.is_not(None))
+            .where(local_date >= date_from)
+            .where(local_date <= date_to)
+            .order_by(event_ts.asc())
+        )
+        return [(row[0], row[1]) for row in self._session.execute(stmt)]

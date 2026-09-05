@@ -33,11 +33,31 @@ class AttributionResult:
     patients_reactivated: int
     subscription_fee: Decimal
     roi_ratio: Decimal | None
+    # G-11: fonte SEPARADA de receita atribuída — nunca somada a
+    # attributed_revenue nem usada no roi_ratio acima. Reativação
+    # (return_opportunities) e no-show evitado (confirmação de sessão)
+    # são mecanismos diferentes; misturar os dois faria um número único
+    # perder a capacidade de dizer QUAL parte do produto está gerando
+    # valor (ver docs/pending/BACKLOG_GO_LIVE.md §6).
+    no_show_avoided_count: int
+    no_show_avoided_revenue: Decimal
+
+
+def calculate_no_show_avoided_revenue(
+    session_values: list[Decimal],
+) -> tuple[int, Decimal]:
+    """G-11: soma pura do valor das sessões que passaram pelo fluxo
+    anti-no-show (confirmed_at) e foram COMPLETED, não NO_SHOW. Função
+    isolada e testável sem banco — o repositório já filtra o critério,
+    aqui só soma com o rigor de Decimal (I1)."""
+    total = money(sum(session_values, Decimal("0.00"))) if session_values else Decimal("0.00")
+    return len(session_values), total
 
 
 def calculate_attributed_revenue(
     candidates: list[AttributedCandidate],
     subscription_fee: Decimal = Decimal("97.00"),
+    no_show_avoided_session_values: list[Decimal] | None = None,
 ) -> AttributionResult:
     """Calcula a receita recuperada atribuível ao sistema de forma pura."""
     attributed_sales: dict[UUID, Decimal] = {}
@@ -77,10 +97,16 @@ def calculate_attributed_revenue(
     if subscription_fee > Decimal("0.00"):
         roi = (total_revenue / subscription_fee).quantize(Decimal("0.1"))
 
+    no_show_count, no_show_revenue = calculate_no_show_avoided_revenue(
+        no_show_avoided_session_values or []
+    )
+
     return AttributionResult(
         attributed_revenue=total_revenue,
         attributed_sale_count=sale_count,
         patients_reactivated=patient_count,
         subscription_fee=money(subscription_fee),
         roi_ratio=roi,
+        no_show_avoided_count=no_show_count,
+        no_show_avoided_revenue=no_show_revenue,
     )

@@ -221,7 +221,7 @@ auditoria **reforça e corrige** essa porta.
 
 | ID | Task | Status | Depende | Nota |
 |---|---|:--:|---|---|
-| `G-11` | 🎯 **Medir no-show evitado na atribuição** | `[ ]` | — | 🔴 **O maior alvo econômico do produto não é medido.** Auditei: `attribution_service.py` só mede receita de reativação via `return_opportunities`; **zero** referência a `NO_SHOW`. Ver §6 — no-show vale R$ 560/mês vs. R$ 280 de 1 reativação |
+| `G-11` | 🎯 **Medir no-show evitado na atribuição** | `[x]` | — | ✅ **Feito 2026-09-05.** `SessionRepository.list_no_show_avoided_in_period()` — sessões com `confirmed_at` preenchido (passaram pelo fluxo anti-no-show) e `status=COMPLETED`, valor via `SaleItem.unit_price` (I5). `AttributionResult` ganhou `no_show_avoided_count`/`no_show_avoided_revenue`, **campos separados** de `attributed_revenue` (nunca somados, nunca entram no `roi_ratio` — reativação e no-show evitado são mecanismos diferentes, ver §6). `GET /dashboard/roi` expõe os dois. 4 testes de domínio puro + 3 de integração real (`test_no_show_avoided_integration.py`). Confirmado com a API real: `"no_show_avoided_count": 3, "no_show_avoided_revenue": "840.00"` |
 | `G-12` | Import gerar oportunidades de retorno retroativas | `[ ]` | — | Era `V4-07`. **É isto que dá valor no dia 1** — sem isso a fila nasce vazia e fica ~90 dias sem valor. ⚠️ Marcar `source=IMPORT`: oportunidade importada **não** conta como receita atribuível |
 | `G-13` | Tabela `events` append-only + eventos de ativação | `[ ]` | — | Era `V4-01/V4-02`. Sem isto não se sabe onde a cliente nº 3 desistiu |
 | `G-14` | Instrumentar time-to-value (signup → 1º lucro na tela) | `[ ]` | G-13, B-02 | Meta: **< 10 min**. Se passar, corrigir onboarding antes de qualquer feature nova |

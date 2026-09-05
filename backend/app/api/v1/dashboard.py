@@ -103,6 +103,8 @@ def get_roi(
         date_from=d_from,
         date_to=d_to,
         is_estimated=is_estimated,
+        no_show_avoided_count=result.no_show_avoided_count,
+        no_show_avoided_revenue=result.no_show_avoided_revenue,
     )
 
 
