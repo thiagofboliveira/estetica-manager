@@ -116,27 +116,40 @@ def test_public_agenda_and_booking_flow():
     )
     assert invalid_token_resp.status_code == 404
 
-    # 7. Paciente remarca para outro slot disponível
-    second_slot_time = datetime.strptime(available_slots[1], "%H:%M").time()
-    new_scheduled_time = datetime.combine(target_day, second_slot_time).replace(
-        tzinfo=UTC
-    )
+    try:
+        # 7. Paciente remarca para outro slot disponível
+        second_slot_time = datetime.strptime(available_slots[1], "%H:%M").time()
+        new_scheduled_time = datetime.combine(target_day, second_slot_time).replace(
+            tzinfo=UTC
+        )
 
-    reschedule_resp = client.patch(
-        f"/api/v1/public/bookings/{booking_id}/reschedule",
-        params={"token": management_token},
-        json={"scheduled_at": new_scheduled_time.isoformat()},
-    )
-    assert reschedule_resp.status_code == 200, reschedule_resp.text
-    assert (
-        datetime.fromisoformat(reschedule_resp.json()["scheduled_at"])
-        == new_scheduled_time
-    )
+        reschedule_resp = client.patch(
+            f"/api/v1/public/bookings/{booking_id}/reschedule",
+            params={"token": management_token},
+            json={"scheduled_at": new_scheduled_time.isoformat()},
+        )
+        assert reschedule_resp.status_code == 200, reschedule_resp.text
+        assert (
+            datetime.fromisoformat(reschedule_resp.json()["scheduled_at"])
+            == new_scheduled_time
+        )
 
-    # 8. Paciente cancela o agendamento através do token seguro
-    cancel_resp = client.post(
-        f"/api/v1/public/bookings/{booking_id}/cancel",
-        params={"token": management_token},
-    )
-    assert cancel_resp.status_code == 200
-    assert cancel_resp.json()["status"] == "CANCELLED"
+        # 8. Paciente cancela o agendamento através do token seguro
+        cancel_resp = client.post(
+            f"/api/v1/public/bookings/{booking_id}/cancel",
+            params={"token": management_token},
+        )
+        assert cancel_resp.status_code == 200
+        assert cancel_resp.json()["status"] == "CANCELLED"
+    finally:
+        # Restaura perfil original para testes manuais e navegação
+        client.patch(
+            "/api/v1/users/me/public-profile",
+            json={
+                "slug": "dra-camila",
+                "bio": "Especialista em Harmonização Facial, Bioestimuladores de Colágeno e Rejuvenescimento Natural.",
+                "specialty": "Biomédica Esteta • CRM/CRBM 12345",
+                "avatar_url": "https://images.unsplash.com/photo-1594824813585-6188e7a0305f?auto=format&fit=crop&w=400&q=80",
+            },
+            headers=auth_headers,
+        )
