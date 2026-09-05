@@ -41,7 +41,7 @@ class SupabaseAdminClient:
                 "criar usuários via Admin API (B-01). Nunca use a anon/publishable "
                 "key aqui: ela não tem permissão para esta chamada."
             )
-        self._base_url = f"{settings.SUPABASE_URL}/auth/v1/admin"
+        self._base_url = f"{settings.SUPABASE_URL}/auth/v1"
         self._headers = {
             "apikey": settings.SUPABASE_SERVICE_ROLE_KEY,
             "Authorization": f"Bearer {settings.SUPABASE_SERVICE_ROLE_KEY}",
@@ -60,6 +60,9 @@ class SupabaseAdminClient:
 
         try:
             resp = httpx.post(
+                # Não é "/admin/invite" — o Admin API real do GoTrue expõe
+                # convite em "/auth/v1/invite" (confirmado por teste manual
+                # contra o projeto real em 2026-09-05: /admin/invite dá 404).
                 f"{self._base_url}/invite",
                 headers=self._headers,
                 json=payload,
@@ -93,5 +96,10 @@ class SupabaseAdminClient:
         # resolve professional_id) — não escalar a exceção original.
         with contextlib.suppress(httpx.HTTPError):
             httpx.delete(
-                f"{self._base_url}/users/{user_id}", headers=self._headers, timeout=10
+                # Diferente do invite: delete/get/update de usuário vivem
+                # sob "/auth/v1/admin/users/{id}" (confirmado por teste
+                # manual em 2026-09-05).
+                f"{self._base_url}/admin/users/{user_id}",
+                headers=self._headers,
+                timeout=10,
             )

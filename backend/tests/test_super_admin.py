@@ -11,6 +11,8 @@ from app.api.deps import (
     _system_db,
     get_current_professional_id,
     get_system_service,
+    get_system_user_service,
+    get_user_service,
 )
 from app.main import app
 from app.models.clinic import Clinic
@@ -151,7 +153,7 @@ def test_setup_root_desfaz_convite_supabase_se_transacao_falhar(db_session, monk
 
 def test_user_service_crud_rules(db_session):
     repo = UserRepository(db_session)
-    user_svc = UserService(repo)
+    user_svc = UserService(repo, supabase_admin=_FakeSupabaseAdmin())
 
     # Criar admin
     admin_id = uuid4()
@@ -208,8 +210,15 @@ def test_system_and_users_api_endpoints(db_session):
             UserRepository(db_session), db_session, supabase_admin=_FakeSupabaseAdmin()
         )
 
+    def override_user_service():
+        # create_user() também chama o Supabase Auth via Admin API — mesmo
+        # motivo do override acima.
+        return UserService(UserRepository(db_session), supabase_admin=_FakeSupabaseAdmin())
+
     app.dependency_overrides[_system_db] = override_system_db
     app.dependency_overrides[get_system_service] = override_system_service
+    app.dependency_overrides[get_user_service] = override_user_service
+    app.dependency_overrides[get_system_user_service] = override_user_service
     client = TestClient(app)
 
     # 1. GET /api/v1/system/status

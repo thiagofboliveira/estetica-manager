@@ -5,6 +5,7 @@ from fastapi import APIRouter, HTTPException, status
 from app.api.deps import GlobalSuperAdminUser, SystemClinicSvc, SystemUserSvc
 from app.schemas.clinic import ClinicCreateInput, ClinicOutput, ClinicUpdateInput
 from app.schemas.user import UserCreateInput, UserOutput, UserUpdateInput
+from app.services.user_service import UserServiceError
 
 router = APIRouter(prefix="/super-admin", tags=["super-admin"])
 
@@ -206,6 +207,11 @@ def create_global_user(
     except ValueError as exc:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(exc),
+        ) from exc
+    except UserServiceError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
             detail=str(exc),
         ) from exc
 
