@@ -31,6 +31,17 @@ class Settings(BaseSettings):
     # Sem default (S-01b): segredo com fallback é segredo público.
     DEV_AUTH_SECRET: str | None = None
 
+    # Opcionais, só para tests/test_supabase_auth_integration.py (B-03):
+    # credenciais de um usuário REAL do Supabase Auth deste projeto, para
+    # provar o caminho JWKS de _decode() com um JWT genuíno, não um mock.
+    # Sem elas o teste pula (skip), nunca falha — nunca commitar valores.
+    SUPABASE_TEST_EMAIL: str | None = None
+    SUPABASE_TEST_PASSWORD: str | None = None
+    # A publishable/anon key (a mesma de frontend/.env.local) — só para
+    # autenticar a chamada de teste. O backend em si nunca precisa dela
+    # para validar token (só do JWKS público, via SUPABASE_URL).
+    SUPABASE_TEST_ANON_KEY: str | None = None
+
 
 @lru_cache
 def get_settings() -> Settings:

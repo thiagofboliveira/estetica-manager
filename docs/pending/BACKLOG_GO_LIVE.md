@@ -24,7 +24,7 @@
 | Features do produto | ✅ **Pronto** | 257 testes passando · `tsc -b` limpo · **zero** rotas em placeholder · 20 rotas reais |
 | Isolamento multi-tenant (11 tabelas) | ✅ **Sólido** | `FORCE ROW LEVEL SECURITY` confirmado em `pg_class` · `set_config` local + `RESET` no checkin do pool (`db/session.py:39-57`) |
 | LGPD do paciente | ✅ **Real** | Anonimização/opt-out/portabilidade implementados e testados · consentimento enforçado no domínio (`opportunity_rules.py:145-148`), não só armazenado |
-| **Autenticação** | 🔴 **Quebrada** | Senha descartada · sem cadastro · sem recuperação · Supabase nunca exercitado |
+| **Autenticação** | 🟡 **Parcial** | ✅ Supabase provisionado e testado (2026-09-04) · 🔴 senha do setup ainda descartada · sem cadastro público · sem recuperação |
 | **Guard de produção** | 🔴 **Fail-open** | `ENV` default `"development"` + segredo hardcoded + `ENV` não definido no deploy |
 | **RLS das tabelas de plataforma** | 🔴 **Ausente** | `users`, `clinics`, `professionals` com `relrowsecurity=f` e GRANT total |
 | Cobrança | ⚪ **Inexistente** | Zero `stripe|asaas|mercadopago` no backend |
@@ -58,7 +58,7 @@ esteticista consegue entrar no sistema**, nem a cliente zero.
 |---|---|---|---|
 | `B-01` | 🔴 **Senha é coletada e descartada** | `SetupWizardPage.tsx:99-108` coleta com `minLength={8}` → `system.py:28` repassa → `system_service.py:29` recebe `password: str \| None` e **nunca usa**. `models/user.py:3` não tem campo de senha | O wizard mostra "Criando conta...", navega para `/login`, e a credencial **não existe**. O usuário não consegue entrar com a senha que acabou de definir |
 | `B-02` | 🔴 **Nenhum cadastro público** | Os 3 caminhos exigem privilégio preexistente: `POST /system/setup` falha se `count() > 0` (`system_service.py:31`); `POST /users` exige `AdminUser`; `POST /clinics` exige super-admin | A segunda profissional só entra se alguém rodar SQL ou logar como admin. Não há self-serve |
-| `B-03` | 🔴 **Supabase nunca exercitado** | `backend/.env:8` = `https://xxxxx.supabase.co` (placeholder literal) · `frontend/.env.local:2` = `changeme` · **0 dos 257 testes** cobrem o caminho JWKS (`security.py:57-86`) | O único login que funciona hoje é `/dev/login`, que **precisa morrer em produção**. O caminho real de auth nunca rodou uma vez |
+| `B-03` | ✅ ~~Supabase nunca exercitado~~ **Resolvido 2026-09-04** | Projeto real provisionado, `.env`/`.env.local` atualizados, 4 testes de integração em `test_supabase_auth_integration.py` | Login real via Supabase + JWKS provado ponta a ponta, com teste automatizado (skip sem credencial, nunca falha) |
 | `B-04` | 🔴 **CORS ausente em produção** | `main.py:28` adiciona `CORSMiddleware` **apenas** se `ENV == "development"`. Não existe `ALLOWED_ORIGINS` em `config.py` | Front na Vercel + back no Railway = domínios diferentes = **todas** as chamadas bloqueadas pelo browser. O app não funciona |
 | `B-05` | 🔴 **Sem recuperação de senha** | `LoginPage.tsx:183` — `<a href="#recuperar">`, âncora morta sem rota nem handler | Primeira senha esquecida = suporte manual no banco. Insustentável a partir da 2ª cliente |
 
@@ -174,8 +174,8 @@ Sem este épico não existe produto usável. É o caminho crítico inteiro.
 | ID | Task | Status | Depende | Nota |
 |---|---|:--:|---|---|
 | `B-01` | Corrigir o fluxo de senha do setup: criar o usuário no Supabase Auth com o mesmo UUID de `users.id`, ou **remover o campo de senha da tela** | `[ ]` | B-03 | 🔴 Hoje `system_service.py:29` recebe `password` e ignora. Escolha de produto embutida: se o Supabase é a fonte de verdade, a tela **não deveria pedir senha** — deveria mandar convite/magic-link. Decidir antes de codar |
-| `B-03` | Provisionar projeto Supabase real e exercitar o caminho JWKS ponta a ponta | `[ ]` | — | 🔴 `.env` tem `xxxxx.supabase.co`. **0 dos 257 testes** cobrem `security.py:57-86`. O caminho de auth de produção nunca rodou |
-| `B-03a` | Teste de integração do login real (não `/dev/login`) | `[ ]` | B-03 | DoD do projeto exige teste contra API real. O auth é a única área sem isso |
+| `B-03` | Provisionar projeto Supabase real e exercitar o caminho JWKS ponta a ponta | `[x]` | — | ✅ **Feito 2026-09-04.** Projeto Supabase criado, usuário real de teste criado no Auth, `Clinic`+`User`+`Professional` vinculados ao mesmo UUID no Postgres local. Testado manualmente via `curl`: login real (`/auth/v1/token`) → GET e POST em `/api/v1/patients` com o token real, em `ENV=production` de verdade (backend temporário na porta 8011) — 201/200 nos casos válidos, 401 para token adulterado, 403 sem token |
+| `B-03a` | Teste de integração do login real (não `/dev/login`) | `[x]` | B-03 | ✅ **Feito 2026-09-04.** `tests/test_supabase_auth_integration.py`, 4 testes — login real contra o Supabase Auth + chamadas autenticadas contra a API em `ENV=production` (recarrega os módulos via `importlib.reload`, mesma técnica de `test_env_production_guard.py`). Roda de verdade só com `SUPABASE_TEST_EMAIL/PASSWORD/ANON_KEY` no ambiente — sem elas, **pula com skip, nunca falha**. Confirmado rodando: `4 passed` |
 | `B-02` | `POST /signup` — cadastro público numa transação: `clinic` + `user` + `professional` + `financial_settings` (defaults §8.1) | `[ ]` | B-01, B-03 | Reaproveita a lógica de `system_service.setup_root`, sem o guard de `count() > 0`. **Idempotente** — duplo-submit não cria duas clínicas |
 | `B-02a` | Tela de cadastro público | `[ ]` | B-02 | Mínimo de campos. Configuração fica no onboarding, não no signup |
 | `B-05` | Recuperação de senha (fluxo do Supabase) | `[ ]` | B-03 | `LoginPage.tsx:183` é âncora morta hoje |
@@ -295,7 +295,7 @@ FASE 0 — Higiene barata  ✅ CONCLUÍDA em 2026-09-04
    ▸ Porta: ✅ `pytest -q && ruff check .` → 264 passed, All checks passed
 
 FASE 1 — Primeiro login real (1-2 semanas)  🔴 caminho crítico
-├── B-03 → B-03a   Supabase provisionado e TESTADO
+├── B-03 → B-03a   ✅ Supabase provisionado e TESTADO (2026-09-04)
 ├── B-01           decidir e corrigir o fluxo de senha
 ├── B-04           CORS de produção
 ├── S-01c → S-01d  ENV no deploy + teste do guard
