@@ -17,6 +17,8 @@ export interface UserSession {
   terms_accepted?: boolean;
   terms_accepted_at?: string | null;
   terms_version?: string | null;
+  slug?: string | null;
+  bio?: string | null;
 }
 
 interface AuthContextValue {
@@ -25,6 +27,7 @@ interface AuthContextValue {
   logout: () => Promise<void>;
   checkAuth: () => Promise<void>;
   acceptTerms: (termsVersion?: string) => Promise<void>;
+  updatePublicProfile: (slug?: string, bio?: string) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
@@ -58,6 +61,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(updated);
   }
 
+  async function updatePublicProfile(slug?: string, bio?: string) {
+    const updated = await api.patch<UserSession>("/users/me/public-profile", {
+      slug,
+      bio,
+    });
+    setUser(updated);
+  }
+
   async function logout() {
     await signOutSession();
     setUser(null);
@@ -69,7 +80,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   return (
-    <AuthContext.Provider value={{ user, isLoading, logout, checkAuth, acceptTerms }}>
+    <AuthContext.Provider
+      value={{
+        user,
+        isLoading,
+        logout,
+        checkAuth,
+        acceptTerms,
+        updatePublicProfile,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );

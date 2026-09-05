@@ -144,6 +144,13 @@ class PatientRepository(TenantRepository[Patient]):
         )
         return {p for p in self._session.scalars(stmt) if p}
 
+    def get_by_phone(self, phone: str) -> Patient | None:
+        """Busca paciente ativo pelo telefone (case-insensitive/limpo)."""
+        stmt = self._scoped().where(
+            Patient.phone == phone.strip(), Patient.is_active.is_(True)
+        )
+        return self._session.scalar(stmt)
+
     def list_never_treated(self, *, limit: int = 20, offset: int = 0) -> list[Patient]:
         """F4-02: pacientes ativos sem nenhuma Session COMPLETED nem Sale
         (reaproveita _completed_treatment_subquery, invertida). Reengajamento

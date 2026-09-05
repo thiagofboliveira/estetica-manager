@@ -15,6 +15,7 @@ from app.api.v1 import (
     patients,
     payment_fee_rules,
     procedures,
+    public_agenda,
     reports,
     retention,
     sales,
@@ -205,3 +206,4 @@ app.include_router(export.router, prefix="/api/v1")
 app.include_router(system.router, prefix="/api/v1")
 app.include_router(users.router, prefix="/api/v1")
 app.include_router(super_admin.router, prefix="/api/v1")
+app.include_router(public_agenda.router, prefix="/api/v1")

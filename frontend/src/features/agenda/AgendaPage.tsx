@@ -3,6 +3,7 @@ import { AgendaView } from "./AgendaView";
 import { OpenPackagesList } from "./OpenPackagesList";
 import { NewBookingModal } from "./NewBookingModal";
 import { NoShowAlert } from "./NoShowAlert";
+import { PublicBookingBanner } from "./PublicBookingBanner";
 
 type Tab = "agenda" | "packages";
 
@@ -22,6 +23,8 @@ export function AgendaPage() {
           + Reservar Horário (Provisório)
         </button>
       </header>
+
+      <PublicBookingBanner />
 
       <div className="tab-group" role="tablist" aria-label="Abas da agenda">
         <button

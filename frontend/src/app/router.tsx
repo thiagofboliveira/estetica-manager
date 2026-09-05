@@ -29,6 +29,8 @@ import { SuperAdminUsersPage } from "@/features/admin/SuperAdminUsersPage";
 
 import { TermsOfServicePage } from "@/features/legal/TermsOfServicePage";
 import { PrivacyPolicyPage } from "@/features/legal/PrivacyPolicyPage";
+import { PublicBookingPage } from "@/features/public-booking/PublicBookingPage";
+import { BookingManagementPage } from "@/features/public-booking/BookingManagementPage";
 
 export const router = createBrowserRouter([
   {
@@ -43,6 +45,8 @@ export const router = createBrowserRouter([
       { path: "/privacidade", element: <PrivacyPolicyPage /> },
       { path: "/login", element: <LoginPage /> },
       { path: "/setup", element: <SetupWizardPage /> },
+      { path: "/agendar/:slug", element: <PublicBookingPage /> },
+      { path: "/agendamento/:id", element: <BookingManagementPage /> },
       {
         element: <RequireAuth />,
         children: [

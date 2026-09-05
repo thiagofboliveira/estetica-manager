@@ -5,6 +5,7 @@ from zoneinfo import ZoneInfo
 from app.domain.bookings.enums import BookingStatus
 from app.domain.bookings.state_machine import validate_booking_transition
 from app.models.booking import Booking
+from app.models.patient import Patient
 from app.repositories.booking import BookingRepository
 from app.repositories.patient import PatientRepository
 from app.repositories.professional import ProfessionalRepository
@@ -13,6 +14,14 @@ from app.schemas.booking import BookingCreate, BookingUpdate
 
 
 class BookingNotFoundError(Exception):
+    pass
+
+
+class BookingConflictError(Exception):
+    pass
+
+
+class BookingInvalidStateError(Exception):
     pass
 
 
@@ -35,6 +44,12 @@ class BookingService:
             raise BookingNotFoundError()
         return booking
 
+    def get_by_token(self, booking_id: UUID, token: str) -> Booking:
+        booking = self._bookings.get_by_id_and_token(booking_id, token)
+        if booking is None:
+            raise BookingNotFoundError()
+        return booking
+
     def create(self, dto: BookingCreate) -> tuple[Booking, list[str]]:
         warnings: list[str] = []
 
@@ -46,9 +61,33 @@ class BookingService:
                 f"Aviso: Já existe atendimento agendado para o horário {dto.scheduled_at.isoformat()}."
             )
 
+        patient_id = dto.patient_id
+        patient_name_hint = dto.patient_name_hint
+        patient_phone = dto.patient_phone
+
+        # Se não informou patient_id mas informou telefone, tenta associar ou registrar
+        if not patient_id and patient_phone:
+            existing = self._patients.get_by_phone(patient_phone)
+            if existing:
+                patient_id = existing.id
+                if not patient_name_hint:
+                    patient_name_hint = existing.name
+            elif patient_name_hint:
+                # Cria novo paciente automaticamente no tenant
+                new_patient = Patient(
+                    name=patient_name_hint.strip(),
+                    phone=patient_phone.strip(),
+                    is_active=True,
+                )
+                created_p = self._patients.add(new_patient)
+                self._patients.flush()
+                patient_id = created_p.id
+
         booking = Booking(
-            patient_id=dto.patient_id,
-            patient_name_hint=dto.patient_name_hint,
+            patient_id=patient_id,
+            patient_name_hint=patient_name_hint,
+            patient_phone=patient_phone,
+            procedure_id=dto.procedure_id,
             scheduled_at=dto.scheduled_at,
             modality=dto.modality,
             note=dto.note,
@@ -95,6 +134,10 @@ class BookingService:
             booking.patient_id = dto.patient_id
         if dto.patient_name_hint is not None:
             booking.patient_name_hint = dto.patient_name_hint
+        if dto.patient_phone is not None:
+            booking.patient_phone = dto.patient_phone
+        if dto.procedure_id is not None:
+            booking.procedure_id = dto.procedure_id
         if dto.modality is not None:
             booking.modality = dto.modality
         if dto.note is not None:
@@ -102,3 +145,58 @@ class BookingService:
 
         self._bookings.flush()
         return booking, warnings
+
+    def reschedule_by_token(
+        self,
+        booking_id: UUID,
+        token: str,
+        new_time: datetime | None,
+        new_procedure_id: UUID | None,
+        note: str | None,
+    ) -> Booking:
+        booking = self.get_by_token(booking_id, token)
+
+        if booking.status != BookingStatus.SCHEDULED:
+            raise BookingInvalidStateError(
+                f"Agendamento não pode ser alterado no status atual: {booking.status.value}"
+            )
+
+        if new_time is not None:
+            # Não permite remarcar para o passado
+            if new_time <= datetime.now(UTC):
+                raise ValueError("O novo horário deve ser no futuro.")
+
+            # Bloqueio estrito de conflito para remarcação pública
+            session_conflicts = self._sessions.find_conflicts(new_time)
+            booking_conflicts = self._bookings.find_conflicts(
+                new_time, exclude_booking_id=booking.id
+            )
+            if session_conflicts or booking_conflicts:
+                raise BookingConflictError("Este horário já está ocupado.")
+
+            booking.scheduled_at = new_time
+
+        if new_procedure_id is not None:
+            booking.procedure_id = new_procedure_id
+
+        if note is not None:
+            booking.note = note
+
+        self._bookings.flush()
+        return booking
+
+    def cancel_by_token(self, booking_id: UUID, token: str) -> Booking:
+        booking = self.get_by_token(booking_id, token)
+
+        if booking.status == BookingStatus.CANCELLED:
+            return booking
+
+        if booking.status != BookingStatus.SCHEDULED:
+            raise BookingInvalidStateError(
+                f"Agendamento não pode ser cancelado no status atual: {booking.status.value}"
+            )
+
+        validate_booking_transition(booking.status, BookingStatus.CANCELLED)
+        booking.status = BookingStatus.CANCELLED
+        self._bookings.flush()
+        return booking

@@ -36,3 +36,5 @@ class Professional(Base, TimestampMixin):
         default=settings.DEFAULT_TIMEZONE, nullable=False
     )
     is_active: Mapped[bool] = mapped_column(default=True, nullable=False)
+    slug: Mapped[str | None] = mapped_column(unique=True, index=True, nullable=True)
+    bio: Mapped[str | None] = mapped_column(nullable=True)

@@ -1,9 +1,13 @@
 from uuid import UUID
 
 from fastapi import APIRouter, HTTPException, Request, status
+from sqlalchemy import select
 
-from app.api.deps import AdminUser, CurrentUser, UserSvc
+from app.api.deps import AdminUser, CurrentProfessional, CurrentUser, DbSession, UserSvc
+from app.models.professional import Professional
+from app.repositories.professional import ProfessionalRepository
 from app.schemas.user import (
+    PublicProfileUpdate,
     TermsAcceptInput,
     UserCreateInput,
     UserOutput,
@@ -15,9 +19,57 @@ router = APIRouter(prefix="/users", tags=["users"])
 
 
 @router.get("/me", response_model=UserOutput)
-def get_current_user_profile(user: CurrentUser) -> UserOutput:
-    """Retorna os dados do usuário autenticado na sessão atual."""
-    return UserOutput.model_validate(user)
+def get_current_user_profile(
+    user: CurrentUser, session: DbSession, professional_id: CurrentProfessional
+) -> UserOutput:
+    """Retorna os dados do usuário autenticado na sessão atual, incluindo slug da agenda pública."""
+    out = UserOutput.model_validate(user)
+    prof = ProfessionalRepository(session, professional_id).get_by_id(professional_id)
+    if prof:
+        out.slug = prof.slug
+        out.bio = prof.bio
+    return out
+
+
+@router.patch("/me/public-profile", response_model=UserOutput)
+def update_public_profile(
+    body: PublicProfileUpdate,
+    user: CurrentUser,
+    session: DbSession,
+    professional_id: CurrentProfessional,
+) -> UserOutput:
+    """Atualiza o link público (slug) e a bio da profissional para agendamento online."""
+    prof_repo = ProfessionalRepository(session, professional_id)
+    prof = prof_repo.get_by_id(professional_id)
+    if not prof:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Perfil de profissional não encontrado",
+        )
+
+    if body.slug is not None:
+        clean_slug = body.slug.strip().lower()
+        # Valida se slug já está em uso por outro profissional
+        stmt = select(Professional).where(
+            Professional.slug == clean_slug, Professional.id != professional_id
+        )
+        existing = session.scalars(stmt).first()
+        if existing:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="Este link de agendamento já está em uso. Por favor escolha outro.",
+            )
+        prof.slug = clean_slug
+
+    if body.bio is not None:
+        prof.bio = body.bio.strip()
+
+    session.flush()
+
+    out = UserOutput.model_validate(user)
+    out.slug = prof.slug
+    out.bio = prof.bio
+    return out
 
 
 @router.post("/me/accept-terms", response_model=UserOutput)

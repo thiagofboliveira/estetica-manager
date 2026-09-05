@@ -87,6 +87,12 @@ def get_tenant_session(professional_id: UUID) -> Iterator[Session]:
 
 
 @contextmanager
+def tenant_session(professional_id: UUID) -> Iterator[Session]:
+    """Context manager com tenant fixado para operações fora da injeção do FastAPI."""
+    yield from get_tenant_session(professional_id)
+
+
+@contextmanager
 def unsafe_session_without_tenant(reason: str) -> Iterator[Session]:
     """⚠️ Sessão SEM contexto de tenant. Utilizada para jobs de manutenção,
     setup inicial do sistema (/system/setup) ou gestão multi-clínica do Super Admin.
