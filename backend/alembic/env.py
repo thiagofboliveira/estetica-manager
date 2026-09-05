@@ -12,6 +12,7 @@ from app.models import Base  # noqa: F401 — importa todos os modelos p/ autoge
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
+config = context.config
 config.set_main_option(
     "sqlalchemy.url", settings.DATABASE_URL_MIGRATIONS or settings.DATABASE_URL
 )
