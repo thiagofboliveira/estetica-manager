@@ -9,7 +9,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
-COPY pyproject.toml /app/
+COPY backend/pyproject.toml /app/
 RUN pip install --no-cache-dir --prefix=/install .
 
 
@@ -31,9 +31,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 WORKDIR /app
 COPY --from=builder /install /usr/local
 
-COPY alembic.ini /app/
-COPY alembic /app/alembic
-COPY app /app/app
+COPY backend/alembic.ini /app/
+COPY backend/alembic /app/alembic
+COPY backend/app /app/app
 
 # G-02: non-root — um processo comprometido não ganha privilégio de
 # root no container à toa.
