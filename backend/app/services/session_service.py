@@ -418,7 +418,7 @@ class SessionService:
                     modality=b.modality,
                     whatsapp_link=link,
                     consent_whatsapp=consent,
-                    confirmed_at=None,
+                    confirmed_at=b.confirmed_at,
                 )
             )
 
