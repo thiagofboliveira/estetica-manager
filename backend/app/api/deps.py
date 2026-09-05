@@ -9,7 +9,7 @@ from datetime import timedelta
 from typing import Annotated
 from uuid import UUID
 
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends, HTTPException, Request, status
 from sqlalchemy.orm import Session
 
 from app.core.rate_limit import InMemoryRateLimiter
@@ -68,6 +68,32 @@ def check_patient_import_rate_limit(professional_id: CurrentProfessional) -> Non
 
 
 PatientImportRateLimit = Annotated[None, Depends(check_patient_import_rate_limit)]
+
+
+# S-04: rate limit por IP em rotas PÚBLICAS (sem professional_id — a
+# rota é alcançada antes de qualquer JWT). /system/setup em particular:
+# sem limite, um atacante poderia bombardear convites via Supabase Admin
+# API (SUPABASE_SERVICE_ROLE_KEY) ou tentar exaurir o guard de
+# count() > 0 de alguma forma. IP é heurística fraca (proxy/NAT
+# compartilham IP, VPN troca), mas é a única chave disponível sem
+# autenticação — suficiente para conter abuso casual, não um atacante
+# dedicado (esse precisa de S-01/RLS, não de rate limit).
+_system_setup_rate_limiter = InMemoryRateLimiter(max_calls=5, window=timedelta(hours=1))
+
+
+def check_system_setup_rate_limit(request: Request) -> None:
+    """5 chamadas/hora por IP para POST /system/setup."""
+    client_ip = request.client.host if request.client else "unknown"
+    retry_after = _system_setup_rate_limiter.check(client_ip)
+    if retry_after is not None:
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail="Muitas tentativas de configuração. Tente novamente em breve.",
+            headers={"Retry-After": str(max(1, int(retry_after.total_seconds())))},
+        )
+
+
+SystemSetupRateLimit = Annotated[None, Depends(check_system_setup_rate_limit)]
 
 
 def _db(professional_id: CurrentProfessional):

@@ -24,9 +24,9 @@
 | Features do produto | ✅ **Pronto** | 257 testes passando · `tsc -b` limpo · **zero** rotas em placeholder · 20 rotas reais |
 | Isolamento multi-tenant (11 tabelas) | ✅ **Sólido** | `FORCE ROW LEVEL SECURITY` confirmado em `pg_class` · `set_config` local + `RESET` no checkin do pool (`db/session.py:39-57`) |
 | LGPD do paciente | ✅ **Real** | Anonimização/opt-out/portabilidade implementados e testados · consentimento enforçado no domínio (`opportunity_rules.py:145-148`), não só armazenado |
-| **Autenticação** | 🟡 **Parcial** | ✅ Supabase provisionado e testado (2026-09-04) · 🔴 senha do setup ainda descartada · sem cadastro público · sem recuperação |
-| **Guard de produção** | 🔴 **Fail-open** | `ENV` default `"development"` + segredo hardcoded + `ENV` não definido no deploy |
-| **RLS das tabelas de plataforma** | 🔴 **Ausente** | `users`, `clinics`, `professionals` com `relrowsecurity=f` e GRANT total |
+| **Autenticação** | ✅ **Fase 1 completa** | Supabase provisionado e testado (2026-09-04) · setup via convite, sem senha (2026-09-05) · CORS de produção · recuperação de senha. Só falta o cadastro público (`B-02`, deliberadamente adiado) e valores reais de deploy (`SUPABASE_SERVICE_ROLE_KEY`, `ALLOWED_ORIGINS`) |
+| **Guard de produção** | ✅ **Fechado 2026-09-04** | `ENV` default agora `"production"`, sem fallback de segredo, com teste (`S-01a-d`) |
+| **RLS das tabelas de plataforma** | 🔴 **Ainda ausente** | `users`, `clinics`, `professionals` com `relrowsecurity=f` e GRANT total (`S-02`) |
 | Cobrança | ⚪ **Inexistente** | Zero `stripe|asaas|mercadopago` no backend |
 | Observabilidade | 🔴 **Mock** | `logger.ts:2` declara-se *"Mock de telemetria / Sentry"* |
 
@@ -56,16 +56,17 @@ esteticista consegue entrar no sistema**, nem a cliente zero.
 
 | ID | Bloqueador | Evidência | Por que bloqueia |
 |---|---|---|---|
-| `B-01` | 🔴 **Senha é coletada e descartada** | `SetupWizardPage.tsx:99-108` coleta com `minLength={8}` → `system.py:28` repassa → `system_service.py:29` recebe `password: str \| None` e **nunca usa**. `models/user.py:3` não tem campo de senha | O wizard mostra "Criando conta...", navega para `/login`, e a credencial **não existe**. O usuário não consegue entrar com a senha que acabou de definir |
-| `B-02` | 🔴 **Nenhum cadastro público** | Os 3 caminhos exigem privilégio preexistente: `POST /system/setup` falha se `count() > 0` (`system_service.py:31`); `POST /users` exige `AdminUser`; `POST /clinics` exige super-admin | A segunda profissional só entra se alguém rodar SQL ou logar como admin. Não há self-serve |
+| `B-01` | ✅ ~~Senha é coletada e descartada~~ **Resolvido 2026-09-05** | Convite/magic-link via `app/core/supabase_admin.py`; `SetupWizardPage.tsx` sem campo de senha | Setup usa o UUID real do Supabase Auth; 6 testes cobrindo sucesso e rollback |
+| `B-02` | 🔴 **Nenhum cadastro público** | Os 3 caminhos exigem privilégio preexistente: `POST /system/setup` falha se `count() > 0` (`system_service.py:31`); `POST /users` exige `AdminUser`; `POST /clinics` exige super-admin | A segunda profissional só entra se alguém rodar SQL ou logar como admin. Não há self-serve. **Deliberadamente adiado para a Fase 4** (§7) — não bloqueia a cliente zero |
 | `B-03` | ✅ ~~Supabase nunca exercitado~~ **Resolvido 2026-09-04** | Projeto real provisionado, `.env`/`.env.local` atualizados, 4 testes de integração em `test_supabase_auth_integration.py` | Login real via Supabase + JWKS provado ponta a ponta, com teste automatizado (skip sem credencial, nunca falha) |
-| `B-04` | 🔴 **CORS ausente em produção** | `main.py:28` adiciona `CORSMiddleware` **apenas** se `ENV == "development"`. Não existe `ALLOWED_ORIGINS` em `config.py` | Front na Vercel + back no Railway = domínios diferentes = **todas** as chamadas bloqueadas pelo browser. O app não funciona |
-| `B-05` | 🔴 **Sem recuperação de senha** | `LoginPage.tsx:183` — `<a href="#recuperar">`, âncora morta sem rota nem handler | Primeira senha esquecida = suporte manual no banco. Insustentável a partir da 2ª cliente |
+| `B-04` | ✅ ~~CORS ausente em produção~~ **Resolvido 2026-09-05** | `ALLOWED_ORIGINS` + `CORSMiddleware` habilitado em produção; 3 testes em `test_cors_production.py` | Fail-closed sem a variável — falta só o valor real quando o domínio existir |
+| `B-05` | ✅ ~~Sem recuperação de senha~~ **Resolvido 2026-09-05** | `LoginPage.tsx` — botão abre form chamando `resetPasswordForEmail()` | Fluxo público do Supabase, sem `service_role` |
 
-> **B-01 é o mais grave e o menos visível.** Um erro de tela seria descoberto no primeiro
-> teste. Este falha **silenciosamente e com feedback positivo**: a tela diz que deu certo.
-> A causa é uma assinatura de método que aceita um parâmetro que o corpo ignora — o tipo de
-> defeito que nenhum teste pega porque não há teste do fluxo de setup ponta a ponta.
+> **B-01 era o mais grave e o menos visível.** Um erro de tela seria descoberto no primeiro
+> teste. Este falhava **silenciosamente e com feedback positivo**: a tela dizia que deu
+> certo. A causa era uma assinatura de método que aceitava um parâmetro que o corpo
+> ignorava — o tipo de defeito que nenhum teste pega porque não havia teste do fluxo de
+> setup ponta a ponta. Corrigido: ver `B-01` na tabela do §5.
 
 ---
 
@@ -173,13 +174,13 @@ Sem este épico não existe produto usável. É o caminho crítico inteiro.
 
 | ID | Task | Status | Depende | Nota |
 |---|---|:--:|---|---|
-| `B-01` | Corrigir o fluxo de senha do setup: criar o usuário no Supabase Auth com o mesmo UUID de `users.id`, ou **remover o campo de senha da tela** | `[ ]` | B-03 | 🔴 Hoje `system_service.py:29` recebe `password` e ignora. Escolha de produto embutida: se o Supabase é a fonte de verdade, a tela **não deveria pedir senha** — deveria mandar convite/magic-link. Decidir antes de codar |
+| `B-01` | Corrigir o fluxo de senha do setup: criar o usuário no Supabase Auth com o mesmo UUID de `users.id`, ou **remover o campo de senha da tela** | `[x]` | B-03 | ✅ **Feito 2026-09-05.** Decisão tomada: convite/magic-link, não senha (User não tem `password_hash` de propósito, I2). Novo `app/core/supabase_admin.py` — único lugar do backend que toca `SUPABASE_SERVICE_ROLE_KEY` — chama `invite_user_by_email()` na Admin API; `system_service.setup_root()` não recebe mais `password`, usa o UUID retornado do Supabase como `User.id`/`Professional.id`; desfaz o convite (`delete_user`) se o resto da transação falhar, para não deixar usuário órfão no Supabase Auth. `SetupWizardPage.tsx` removeu o campo de senha e mostra "Convite enviado" em vez de navegar para `/login`. 6 testes novos/atualizados em `tests/test_super_admin.py` (mock do admin client) — **⚠️ falta só você configurar `SUPABASE_SERVICE_ROLE_KEY` no `.env` de produção quando for de fato rodar o setup lá** (Settings → API → secret key no painel do Supabase); localmente, o setup real não foi exercitado ponta a ponta (exigiria rodar `/system/setup` de verdade, criando uma 2ª clínica no projeto Supabase) |
 | `B-03` | Provisionar projeto Supabase real e exercitar o caminho JWKS ponta a ponta | `[x]` | — | ✅ **Feito 2026-09-04.** Projeto Supabase criado, usuário real de teste criado no Auth, `Clinic`+`User`+`Professional` vinculados ao mesmo UUID no Postgres local. Testado manualmente via `curl`: login real (`/auth/v1/token`) → GET e POST em `/api/v1/patients` com o token real, em `ENV=production` de verdade (backend temporário na porta 8011) — 201/200 nos casos válidos, 401 para token adulterado, 403 sem token |
 | `B-03a` | Teste de integração do login real (não `/dev/login`) | `[x]` | B-03 | ✅ **Feito 2026-09-04.** `tests/test_supabase_auth_integration.py`, 4 testes — login real contra o Supabase Auth + chamadas autenticadas contra a API em `ENV=production` (recarrega os módulos via `importlib.reload`, mesma técnica de `test_env_production_guard.py`). Sem `SUPABASE_TEST_EMAIL/PASSWORD/ANON_KEY` no ambiente, **pula com skip, nunca falha** — mas nesta máquina as credenciais foram gravadas no `.env` local (fora do git), então a suíte completa roda com o caminho real sempre: **268 passed, 0 skipped** |
 | `B-02` | `POST /signup` — cadastro público numa transação: `clinic` + `user` + `professional` + `financial_settings` (defaults §8.1) | `[ ]` | B-01, B-03 | Reaproveita a lógica de `system_service.setup_root`, sem o guard de `count() > 0`. **Idempotente** — duplo-submit não cria duas clínicas |
 | `B-02a` | Tela de cadastro público | `[ ]` | B-02 | Mínimo de campos. Configuração fica no onboarding, não no signup |
-| `B-05` | Recuperação de senha (fluxo do Supabase) | `[ ]` | B-03 | `LoginPage.tsx:183` é âncora morta hoje |
-| `B-04` | `ALLOWED_ORIGINS` em `config.py` + CORS no caminho de produção | `[ ]` | — | 🔴 Sem isto, front e back em domínios diferentes = app morto no browser. Barato e invisível até o deploy |
+| `B-05` | Recuperação de senha (fluxo do Supabase) | `[x]` | B-03 | ✅ **Feito 2026-09-05.** `LoginPage.tsx:183` (âncora morta `href="#recuperar"`) virou botão que abre um formulário inline chamando `supabase.auth.resetPasswordForEmail()` — chamada pública do client (mesma anon key), sem `service_role`. Mesma mensagem de sucesso independente de o e-mail existir ou não (evita enumerar contas). `tsc -b` e lint limpos — **não testado manualmente ponta a ponta** (exigiria clicar e checar a caixa de e-mail) |
+| `B-04` | `ALLOWED_ORIGINS` em `config.py` + CORS no caminho de produção | `[x]` | — | ✅ **Feito 2026-09-05.** `Settings.ALLOWED_ORIGINS` (lista separada por vírgula) + `allowed_origins_list`; `main.py` habilita `CORSMiddleware` em produção com essa lista (nunca `*`) — antes só existia em `ENV=development`. 3 testes novos em `tests/test_cors_production.py`: sem a variável não libera nenhuma origem (fail-closed, não fail-open), com a variável libera só os domínios listados, e nunca configura wildcard. **⚠️ Falta você definir o valor real** (`ALLOWED_ORIGINS=https://seu-dominio.com`) no ambiente de produção quando o frontend tiver um domínio — documentado em `.env.example` |
 
 ### G2 — Fechar o fail-open 🔴
 
@@ -191,7 +192,7 @@ Cada item aqui é uma falha que **não aparece em teste manual** — só em inci
 | `S-01b` | Remover os fallbacks hardcoded do `DEV_AUTH_SECRET` (`main.py`, `security.py`) — falhar ruidosamente se ausente em dev | `[x]` | — | ✅ **Feito 2026-09-04.** `_decode_dev()` levanta 500 e o boot em dev levanta `RuntimeError`. 2 testes, incluindo varredura textual provando que a string do segredo não existe mais em `app/` |
 | `S-01c` | `ENV=production` explícito no `Dockerfile` e `railway.json` | `[x]` | — | ✅ **Feito 2026-09-04.** `ENV=production` no bloco `ENV` do Dockerfile. **Bônus:** removido o BOM (`efbbbf`) de `Dockerfile` **e** `railway.json` — confirmado com `xxd`, era risco de parser (o `G-02` previa isso) |
 | `S-01d` | ⛔ **Teste provando que `/dev/login` e `/dev/impersonate` retornam 404 com `ENV=production`** | `[x]` | S-01a | ✅ **Feito 2026-09-04.** `tests/test_env_production_guard.py`, 7 testes. Inclui varredura do router inteiro (pega `/dev/*` novo que alguém adicione sem guard) e contraprova de que `/health` continua público — o Railway depende dele |
-| `S-02a` | RLS + policy em `users`, `clinics`, `professionals` | `[ ]` | — | 🔴 `relrowsecurity=f` confirmado no banco. ⚠️ Estas tabelas são **cross-tenant por natureza** (super-admin precisa ver todas) — a policy não é a mesma das 11 de tenant. Provável: policy por `clinic_id` + role separada para plataforma. **Decidir o modelo antes de migrar** |
+| `S-02a` | RLS + policy em `users`, `clinics`, `professionals` | `[ ]` | — | 🔴 `relrowsecurity=f` confirmado no banco. Modelo decidido em 2026-09-05: **policy por `clinic_id`** via novo GUC `app.clinic_id` (análogo a `app.professional_id`). **Investigação feita, implementação NÃO iniciada — deliberadamente, risco alto demais para rodar sem supervisão:** ⚠️ `db/session.py._set_tenant()` hoje seta só `app.professional_id`; para a policy funcionar, precisa também setar `app.clinic_id` (buscando o `clinic_id` do `Professional` logado) em `get_tenant_session()` — sem isso, **`GET /users` (rota de admin comum, usa `DbSession` normal, não `SystemDbSession`) passaria a ver RLS vazio e quebraria silenciosamente**. `unsafe_session_without_tenant()` (usado por `/system/setup` e `/super-admin/*`) já teria o bypass certo por natureza (não seta GUC algum, mas hoje o comentário do código *já mente*: diz "RLS retorna VAZIO" quando na verdade RLS nem está ligado nessas 3 tabelas — isso nunca foi exercitado). Fazer isso errado trava login/setup pela raiz. **Fazer com Postgres real e teste rodando a cada passo, não em lote** |
 | `S-02b` | `UserRepository`/`ClinicRepository` com escopo de clínica | `[ ]` | S-02a | `repositories/user.py:9` não herda `TenantRepository`; `list_all()` não filtra |
 | `S-02c` | Teste de isolamento cross-tenant para `users`/`clinics`/`professionals` | `[ ]` | S-02a | `test_isolation_generic.py` cobre só `patients` e `procedures` |
 | `S-03` | `.env`, `.env.*` no `.gitignore` da raiz | `[x]` | — | ✅ **Feito 2026-09-04**, com correção da auditoria: `backend/.gitignore:2` e `frontend/.gitignore:27` **já protegiam** — a auditoria olhou só o da raiz e superestimou o risco. A adição na raiz é defesa em profundidade, com exceção `!.env.example` para não deixar de versionar os templates |
@@ -294,13 +295,16 @@ FASE 0 — Higiene barata  ✅ CONCLUÍDA em 2026-09-04
 └── docs   link ../BACKLOG.md + dívida paga   ✅
    ▸ Porta: ✅ `pytest -q && ruff check .` → 264 passed, All checks passed
 
-FASE 1 — Primeiro login real (1-2 semanas)  🔴 caminho crítico
+FASE 1 — Primeiro login real  ✅ CÓDIGO COMPLETO em 2026-09-05
 ├── B-03 → B-03a   ✅ Supabase provisionado e TESTADO (2026-09-04)
-├── B-01           decidir e corrigir o fluxo de senha
-├── B-04           CORS de produção
-├── S-01c → S-01d  ENV no deploy + teste do guard
-└── B-05           recuperação de senha
+├── B-01           ✅ convite/magic-link, sem senha (2026-09-05)
+├── B-04           ✅ CORS de produção, fail-closed sem config (2026-09-05)
+├── S-01c → S-01d  ✅ ENV no deploy + teste do guard (2026-09-04)
+└── B-05           ✅ recuperação de senha via Supabase (2026-09-05)
    ▸ Porta: você faz logout, esquece a senha, recupera, e entra de novo — em produção
+   ⚠️ FALTA SÓ VOCÊ: definir SUPABASE_SERVICE_ROLE_KEY e ALLOWED_ORIGINS no
+      ambiente de produção quando o domínio do frontend existir (§13) —
+      nada disso pode ser decidido ou testado sem uma conta/domínio real
 
 FASE 2 — Produção (1-2 semanas)
 ├── G-01  host do front + rewrite de SPA

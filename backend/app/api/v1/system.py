@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException, status
 
-from app.api.deps import SystemSvc
+from app.api.deps import SystemSetupRateLimit, SystemSvc
 from app.schemas.system import SystemSetupInput, SystemStatusOutput
 from app.schemas.user import UserOutput
 from app.services.system_service import SystemSetupError
@@ -16,7 +16,9 @@ def get_system_status(service: SystemSvc) -> SystemStatusOutput:
 
 
 @router.post("/setup", response_model=UserOutput, status_code=status.HTTP_201_CREATED)
-def setup_system(body: SystemSetupInput, service: SystemSvc) -> UserOutput:
+def setup_system(
+    body: SystemSetupInput, service: SystemSvc, _rate_limit: SystemSetupRateLimit
+) -> UserOutput:
     """Cria o Super Administrador e o tenant inicial no primeiro acesso.
 
     B-01: sem senha — o Supabase Auth manda um convite/magic-link para o
