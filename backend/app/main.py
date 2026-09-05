@@ -28,12 +28,21 @@ from app.repositories.user import UserRepository
 
 app = FastAPI(title="Estetica API", version="0.1.0")
 
+# B-04: sem isto, front e back em domínios diferentes (o cenário normal
+# de deploy — ex. Vercel + Railway) têm toda chamada bloqueada pelo
+# browser, mesmo com o backend respondendo certo. allow_origins nunca é
+# "*" — nem em dev (localhost fixo) nem em produção (lista explícita via
+# ALLOWED_ORIGINS). Uma lista vazia em produção é configuração
+# incompleta, não motivo para abrir para qualquer origem.
 if settings.ENV == "development":
-    # Só em dev: em produção o front é servido de um domínio fixo e
-    # conhecido, configurado explicitamente — nunca "*".
+    _cors_origins = ["http://localhost:5173"]
+else:
+    _cors_origins = settings.allowed_origins_list
+
+if _cors_origins:
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=["http://localhost:5173"],
+        allow_origins=_cors_origins,
         allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],
