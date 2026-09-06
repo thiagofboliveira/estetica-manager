@@ -95,6 +95,7 @@ def _resolve_slug(slug: str) -> tuple[UUID, str, str | None, str, str | None, st
         row = sys_sess.execute(stmt).first()
         if not row and clean_slug in ("minha-agenda", "agenda", "default"):
             from sqlalchemy import text
+
             from app.core.slug import generate_slug
 
             fallback_stmt = select(
