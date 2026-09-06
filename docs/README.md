@@ -2,7 +2,7 @@
 
 Organização por **estado de execução**, não por assunto. A pergunta que esta pasta responde é: *o que já foi feito, o que está em andamento, e o que falta.*
 
-**Última auditoria de estado:** 2026-09-03 (verificada contra o código, não contra os docs)
+**Última auditoria de estado:** 2026-09-05 (verificada contra o código e contra os gates, não contra os docs)
 
 ---
 
@@ -47,7 +47,11 @@ Documentos **atemporais** (não têm estado de execução) ficam na raiz de `doc
 
 ## in_progress/
 
-Nenhum documento em andamento no momento — `BACKLOG_SPRINT2_backend.md` moveu para `finished/` em 2026-09-04 após as 3 ações corretivas (AC-01, AC-02, AC-07) serem corrigidas e testadas.
+| Arquivo | Conteúdo | Estado |
+|---|---|---|
+| [`BACKLOG_AUDITORIA_2026-09-05.md`](in_progress/BACKLOG_AUDITORIA_2026-09-05.md) | 🔴 **Comece aqui.** Auditoria pós-Fase 2: agenda pública entregue fora do plano e sem consentimento, porta de decisão da Fase 3 travada por dependência circular, medição que mede setup e não valor | 1/16 — `A-01` (gate `ruff`) fechada em 2026-09-05 |
+
+> Antes disso, `BACKLOG_SPRINT2_backend.md` moveu para `finished/` em 2026-09-04 após as 3 ações corretivas (AC-01, AC-02, AC-07) serem corrigidas e testadas.
 
 ---
 
@@ -55,7 +59,7 @@ Nenhum documento em andamento no momento — `BACKLOG_SPRINT2_backend.md` moveu 
 
 | Arquivo | Conteúdo | Escopo |
 |---|---|---|
-| [`BACKLOG_GO_LIVE.md`](pending/BACKLOG_GO_LIVE.md) | 🔴 **Comece aqui.** Go-live: 5 bloqueadores do primeiro login + 3 de segurança + pesquisa de concorrência e preço | Do MVP pronto ao primeiro uso real |
+| [`BACKLOG_GO_LIVE.md`](pending/BACKLOG_GO_LIVE.md) | Go-live: 5 bloqueadores do primeiro login + 3 de segurança + pesquisa de concorrência e preço. Fases 0-2 ✅ concluídas | Do MVP pronto ao primeiro uso real |
 | [`BACKLOG_VERSAO_COMPLETA.md`](pending/BACKLOG_VERSAO_COMPLETA.md) | Backlog da versão completa — 74 tasks em 8 épicos (V1 a V8) | Do go-live até SaaS em escala |
 | [`BACKLOG_FILTROS_E_LAYOUT.md`](pending/BACKLOG_FILTROS_E_LAYOUT.md) | Filtros, sidebar, carrosséis, reengajamento (E1-E6) | ✅ Entregue — só `F6-05` aberto (decisão de escopo) |
 
@@ -67,6 +71,13 @@ Nenhum documento em andamento no momento — `BACKLOG_SPRINT2_backend.md` moveu 
 | L-2 | Não tem cadastro público | ✅ **Confirmada.** Os 3 caminhos exigem privilégio preexistente |
 | L-3 | Não tem produção | ⚠️ **Parcialmente desatualizada.** `backend/Dockerfile` e `railway.json` **existem**. Falta CI e infra do frontend |
 | L-4 | Não se mede | ✅ **Confirmada, e pior:** o produto não mede o no-show evitado, que é seu maior alvo econômico |
+
+> 🔴 **A auditoria de 2026-09-05 encontrou a maior entrega da semana sem documento algum:**
+> a **agenda pública** (`/agendar/:slug`, migrations `0017`–`0021`, `api/v1/public_agenda.py`)
+> é a `V8-04`, listada como fora de escopo no MVP spec e no último épico do
+> `BACKLOG_VERSAO_COMPLETA.md`. Ela quebrou o gate `ruff` (8 erros, ✅ corrigidos) e coleta nome e telefone
+> da paciente sem consentimento registrado. Tudo em
+> [`BACKLOG_AUDITORIA_2026-09-05.md`](in_progress/BACKLOG_AUDITORIA_2026-09-05.md).
 
 > 🔴 **A auditoria de 2026-09-04 encontrou 5 bloqueadores que nenhum documento registrava** —
 > entre eles, a senha do setup ser coletada pela tela e descartada pelo backend
