@@ -49,7 +49,7 @@ Documentos **atemporais** (não têm estado de execução) ficam na raiz de `doc
 
 | Arquivo | Conteúdo | Estado |
 |---|---|---|
-| [`BACKLOG_AUDITORIA_2026-09-05.md`](in_progress/BACKLOG_AUDITORIA_2026-09-05.md) | 🔴 **Comece aqui.** Auditoria pós-Fase 2: agenda pública entregue fora do plano e sem consentimento, porta de decisão da Fase 3 travada por dependência circular, medição que mede setup e não valor | 1/16 — `A-01` (gate `ruff`) fechada em 2026-09-05 |
+| [`BACKLOG_AUDITORIA_2026-09-05.md`](in_progress/BACKLOG_AUDITORIA_2026-09-05.md) | 🔴 **Comece aqui.** Auditoria pós-Fase 2: agenda pública entregue fora do plano, porta de decisão da Fase 3 travada por dependência circular, medição que mede setup e não valor | 3/16 — `A-01`, `A-02`, `A-02a` fechadas em 2026-09-05 |
 
 > Antes disso, `BACKLOG_SPRINT2_backend.md` moveu para `finished/` em 2026-09-04 após as 3 ações corretivas (AC-01, AC-02, AC-07) serem corrigidas e testadas.
 

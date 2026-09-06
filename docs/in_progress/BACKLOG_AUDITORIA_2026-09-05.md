@@ -2,7 +2,7 @@
 
 **Produto:** Lumina Estética Manager · **Papel:** PO/PM · **Data:** 2026-09-05
 **Branch:** `feature/mvp-release` · **Auditoria:** código, banco e gates reais, não docs
-**Estado:** `A-01` fechada em 2026-09-05 · 15 tasks abertas (`A-02` a `A-16`)
+**Estado:** `A-01`, `A-02`, `A-02a` fechadas em 2026-09-05 · 13 tasks abertas (`A-03` a `A-16`)
 
 > **O que este documento é.** Uma revisão de produto e arquitetura feita **depois** que o
 > [`BACKLOG_GO_LIVE.md`](../pending/BACKLOG_GO_LIVE.md) declarou as Fases 0-2 concluídas. Ela encontrou
@@ -65,7 +65,7 @@ Nada aqui vira task. Está registrado porque decisão boa precisa de memória ta
 | ID | Achado | Severidade | Evidência |
 |---|---|:--:|---|
 | `A-01` | ✅ ~~Gate `ruff` vermelho~~ **Resolvido 2026-09-05** | 🔴 | Eram 8 erros, **todos** nos arquivos da agenda pública |
-| `A-02` | Agenda pública coleta dado pessoal sem base legal | 🔴 | `public_agenda.py:299-306` vs. `PublicBookingPage.tsx` sem consentimento |
+| `A-02` | ✅ ~~Agenda pública coleta dado pessoal sem base legal~~ **Resolvido 2026-09-05** | 🔴 | `public_agenda.py:299-306` vs. `PublicBookingPage.tsx` sem consentimento |
 | `A-03` | Agenda pública não existe em documento algum | 🔴 | `grep -rn "public_agenda" docs/` → zero |
 | `A-04` | Duplo agendamento possível no link público | 🟠 | `public_agenda.py:290-297`, sem constraint no banco |
 | `A-05` | A porta de decisão da Fase 3 não pode fechar | 🟠 | `G-14` depende de `B-02`, que está na Fase 4, que depende da porta da Fase 3 |
@@ -195,8 +195,8 @@ Nenhum destes é feature nova. São o custo não pago de uma entrega que pulou o
 | ID | Task | Status | Depende | Nota |
 |---|---|:--:|---|---|
 | `A-01` | `ruff check . --fix` + confirmar `pytest -q && ruff check .` limpo | `[x]` | — | ✅ **Feito 2026-09-05.** 9 erros corrigidos (I001 em `0017`-`0021`, `public_agenda.py:97`, `users.py:30`; F401 `sqlalchemy` não usado em `0021`). Evidência dos 4 gates: `ruff check .` → *All checks passed* · `pytest -q` → **294 passed** · `npx tsc -b` → exit 0 · `npm run lint` → exit 0, 0 erros. Nenhuma mudança semântica: só ordenação de imports e remoção de import morto |
-| `A-02` | Checkbox de consentimento + link para `/privacidade` no formulário público, gravando `consent_whatsapp` no `booking`/`patient` | `[ ]` | — | 🔴 Hoje `public_agenda.py:299` grava nome e telefone da titular sem base legal registrada, e `opportunity_rules.py:145` depois **bloqueia** o contato. **Corrige o gap jurídico e destrava o funil de retenção na mesma linha de código** |
-| `A-02a` | Teste provando que booking público sem consentimento não gera oportunidade contatável, e com consentimento gera | `[ ]` | A-02 | O DoD exige teste em rota que toca dado de paciente. Superfície pública tem de provar o comportamento, não assumir |
+| `A-02` | Checkbox de consentimento + link para `/privacidade` no formulário público, gravando `consent_whatsapp` no `booking`/`patient` | `[x]` | — | ✅ **Feito 2026-09-05.** `PublicBookingCreate.patient_consent_whatsapp` (default `False`, opt-in) propagado por `BookingCreate` até `booking_service.create()`: paciente nova nasce com o consentimento marcado; paciente existente só sobe (`False→True`), nunca desce — retirar é ato explícito de `PatientService.update`, não efeito colateral de agendar. **Achado no caminho:** o matching por telefone comparava string crua contra o valor normalizado E.164 gravado por `PatientService.create`, duplicando a paciente sempre que o formato divergia — corrigido com `normalize_br_phone()` antes do `get_by_phone()`. Checkbox + link para `/privacidade` (`target="_blank"`) em `PublicBookingPage.tsx` |
+| `A-02a` | Teste provando que booking público sem consentimento não gera oportunidade contatável, e com consentimento gera | `[x]` | A-02 | ✅ **Feito 2026-09-05.** `tests/test_public_booking_consent.py`, 3 testes: sem consentimento → `consent_whatsapp=False`; com consentimento → `True` + `consent_at` preenchido; paciente que já tinha `True` e agenda de novo sem marcar o checkbox **não perde** o consentimento. Evidência: `pytest -q` → 297 passed (eram 294) · `ruff check .` → All checks passed · `tsc -b` → exit 0 · `npm run lint` → exit 0, mesmos 23 warnings pré-existentes |
 | `A-03` | Documentar a agenda pública: registrar `V8-04` como entregue antecipadamente no `BACKLOG_VERSAO_COMPLETA.md`, com o motivo e a data | `[ ]` | — | Sem isso o repositório mente pela terceira vez e a próxima auditoria propõe construir o que já existe. **Documentação que omite é o mesmo problema que documentação que mente** |
 | `A-04` | Constraint de exclusão de horário no banco (`EXCLUDE USING gist`) ou `SELECT ... FOR UPDATE` no caminho de criação | `[ ]` | — | `public_agenda.py:290-297` checa conflito em Python e cria em seguida; `booking.py` não tem constraint. Dois cliques simultâneos passam. **O link público existe justamente para multiplicar acesso concorrente**, e o custo do erro é ela recebendo duas pacientes no mesmo horário |
 
@@ -243,7 +243,7 @@ FASE 0-2  ✅ CONCLUÍDAS (ver BACKLOG_GO_LIVE.md §7)
 
 FASE 2.5 — Pagar o custo da agenda pública   🆕 ESTE DOCUMENTO
 ├── A-01   ruff limpo                        ✅ FEITO 2026-09-05
-├── A-02 → A-02a  consentimento no público   ← jurídico + funil, mesma linha
+├── A-02 → A-02a  ✅ FEITO 2026-09-05 (consentimento no público)
 ├── A-03   documentar V8-04 entregue         ← para o repositório parar de mentir
 └── A-04   constraint de horário             ← duplo agendamento
    ▸ Porta: `pytest -q && ruff check .` limpo (✅ já) E a agenda pública existe em docs/

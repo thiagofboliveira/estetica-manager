@@ -1,5 +1,5 @@
 import { useEffect, useState, useMemo } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, Link } from "react-router-dom";
 import {
   publicBookingApi,
   type PublicProfessionalInfo,
@@ -34,6 +34,9 @@ export function PublicBookingPage() {
   const [patientName, setPatientName] = useState("");
   const [patientPhone, setPatientPhone] = useState("");
   const [note, setNote] = useState("");
+  // A-02: opt-in explícito de contato por WhatsApp — sem isso o
+  // paciente vira lead que opportunity_rules.py se recusa a contatar.
+  const [consentWhatsapp, setConsentWhatsapp] = useState(false);
 
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
@@ -167,6 +170,7 @@ export function PublicBookingPage() {
         patient_name: patientName.trim(),
         patient_phone: cleanPhone,
         note: note.trim() || null,
+        patient_consent_whatsapp: consentWhatsapp,
       });
 
       navigate(`/agendamento/${booking.id}?token=${encodeURIComponent(booking.management_token)}`);
@@ -641,6 +645,22 @@ export function PublicBookingPage() {
                     />
                   </div>
                 </div>
+
+                <label className={styles.consentRow}>
+                  <input
+                    type="checkbox"
+                    checked={consentWhatsapp}
+                    onChange={(e) => setConsentWhatsapp(e.target.checked)}
+                  />
+                  <span>
+                    Aceito receber lembretes e confirmações deste agendamento pelo
+                    WhatsApp. Veja como tratamos seus dados na nossa{" "}
+                    <Link to="/privacidade" target="_blank" rel="noopener noreferrer">
+                      Política de Privacidade
+                    </Link>
+                    .
+                  </span>
+                </label>
 
                 {submitError && <div className={styles.errorBanner}>{submitError}</div>}
 

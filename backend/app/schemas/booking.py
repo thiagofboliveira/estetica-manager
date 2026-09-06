@@ -15,6 +15,9 @@ class BookingCreate(InputSchema):
     scheduled_at: datetime
     modality: Modality = Modality.IN_PERSON
     note: str | None = None
+    # A-02: só a origem pública informa isto — o agendamento feito pela
+    # própria profissional não implica consentimento da paciente.
+    patient_consent_whatsapp: bool = False
 
 
 class BookingUpdate(InputSchema):
@@ -53,6 +56,9 @@ class PublicBookingCreate(InputSchema):
     patient_name: str
     patient_phone: str
     note: str | None = None
+    # A-02: opt-in explícito, default False. O agendamento funciona sem
+    # marcar — só o lembrete por WhatsApp fica indisponível (I6/opportunity_rules).
+    patient_consent_whatsapp: bool = False
 
 
 class PublicBookingReschedule(InputSchema):

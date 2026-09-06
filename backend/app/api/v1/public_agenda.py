@@ -303,6 +303,7 @@ def create_public_booking(
             procedure_id=body.procedure_id,
             scheduled_at=scheduled_utc,
             note=body.note.strip() if body.note else None,
+            patient_consent_whatsapp=body.patient_consent_whatsapp,
         )
 
         booking, _ = booking_svc.create(booking_create)

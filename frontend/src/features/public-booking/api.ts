@@ -24,6 +24,7 @@ export type PublicBookingCreateInput = {
   patient_name: string;
   patient_phone: string;
   note?: string | null;
+  patient_consent_whatsapp?: boolean;
 };
 
 export type PublicBookingRescheduleInput = {
