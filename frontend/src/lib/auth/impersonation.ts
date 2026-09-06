@@ -45,12 +45,25 @@ export function getImpersonationState(): ImpersonationState {
   }
 }
 
+const DEV_AUTH = import.meta.env.VITE_DEV_AUTH === "true";
+
 export async function startImpersonation(
   userId: string,
   targetName: string,
   originalUserName: string,
   originalUserId: string,
 ): Promise<void> {
+  // Salva os metadados de impersonação para exibir o banner
+  sessionStorage.setItem(ORIGINAL_USER_KEY, originalUserName);
+  sessionStorage.setItem(ORIGINAL_USER_ID_KEY, originalUserId);
+  sessionStorage.setItem(IMPERSONATION_KEY, JSON.stringify({ targetName, targetUserId: userId }));
+
+  // Em produção (Supabase Auth): a sessão do usuário é globalmente autenticada
+  // e válida para acessar a visão da clínica. Não usa a rota /dev/impersonate.
+  if (!DEV_AUTH) {
+    return;
+  }
+
   const currentToken = sessionStorage.getItem(DEV_TOKEN_KEY);
   if (!currentToken) throw new Error("Nenhuma sessão ativa para salvar");
 
@@ -68,13 +81,7 @@ export async function startImpersonation(
 
   const body = (await res.json()) as { access_token: string };
 
-  // Salva o token original e os metadados antes de trocar
   sessionStorage.setItem(ORIGINAL_TOKEN_KEY, currentToken);
-  sessionStorage.setItem(ORIGINAL_USER_KEY, originalUserName);
-  sessionStorage.setItem(ORIGINAL_USER_ID_KEY, originalUserId);
-  sessionStorage.setItem(IMPERSONATION_KEY, JSON.stringify({ targetName, targetUserId: userId }));
-
-  // Substitui a sessão ativa pelo token de impersonação
   sessionStorage.setItem(DEV_TOKEN_KEY, body.access_token);
 }
 
