@@ -26,6 +26,19 @@ def get_current_user_profile(
     out = UserOutput.model_validate(user)
     prof = ProfessionalRepository(session, professional_id).get_by_id(professional_id)
     if prof:
+        if not prof.slug:
+            from uuid import uuid4
+            from app.core.slug import generate_slug
+
+            candidate_slug = generate_slug(prof.name, prof.id)
+            stmt = select(Professional).where(
+                Professional.slug == candidate_slug, Professional.id != professional_id
+            )
+            if session.scalars(stmt).first():
+                candidate_slug = f"{candidate_slug}-{uuid4().hex[:4]}"
+            prof.slug = candidate_slug
+            session.flush()
+
         out.slug = prof.slug
         out.bio = prof.bio
         out.avatar_url = prof.avatar_url

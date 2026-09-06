@@ -88,7 +88,13 @@ export function PublicBookingBanner() {
             type="button"
             className={styles.btnSecondary}
             onClick={() => {
-              setSlugInput(user.slug || "");
+              const suggested = (user.name || "minha-agenda")
+                .toLowerCase()
+                .normalize("NFD")
+                .replace(/[\u0300-\u036f]/g, "")
+                .replace(/[^a-z0-9]+/g, "-")
+                .replace(/^-|-$/g, "");
+              setSlugInput(user.slug || suggested || "minha-agenda");
               setBioInput(user.bio || "");
               setAvatarUrlInput(user.avatar_url || "");
               setSpecialtyInput(user.specialty || "");
