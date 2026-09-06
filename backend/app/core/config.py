@@ -42,6 +42,10 @@ class Settings(BaseSettings):
             )
             v = re.sub(r"://postgres:", "://postgres.ckgnnvxnftaqtnkmovox:", v)
 
+        # No Connection Pooler do Supabase, o usuário OBRIGATORIAMENTE deve ser postgres.<ref>
+        if "pooler.supabase.com" in v and "://postgres:" in v:
+            v = re.sub(r"://postgres:", "://postgres.ckgnnvxnftaqtnkmovox:", v)
+
         return v
 
     SUPABASE_URL: str
