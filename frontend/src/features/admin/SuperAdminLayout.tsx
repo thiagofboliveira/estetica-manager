@@ -48,6 +48,14 @@ export function SuperAdminLayout() {
             <IconUsers width="18" height="18" />
             <span>Usuários Globais</span>
           </NavLink>
+          <NavLink
+            to="/dashboard"
+            className={styles.navLink}
+            title="Acessar painel de atendimento da clínica"
+          >
+            <IconSparkles width="18" height="18" />
+            <span>Visão da Clínica</span>
+          </NavLink>
         </nav>
 
         <div className={styles.userSection}>
