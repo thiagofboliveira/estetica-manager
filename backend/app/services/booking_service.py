@@ -2,6 +2,7 @@ from datetime import UTC, date, datetime, time
 from uuid import UUID
 from zoneinfo import ZoneInfo
 
+from app.core.phone import InvalidPhoneError, normalize_br_phone
 from app.domain.bookings.enums import BookingStatus
 from app.domain.bookings.state_machine import validate_booking_transition
 from app.models.booking import Booking
@@ -67,17 +68,35 @@ class BookingService:
 
         # Se não informou patient_id mas informou telefone, tenta associar ou registrar
         if not patient_id and patient_phone:
-            existing = self._patients.get_by_phone(patient_phone)
+            # Normaliza antes de buscar: um paciente cadastrado via tela
+            # (PatientService.create) já está em E.164. Comparar a string
+            # crua vinda do link público duplicava a paciente sempre que o
+            # formato divergia (com/sem +55, DDD sem o 9).
+            try:
+                lookup_phone = normalize_br_phone(patient_phone)
+            except InvalidPhoneError:
+                lookup_phone = patient_phone.strip()
+            existing = self._patients.get_by_phone(lookup_phone)
             if existing:
                 patient_id = existing.id
                 if not patient_name_hint:
                     patient_name_hint = existing.name
+                # A-02: consentimento só sobe (False->True), nunca desce
+                # aqui — retirar consentimento é ato explícito em
+                # PatientService.update, não efeito colateral de agendar.
+                if dto.patient_consent_whatsapp and not existing.consent_whatsapp:
+                    existing.consent_whatsapp = True
+                    existing.consent_at = datetime.now(UTC)
             elif patient_name_hint:
                 # Cria novo paciente automaticamente no tenant
                 new_patient = Patient(
                     name=patient_name_hint.strip(),
-                    phone=patient_phone.strip(),
+                    phone=lookup_phone,
                     is_active=True,
+                    consent_whatsapp=dto.patient_consent_whatsapp,
+                    consent_at=(
+                        datetime.now(UTC) if dto.patient_consent_whatsapp else None
+                    ),
                 )
                 created_p = self._patients.add(new_patient)
                 self._patients.flush()

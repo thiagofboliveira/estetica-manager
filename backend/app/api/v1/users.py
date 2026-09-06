@@ -28,6 +28,7 @@ def get_current_user_profile(
     if prof:
         if not prof.slug:
             from uuid import uuid4
+
             from app.core.slug import generate_slug
 
             candidate_slug = generate_slug(prof.name, prof.id)

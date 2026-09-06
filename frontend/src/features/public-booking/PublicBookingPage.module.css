@@ -564,6 +564,33 @@
   margin-top: 32px;
 }
 
+.consentRow {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin-top: 16px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: var(--surface-muted, rgba(0, 0, 0, 0.03));
+  font-size: 0.85rem;
+  line-height: 1.4;
+  color: var(--text-muted);
+  cursor: pointer;
+}
+
+.consentRow input[type="checkbox"] {
+  margin-top: 2px;
+  flex-shrink: 0;
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+}
+
+.consentRow a {
+  color: var(--accent);
+  text-decoration: underline;
+}
+
 /* Busca e Filtros de Procedimentos */
 .procedureFilterBar {
   display: flex;

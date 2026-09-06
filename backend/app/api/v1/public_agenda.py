@@ -95,6 +95,7 @@ def _resolve_slug(slug: str) -> tuple[UUID, str, str | None, str, str | None, st
         row = sys_sess.execute(stmt).first()
         if not row and clean_slug in ("minha-agenda", "agenda", "default"):
             from sqlalchemy import text
+
             from app.core.slug import generate_slug
 
             fallback_stmt = select(
@@ -302,6 +303,7 @@ def create_public_booking(
             procedure_id=body.procedure_id,
             scheduled_at=scheduled_utc,
             note=body.note.strip() if body.note else None,
+            patient_consent_whatsapp=body.patient_consent_whatsapp,
         )
 
         booking, _ = booking_svc.create(booking_create)
