@@ -15,7 +15,7 @@ Organização por **estado de execução**, não por assunto. A pergunta que est
 | [`pending/`](pending/) | Não começado | Backlog de futuro |
 
 Documentos **atemporais** (não têm estado de execução) ficam na raiz de `docs/` ou do repo:
-`ENGENHARIA.md` (invariantes), `LGPD_CONTRATO_OPERADOR.md`, `ENTREVISTA.md`, `requisitos.md`, o MVP spec.
+`ENGENHARIA.md` (invariantes), [`FREE_TIER_SERVICES.md`](FREE_TIER_SERVICES.md) (infraestrutura e cotas gratuitas), `LGPD_CONTRATO_OPERADOR.md`, `ENTREVISTA.md`, `requisitos.md`, o MVP spec.
 
 ---
 
