@@ -17,10 +17,31 @@ class Settings(BaseSettings):
     @field_validator("DATABASE_URL", "DATABASE_URL_MIGRATIONS", mode="before")
     @classmethod
     def _normalize_db_url(cls, v: str | None) -> str | None:
-        if v and v.startswith("postgres://"):
-            return v.replace("postgres://", "postgresql+psycopg2://", 1)
-        if v and v.startswith("postgresql://") and not v.startswith("postgresql+"):
-            return v.replace("postgresql://", "postgresql+psycopg2://", 1)
+        if not v:
+            return v
+        import re
+
+        if v.startswith("postgres://"):
+            v = v.replace("postgres://", "postgresql+psycopg2://", 1)
+        elif v.startswith("postgresql://") and not v.startswith("postgresql+"):
+            v = v.replace("postgresql://", "postgresql+psycopg2://", 1)
+
+        # Se a senha contiver # antes do @, escapa para %23 (evita quebrar a URL como fragmento)
+        match = re.match(r"^(postgresql\+psycopg2://[^:]+:)(.*)@([^@]+)$", v)
+        if match:
+            prefix, password, rest = match.groups()
+            password = password.replace("#", "%23")
+            v = f"{prefix}{password}@{rest}"
+
+        # Se for o host direct do Supabase (IPv6-only incompatível com Render Free),
+        # converte automaticamente para o Connection Pooler IPv4 do Supabase
+        if "db.ckgnnvxnftaqtnkmovox.supabase.co" in v:
+            v = v.replace(
+                "db.ckgnnvxnftaqtnkmovox.supabase.co",
+                "aws-0-us-east-2.pooler.supabase.com",
+            )
+            v = re.sub(r"://postgres:", "://postgres.ckgnnvxnftaqtnkmovox:", v)
+
         return v
 
     SUPABASE_URL: str

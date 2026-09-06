@@ -15,7 +15,7 @@ if settings.DATABASE_URL_MIGRATIONS and "db." not in settings.DATABASE_URL_MIGRA
     migration_url = settings.DATABASE_URL_MIGRATIONS
 
 safe_target = migration_url.split("@")[-1] if "@" in migration_url else "local"
-print(f"[ALEMBIC] Conectando ao host de banco: {safe_target}")
+print(f"[ALEMBIC] Conectando ao host de banco: {safe_target}", flush=True)
 
 config = context.config
 config.set_main_option("sqlalchemy.url", migration_url)
