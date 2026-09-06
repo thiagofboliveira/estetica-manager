@@ -198,5 +198,17 @@ function buildMetricSlides(dashboard: Dashboard) {
     />,
   );
 
+  if (dashboard.public_booking_count != null && dashboard.public_booking_count > 0) {
+    slides.push(
+      <MetricCard
+        key="public-bookings"
+        label="Agendamentos pelo link público"
+        value={`${dashboard.public_booking_count} ${dashboard.public_booking_count === 1 ? "agendamento" : "agendamentos"}`}
+        note="Originados da sua bio ou WhatsApp"
+      />,
+    );
+  }
+
   return slides;
 }
+

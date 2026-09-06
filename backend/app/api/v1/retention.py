@@ -3,7 +3,9 @@ from uuid import UUID
 
 from fastapi import APIRouter, HTTPException, Query, status
 
-from app.api.deps import RetentionSvc
+from app.api.deps import EventSvc, RetentionSvc
+from app.domain.events import EventName
+from app.domain.retention.enums import ReturnOpportunityStatus
 from app.domain.retention.state_machine import InvalidReturnOpportunityTransitionError
 from app.schemas.retention import (
     PatientRetentionCardOut,
@@ -57,11 +59,28 @@ def update_retention_opportunity(
     opp_id: UUID,
     payload: ReturnOpportunityUpdate,
     svc: RetentionSvc,
+    events: EventSvc,
 ) -> ReturnOpportunityOut:
     """Registra contato ou altera status de uma oportunidade de retorno (TASK-031)."""
     try:
         opp = svc.update(opp_id, payload)
+
+        if (
+            payload.status == ReturnOpportunityStatus.CONTACTED
+            or payload.contact_channel is not None
+            or payload.contacted_at is not None
+            or opp.contacted_at is not None
+        ):
+            events.track_first(EventName.FIRST_REACTIVATION_SENT)
+
+        if payload.status in (
+            ReturnOpportunityStatus.BOOKED,
+            ReturnOpportunityStatus.CLOSED,
+        ):
+            events.track_first(EventName.FIRST_REACTIVATION_CONVERTED)
+
         # Converte para output
+
         items = svc.list_all()
         for it in items:
             if it.id == opp.id:

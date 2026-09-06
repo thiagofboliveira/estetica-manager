@@ -7,6 +7,7 @@ import {
   IconSparkles,
   IconWallet,
   IconReceipt,
+  IconTrendingUp,
 } from "@/ui/icons";
 import styles from "./Sidebar.module.css";
 
@@ -16,9 +17,11 @@ const NAV_ITEMS = [
   { to: "/agenda", label: "Agenda", Icon: IconCalendar, end: false },
   { to: "/pacientes", label: "Pacientes", Icon: IconUsers, end: false },
   { to: "/procedimentos", label: "Procedimentos", Icon: IconSparkles, end: false },
+  { to: "/simulador", label: "Simulador de Preço", Icon: IconTrendingUp, end: false },
   { to: "/financeiro", label: "Financeiro", Icon: IconWallet, end: false },
   { to: "/despesas-fixas", label: "Despesas Fixas", Icon: IconReceipt, end: false },
 ];
+
 
 type Props = {
   onNavigate?: () => void;

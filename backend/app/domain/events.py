@@ -11,9 +11,13 @@ from enum import StrEnum
 
 class EventName(StrEnum):
     SIGNED_UP = "signed_up"
+    FIRST_LOGIN = "first_login"
     FIRST_PROCEDURE_CREATED = "first_procedure_created"
     FIRST_PATIENT_IMPORTED = "first_patient_imported"
     FIRST_SALE_RECORDED = "first_sale_recorded"
     FIRST_PROFIT_VIEWED = "first_profit_viewed"
     FIRST_REACTIVATION_SENT = "first_reactivation_sent"
     FIRST_REACTIVATION_CONVERTED = "first_reactivation_converted"
+    FIRST_PUBLIC_BOOKING_RECEIVED = "first_public_booking_received"
+    PUBLIC_BOOKING_CREATED = "public_booking_created"
+

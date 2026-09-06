@@ -3,7 +3,15 @@ from uuid import UUID
 from fastapi import APIRouter, HTTPException, Request, status
 from sqlalchemy import select
 
-from app.api.deps import AdminUser, CurrentProfessional, CurrentUser, DbSession, UserSvc
+from app.api.deps import (
+    AdminUser,
+    CurrentProfessional,
+    CurrentUser,
+    DbSession,
+    EventSvc,
+    UserSvc,
+)
+from app.domain.events import EventName
 from app.models.professional import Professional
 from app.repositories.professional import ProfessionalRepository
 from app.schemas.user import (
@@ -20,11 +28,16 @@ router = APIRouter(prefix="/users", tags=["users"])
 
 @router.get("/me", response_model=UserOutput)
 def get_current_user_profile(
-    user: CurrentUser, session: DbSession, professional_id: CurrentProfessional
+    user: CurrentUser,
+    session: DbSession,
+    professional_id: CurrentProfessional,
+    events: EventSvc,
 ) -> UserOutput:
     """Retorna os dados do usuário autenticado na sessão atual, incluindo slug da agenda pública."""
+    events.track_first(EventName.FIRST_LOGIN)
     out = UserOutput.model_validate(user)
     prof = ProfessionalRepository(session, professional_id).get_by_id(professional_id)
+
     if prof:
         if not prof.slug:
             from uuid import uuid4

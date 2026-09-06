@@ -7,7 +7,14 @@ from app.api.deps import EventSvc, SaleSvc
 from app.domain.events import EventName
 from app.models.sale_item import SaleItem
 from app.models.session import Session as SessionModel
-from app.schemas.sale import SaleCreate, SaleItemOut, SaleOut, SessionOut
+from app.schemas.sale import (
+    SaleCreate,
+    SaleItemOut,
+    SaleOut,
+    SaleSimulationInput,
+    SaleSimulationOut,
+    SessionOut,
+)
 from app.services.sale_service import (
     IdempotencyKeyConflictError,
     PatientNotFoundForSaleError,
@@ -70,10 +77,27 @@ def create_sale(
         # Só na criação genuína — idempotência devolvendo a mesma venda
         # (200) não é uma "primeira venda" nova acontecendo de novo.
         events.track_first(EventName.FIRST_SALE_RECORDED)
+        if getattr(sale, "_reactivations_converted", 0) > 0:
+            events.track_first(EventName.FIRST_REACTIVATION_CONVERTED)
     return _to_sale_out(svc, sale)
 
 
+@router.post("/simulate", response_model=SaleSimulationOut)
+def simulate_sale_pricing(payload: SaleSimulationInput, svc: SaleSvc) -> SaleSimulationOut:
+    """A-10 / A-11: Simula precificação de procedimento sem persistir nada.
+    Reusa calculate_sale() com taxas e split do tenant e alerta se a margem for negativa."""
+    try:
+        return svc.simulate(payload)
+    except ProcedureNotFoundForSaleError as exc:
+        raise HTTPException(
+            status.HTTP_404_NOT_FOUND, f"Procedimento não encontrado: {exc.procedure_id}"
+        ) from exc
+    except ValueError as exc:
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, str(exc)) from exc
+
+
 @router.get("/{sale_id}", response_model=SaleOut)
+
 def get_sale(sale_id: UUID, svc: SaleSvc) -> SaleOut:
     try:
         sale = svc.get(sale_id)

@@ -22,7 +22,9 @@ import { AgendaPage } from "@/features/agenda/AgendaPage";
 import { ModoOcupadoPage } from "@/features/agenda/ModoOcupadoPage";
 import { FinancialSettingsPage } from "@/features/settings/FinancialSettingsPage";
 import { FixedExpensesPage } from "@/features/fixed-expenses/FixedExpensesPage";
+import { PriceSimulatorPage } from "@/features/simulator/PriceSimulatorPage";
 import { SetupWizardPage } from "@/features/admin/SetupWizardPage";
+
 import { AdminLayout } from "@/features/admin/AdminLayout";
 import { AdminUsersPage } from "@/features/admin/AdminUsersPage";
 import { SuperAdminLayout } from "@/features/admin/SuperAdminLayout";
@@ -84,7 +86,9 @@ export const router = createBrowserRouter([
               { path: "/agenda/rapido", element: <ModoOcupadoPage /> },
               { path: "/financeiro", element: <FinancialSettingsPage /> },
               { path: "/despesas-fixas", element: <FixedExpensesPage /> },
+              { path: "/simulador", element: <PriceSimulatorPage /> },
               { path: "*", element: <Navigate to="/dashboard" replace /> },
+
             ],
           },
           {

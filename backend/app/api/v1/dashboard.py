@@ -3,7 +3,8 @@ from decimal import Decimal
 
 from fastapi import APIRouter, HTTPException, Query, status
 
-from app.api.deps import AttributionSvc, DashboardSvc
+from app.api.deps import AttributionSvc, DashboardSvc, EventSvc
+from app.domain.events import EventName
 from app.schemas.dashboard import (
     DashboardOut,
     MonthlyReceivableOut,
@@ -19,10 +20,12 @@ _VALID_FILTERS = {"today", "last_7_days", "this_month", "last_month", "custom"}
 @router.get("", response_model=DashboardOut)
 def get_dashboard(
     svc: DashboardSvc,
+    events: EventSvc,
     period: str = Query(
         default="this_month",
         description="today|last_7_days|this_month|last_month|custom",
     ),
+
     date_from: date | None = Query(
         default=None, description="Obrigatório se period=custom"
     ),
@@ -41,6 +44,11 @@ def get_dashboard(
         )
     except ValueError as exc:
         raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, str(exc)) from exc
+
+    if result.has_any_data:
+        events.track_first(EventName.FIRST_PROFIT_VIEWED)
+
+    public_booking_count = events.count_by_name(EventName.PUBLIC_BOOKING_CREATED.value)
 
     return DashboardOut(
         period=resolved.kind.value,
@@ -61,13 +69,16 @@ def get_dashboard(
         breakeven_remaining_amount=result.breakeven_remaining_amount,
         breakeven_remaining_sessions_estimate=result.breakeven_remaining_sessions_estimate,
         breakeven_alert=result.breakeven_alert,
+        public_booking_count=public_booking_count,
     )
 
 
 @router.get("/roi", response_model=ROIOut)
 def get_roi(
     svc: AttributionSvc,
+    events: EventSvc,
     period: str = Query(
+
         default="this_month",
         description="today|last_7_days|this_month|last_month|custom",
     ),
@@ -92,6 +103,7 @@ def get_roi(
         raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, str(exc)) from exc
 
     roi_str = f"{result.roi_ratio}x" if result.roi_ratio is not None else None
+    events.track_first(EventName.FIRST_PROFIT_VIEWED)
 
     return ROIOut(
         attributed_revenue=result.attributed_revenue,

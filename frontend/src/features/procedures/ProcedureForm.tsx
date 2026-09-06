@@ -202,7 +202,22 @@ export function ProcedureForm({ initial, onSubmit, submitLabel }: Props) {
       </label>
 
       <label className="form__field">
-        <span>Custo estimado</span>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", flexWrap: "wrap", gap: "4px" }}>
+          <span>Custo estimado</span>
+          <button
+            type="button"
+            className="button--text"
+            style={{ fontSize: "0.78rem", color: "#b45309", cursor: "pointer", background: "none", border: "none", padding: "0 2px", textDecoration: "underline" }}
+            onClick={() => {
+              const p = Number(watch("price")) || 0;
+              const defaultCost = p > 0 ? (p * 0.2).toFixed(2) : "30.00";
+              setValue("estimated_cost", defaultCost as Money, { shouldDirty: true });
+              toast.show(`Custo estimado em 20% (${defaultCost}) — estimativa I7 aplicada.`, "info");
+            }}
+          >
+            💡 Não sei agora (estimar 20% do preço — I7)
+          </button>
+        </div>
         <Controller
           control={control}
           name="estimated_cost"
@@ -214,6 +229,9 @@ export function ProcedureForm({ initial, onSubmit, submitLabel }: Props) {
             />
           )}
         />
+        <span style={{ fontSize: "0.76rem", color: "#64748b" }}>
+          Insumos e materiais consumidos na sessão. Salva como custo estimado (I7).
+        </span>
       </label>
 
       <fieldset className="form__field">
@@ -244,13 +262,29 @@ export function ProcedureForm({ initial, onSubmit, submitLabel }: Props) {
           </fieldset>
 
           <label className="form__field">
-            <span>Retorno recomendado (dias)</span>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", flexWrap: "wrap", gap: "4px" }}>
+              <span>Retorno recomendado (dias)</span>
+              <button
+                type="button"
+                className="button--text"
+                style={{ fontSize: "0.78rem", color: "#b45309", cursor: "pointer", background: "none", border: "none", padding: "0 2px", textDecoration: "underline" }}
+                onClick={() => {
+                  setValue("return_interval_days", "30", { shouldDirty: true });
+                  toast.show("Retorno clínico sugerido para 30 dias (estimativa I7).", "info");
+                }}
+              >
+                💡 Não sei agora (usar 30 dias — I7)
+              </button>
+            </div>
             <input
               {...register("return_interval_days")}
               type="number"
               min={0}
               placeholder="ex: 30"
             />
+            <span style={{ fontSize: "0.76rem", color: "#64748b" }}>
+              Intervalo para alimentar a fila inteligente "Quem chamar hoje?".
+            </span>
           </label>
         </>
       )}

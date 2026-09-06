@@ -96,7 +96,7 @@ class TestNuncaTratados:
     ) -> None:
         marker = uuid.uuid4().hex
         patient_id = _create_patient(
-            client, auth_headers, f"Nunca Tratou Reeng {marker}"
+            client, auth_headers, f"!00_Nunca Tratou Reeng {marker}"
         )
 
         resp = client.get(

@@ -41,10 +41,20 @@ export function ProceduresPage() {
     <div className="page">
       <header className="page__header">
         <h1>Procedimentos</h1>
-        <button className="tap-target" onClick={() => navigate("novo")}>
-          + Novo procedimento
-        </button>
+        <div style={{ display: "flex", gap: "10px" }}>
+          <button
+            type="button"
+            className="button button--secondary tap-target"
+            onClick={() => navigate("/simulador")}
+          >
+            📊 Simulador de Preço
+          </button>
+          <button className="tap-target" onClick={() => navigate("novo")}>
+            + Novo procedimento
+          </button>
+        </div>
       </header>
+
 
       <div className="filters-bar">
         <button
@@ -123,8 +133,18 @@ export function ProceduresPage() {
                           {p.session_plan === "MULTIPLE" && (
                             <span className="list__item-badge">🔁 Múltiplas sessões</span>
                           )}
+                          {p.estimated_cost && Number(p.estimated_cost) >= Number(p.price) && (
+                            <span
+                              className="list__item-badge"
+                              style={{ background: "#fef2f2", color: "#b91c1c", borderColor: "#fecaca" }}
+                              title="Custo de insumos igual ou maior que o preço cobrado"
+                            >
+                              ⚠️ Margem no vermelho
+                            </span>
+                          )}
                         </div>
                         <span className="list__item-sub">{formatBRL(money(p.price))}</span>
+
                       </button>
                     </li>
                   );

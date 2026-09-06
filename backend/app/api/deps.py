@@ -50,6 +50,7 @@ from app.services.sale_service import SaleService
 from app.services.session_service import SessionService
 from app.services.system_service import SystemService
 from app.services.user_service import UserService
+from app.services.weekly_summary_service import WeeklySummaryService
 
 CurrentProfessional = Annotated[UUID, Depends(get_current_professional_id)]
 
@@ -383,3 +384,16 @@ SystemClinicSvc = Annotated[ClinicService, Depends(get_system_clinic_service)]
 SystemUserSvc = Annotated[UserService, Depends(get_system_user_service)]
 AttributionSvc = Annotated[AttributionService, Depends(get_attribution_service)]
 ExportSvc = Annotated[ExportService, Depends(get_export_service)]
+
+
+def get_weekly_summary_service(
+    session: DbSession, professional_id: CurrentProfessional
+) -> WeeklySummaryService:
+    return WeeklySummaryService(
+        sale_repo=SaleRepository(session, professional_id),
+        return_opp_repo=ReturnOpportunityRepository(session, professional_id),
+        professional_repo=ProfessionalRepository(session, professional_id),
+    )
+
+
+WeeklySummarySvc = Annotated[WeeklySummaryService, Depends(get_weekly_summary_service)]

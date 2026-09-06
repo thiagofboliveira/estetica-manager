@@ -23,6 +23,7 @@ from app.api.v1 import (
     super_admin,
     system,
     users,
+    weekly_summary,
 )
 from app.core.config import settings
 from app.db.session import unsafe_session_without_tenant
@@ -207,3 +208,4 @@ app.include_router(system.router, prefix="/api/v1")
 app.include_router(users.router, prefix="/api/v1")
 app.include_router(super_admin.router, prefix="/api/v1")
 app.include_router(public_agenda.router, prefix="/api/v1")
+app.include_router(weekly_summary.router, prefix="/api/v1")

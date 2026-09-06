@@ -12,13 +12,16 @@ from zoneinfo import ZoneInfo
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
 
 from app.core.rate_limit import InMemoryRateLimiter
 from app.db.session import tenant_session, unsafe_session_without_tenant
+from app.domain.events import EventName
 from app.models.booking import Booking
 from app.models.procedure import Procedure, ProcedureType
 from app.models.professional import Professional
 from app.repositories.booking import BookingRepository
+from app.repositories.event import EventRepository
 from app.repositories.financial_settings import FinancialSettingsRepository
 from app.repositories.patient import PatientRepository
 from app.repositories.procedure import ProcedureRepository
@@ -41,6 +44,7 @@ from app.services.booking_service import (
     BookingInvalidStateError,
     BookingService,
 )
+from app.services.event_service import EventService
 from app.services.financial_settings_service import FinancialSettingsService
 from app.services.session_service import SessionService
 
@@ -286,6 +290,11 @@ def create_public_booking(
                 detail="Procedimento selecionado não encontrado ou inativo.",
             )
 
+        # A-04: Trava o registro do profissional para serializar criação concorrente de bookings
+        session.execute(
+            select(Professional.id).where(Professional.id == prof_id).with_for_update()
+        )
+
         booking_svc = _build_booking_service(session, prof_id)
 
         # Checa conflito estrito para auto-agendamento de bio
@@ -306,7 +315,21 @@ def create_public_booking(
             patient_consent_whatsapp=body.patient_consent_whatsapp,
         )
 
-        booking, _ = booking_svc.create(booking_create)
+        try:
+            booking, _ = booking_svc.create(booking_create)
+        except IntegrityError:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="Desculpe, este horário acabou de ser ocupado. Por favor escolha outro.",
+            ) from None
+
+        # A-09: Medir se alguém agenda pelo link público
+        event_repo = EventRepository(session, prof_id)
+        event_svc = EventService(event_repo)
+        event_svc.track(EventName.PUBLIC_BOOKING_CREATED, payload={"booking_id": str(booking.id)})
+        event_svc.track_first(EventName.FIRST_PUBLIC_BOOKING_RECEIVED, payload={"booking_id": str(booking.id)})
+
+
 
         return PublicBookingOut(
             id=booking.id,

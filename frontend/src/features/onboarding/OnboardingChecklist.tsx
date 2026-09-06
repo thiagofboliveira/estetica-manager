@@ -116,6 +116,19 @@ export function OnboardingChecklist({ hasAnySale }: Props) {
           </li>
         ))}
       </ul>
+
+      <div style={{
+        marginTop: "14px",
+        padding: "10px 14px",
+        background: "#f8fafc",
+        borderRadius: "6px",
+        border: "1px dashed #cbd5e1",
+        fontSize: "0.82rem",
+        color: "#475569",
+        lineHeight: 1.45,
+      }}>
+        💡 <strong>Onboarding tolerante (I7):</strong> Em dúvida sobre custos de produtos ou taxas da maquininha? Nossos formulários aceitam o botão <em>"Não sei agora"</em> para preencher estimativas sugeridas de mercado. Você começa rápido e refina quando quiser.
+      </div>
     </section>
   );
 }

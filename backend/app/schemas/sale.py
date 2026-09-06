@@ -85,3 +85,27 @@ class SaleOut(OutputSchema):
 
     items: list[SaleItemOut] = Field(default_factory=list)
     sessions: list[SessionOut] = Field(default_factory=list)
+
+
+class SaleSimulationInput(InputSchema):
+    procedure_id: UUID | None = None
+    price: str | None = None
+    estimated_cost: str | None = None
+    payment_method: PaymentMethod = PaymentMethod.PIX
+    installments: int = Field(default=1, ge=1)
+    discount_amount: str = Field(default="0.00")
+
+
+class SaleSimulationOut(OutputSchema):
+    price: MoneyOut
+    estimated_cost: MoneyOut
+    discount_amount: MoneyOut
+    gross_amount: MoneyOut
+    fee_rate: RateOut
+    fee_amount: MoneyOut
+    cost_provisioned: MoneyOut
+    net_profit: MoneyOut
+    margin: RateOut | None
+    is_negative_margin: bool
+    negative_margin_alert: str | None = None
+

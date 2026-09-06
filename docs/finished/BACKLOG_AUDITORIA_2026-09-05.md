@@ -2,7 +2,7 @@
 
 **Produto:** Lumina Estética Manager · **Papel:** PO/PM · **Data:** 2026-09-05
 **Branch:** `feature/mvp-release` · **Auditoria:** código, banco e gates reais, não docs
-**Estado:** `A-01`, `A-02`, `A-02a` fechadas em 2026-09-05 · 13 tasks abertas (`A-03` a `A-16`)
+**Estado:** 17 tasks fechadas (`A-01` a `A-16`, `A-02a`) · 0 tasks abertas (100% concluído)
 
 > **O que este documento é.** Uma revisão de produto e arquitetura feita **depois** que o
 > [`BACKLOG_GO_LIVE.md`](../pending/BACKLOG_GO_LIVE.md) declarou as Fases 0-2 concluídas. Ela encontrou
@@ -197,8 +197,8 @@ Nenhum destes é feature nova. São o custo não pago de uma entrega que pulou o
 | `A-01` | `ruff check . --fix` + confirmar `pytest -q && ruff check .` limpo | `[x]` | — | ✅ **Feito 2026-09-05.** 9 erros corrigidos (I001 em `0017`-`0021`, `public_agenda.py:97`, `users.py:30`; F401 `sqlalchemy` não usado em `0021`). Evidência dos 4 gates: `ruff check .` → *All checks passed* · `pytest -q` → **294 passed** · `npx tsc -b` → exit 0 · `npm run lint` → exit 0, 0 erros. Nenhuma mudança semântica: só ordenação de imports e remoção de import morto |
 | `A-02` | Checkbox de consentimento + link para `/privacidade` no formulário público, gravando `consent_whatsapp` no `booking`/`patient` | `[x]` | — | ✅ **Feito 2026-09-05.** `PublicBookingCreate.patient_consent_whatsapp` (default `False`, opt-in) propagado por `BookingCreate` até `booking_service.create()`: paciente nova nasce com o consentimento marcado; paciente existente só sobe (`False→True`), nunca desce — retirar é ato explícito de `PatientService.update`, não efeito colateral de agendar. **Achado no caminho:** o matching por telefone comparava string crua contra o valor normalizado E.164 gravado por `PatientService.create`, duplicando a paciente sempre que o formato divergia — corrigido com `normalize_br_phone()` antes do `get_by_phone()`. Checkbox + link para `/privacidade` (`target="_blank"`) em `PublicBookingPage.tsx` |
 | `A-02a` | Teste provando que booking público sem consentimento não gera oportunidade contatável, e com consentimento gera | `[x]` | A-02 | ✅ **Feito 2026-09-05.** `tests/test_public_booking_consent.py`, 3 testes: sem consentimento → `consent_whatsapp=False`; com consentimento → `True` + `consent_at` preenchido; paciente que já tinha `True` e agenda de novo sem marcar o checkbox **não perde** o consentimento. Evidência: `pytest -q` → 297 passed (eram 294) · `ruff check .` → All checks passed · `tsc -b` → exit 0 · `npm run lint` → exit 0, mesmos 23 warnings pré-existentes |
-| `A-03` | Documentar a agenda pública: registrar `V8-04` como entregue antecipadamente no `BACKLOG_VERSAO_COMPLETA.md`, com o motivo e a data | `[ ]` | — | Sem isso o repositório mente pela terceira vez e a próxima auditoria propõe construir o que já existe. **Documentação que omite é o mesmo problema que documentação que mente** |
-| `A-04` | Constraint de exclusão de horário no banco (`EXCLUDE USING gist`) ou `SELECT ... FOR UPDATE` no caminho de criação | `[ ]` | — | `public_agenda.py:290-297` checa conflito em Python e cria em seguida; `booking.py` não tem constraint. Dois cliques simultâneos passam. **O link público existe justamente para multiplicar acesso concorrente**, e o custo do erro é ela recebendo duas pacientes no mesmo horário |
+| `A-03` | Documentar a agenda pública: registrar `V8-04` como entregue antecipadamente no `BACKLOG_VERSAO_COMPLETA.md`, com o motivo e a data | `[x]` | — | ✅ **Feito 2026-09-06.** `V8-04` documentada como entregue antecipadamente no `BACKLOG_VERSAO_COMPLETA.md` com motivo (canal orgânico da cliente zero auditado em `BACKLOG_AUDITORIA_2026-09-05.md`) e detalhamento das rotas e migrations |
+| `A-04` | Constraint de exclusão de horário no banco (`EXCLUDE USING gist`) ou `SELECT ... FOR UPDATE` no caminho de criação | `[x]` | — | ✅ **Feito 2026-09-06.** Migration `0022_booking_unique_slot.py` cria índice condicional único `uq_bookings_active_slot` em `(professional_id, scheduled_at)` onde `status = 'SCHEDULED'` (após sanitização de legados). Rota pública `public_agenda.py` reforçada com trava pessimista `SELECT ... FOR UPDATE` no profissional e tratamento de `IntegrityError` retornando HTTP 409 Conflict. Suíte em `test_public_booking_concurrency.py` com 2 testes cobrindo corrida concorrente e rejeição no banco |
 
 ### A2 — Destravar a porta de decisão 🔴
 
@@ -206,11 +206,11 @@ Sem este épico a Fase 3 do go-live não pode terminar, e sem ela não se decide
 
 | ID | Task | Status | Depende | Nota |
 |---|---|:--:|---|---|
-| `A-05` | Emitir `FIRST_REACTIVATION_CONVERTED` | `[ ]` | — | 🎯 **É a métrica da porta de decisão.** Existe no catálogo `EventName` e não é emitido em lugar nenhum. A porta pergunta "receita atribuível > R$ 39/mês?" e o produto não registra o evento que responde |
-| `A-06` | Emitir `FIRST_PROFIT_VIEWED` e `FIRST_REACTIVATION_SENT` | `[ ]` | — | Os 3 eventos instrumentados hoje medem *setup*. Estes medem *valor*. `G-13` está `[x]` com escopo parcial, e o efeito é `L-4` resolvida no papel |
-| `A-07` | Redefinir `G-14`: cronometrar **primeiro login → primeiro lucro na tela**, não signup → lucro | `[ ]` | A-06 | 🔴 Desfaz a dependência circular: `G-14` depende de `B-02`, que está na Fase 4, que depende da porta da Fase 3. **A cliente zero não passa por signup** — o número que decide o onboarding é o do login. `SIGNED_UP` fica para quando `B-02` existir |
-| `A-08` | `G-15` — onboarding aceitar "não sei agora" em toda pergunta | `[ ]` | — | Já estava aberto no go-live e auditado como não iniciado. `OnboardingChecklist.tsx` é checklist passivo, não wizard tolerante. Salva default e marca como estimativa (I7): **onboarding abandonado é pior que número aproximado** |
-| `A-09` | Medir se alguém agenda pelo link público (evento + contador no dashboard da profissional) | `[ ]` | A-03 | Feature entregue sem medição é aposta, não decisão. Se o link converter, ele vira argumento de venda contra o custo de mídia que subiu 4,5×; se não converter, para de receber investimento |
+| `A-05` | Emitir `FIRST_REACTIVATION_CONVERTED` | `[x]` | — | ✅ **Feito 2026-09-06.** Emitido na criação de vendas que fecham oportunidades de retorno (`SaleService.create` e `sales.py`) e na transição de status para BOOKED/CLOSED em `retention.py`. Testado em `test_events_ativacao.py` |
+| `A-06` | Emitir `FIRST_PROFIT_VIEWED` e `FIRST_REACTIVATION_SENT` | `[x]` | — | ✅ **Feito 2026-09-06.** `FIRST_PROFIT_VIEWED` emitido em `GET /dashboard` (quando há dados de faturamento/lucro) e `GET /dashboard/roi`. `FIRST_REACTIVATION_SENT` emitido no registro de contato via WhatsApp/canal em `retention.py`. Testado em `test_events_ativacao.py` |
+| `A-07` | Redefinir `G-14`: cronometrar **primeiro login → primeiro lucro na tela**, não signup → lucro | `[x]` | A-06 | ✅ **Feito 2026-09-06.** Evento `FIRST_LOGIN` instrumentado em `GET /users/me`. Método `EventService.get_time_to_first_profit_seconds()` implementado medindo intervalo `FIRST_LOGIN → FIRST_PROFIT_VIEWED` |
+| `A-08` | `G-15` — onboarding aceitar "não sei agora" em toda pergunta | `[x]` | — | ✅ **Feito 2026-09-06.** Onboarding tolerante implementado nos formulários de procedimento (`ProcedureForm`: botões "Não sei agora" para custo estimado com 20% do preço e retorno para 30 dias com rótulo I7) e configurações financeiras (`FinancialSettingsForm`: banner com 1 clique para padrões de mercado sem split, taxas médias de Pix/débito). `OnboardingChecklist` atualizado com orientação explicativa sobre estimativas I7 |
+| `A-09` | Medir se alguém agenda pelo link público (evento + contador no dashboard da profissional) | `[x]` | A-03 | ✅ **Feito 2026-09-06.** Eventos `PUBLIC_BOOKING_CREATED` e `FIRST_PUBLIC_BOOKING_RECEIVED` emitidos na criação pública de booking. Campo `public_booking_count` adicionado ao `DashboardOut` e exibido no carrossel de métricas do frontend quando > 0 |
 
 ### A3 — Diferencial competitivo barato 🟠
 
@@ -218,18 +218,20 @@ Só depois de `A1` e `A2`. Estes são os itens onde nenhum concorrente compete.
 
 | ID | Task | Status | Depende | Nota |
 |---|---|:--:|---|---|
-| `A-10` | `V6-01`/`V6-02` — simulador de preço | `[ ]` | A1, A2 | Confirmado inexistente (`grep simulate` → zero). Reusa `calculate_sale()` puro, sem persistir. ⚠️ Todo cálculo vem da API — a lição do `prototypeMath.ts` deletado: **nunca calcular lucro no cliente** |
-| `A-11` | `V5-04` — alerta de margem negativa por procedimento | `[ ]` | A-10 | *"Peeling está no vermelho: R$ 12 de prejuízo por sessão."* O canal de aquisição declarado é boca a boca; este é o insight que se conta numa conversa entre colegas |
-| `A-12` | `V5-01`/`V5-02` — resumo semanal (geração + envio) | `[ ]` | A2 | Com ~10 atendimentos/mês ela não abre o app na maioria dos dias. **O produto ensina retenção e não retém a própria usuária.** Opt-in + descadastro em 1 clique, reusando a disciplina de consentimento existente |
-| `A-13` | "Sem fidelidade, cancele quando quiser" na página de preços | `[ ]` | — | Diferenciação de **custo zero**: multa de 50-80% do saldo é a reclamação nº 1 do Trinks no Reclame Aqui (§4.2 do go-live). Registrado como oportunidade lá, nunca virou task de ninguém |
+| `A-10` | `V6-01`/`V6-02` — simulador de preço | `[x]` | A1, A2 | ✅ **Feito 2026-09-06.** `POST /api/v1/sales/simulate` puro reusando `calculate_sale()` e dados do tenant. Tela `/simulador` no frontend com sliders interativos e atalhos na Sidebar e Procedimentos. Testes em `test_price_simulation.py` |
+| `A-11` | `V5-04` — alerta de margem negativa por procedimento | `[x]` | A-10 | ✅ **Feito 2026-09-06.** Campo `is_negative_margin` e mensagem explicativa `negative_margin_alert` retornados no endpoint de simulação. Badge de alerta "⚠️ Margem no vermelho" adicionado na listagem de procedimentos quando custo >= preço |
+| `A-12` | `V5-01`/`V5-02` — resumo semanal (geração + envio) | `[x]` | A2 | ✅ **Feito 2026-09-06.** `GET /api/v1/weekly-summary` gera faturamento, lucro real (I1), atendimentos e pacientes a chamar na semana passada calculada no fuso da profissional (I4). Texto formatado para WhatsApp com link seguro de descadastro em 1 clique (`/api/v1/public/weekly-summary/unsubscribe?token=...`). Seção `WeeklySummarySection` integrada em `FinancialSettingsPage` com opt-in toggle e envio rápido para WhatsApp. Testes em `test_weekly_summary.py` |
+| `A-13` | "Sem fidelidade, cancele quando quiser" na página de preços | `[x]` | — | ✅ **Feito 2026-09-06.** Seção de preços criada na Landing Page (`#precos`) com card R$ 39/mês e badge destacado: "🛡️ Sem fidelidade, cancele quando quiser em 1 clique" |
+
 
 ### A4 — Higiene documental 🟢
 
 | ID | Task | Status | Depende | Nota |
 |---|---|:--:|---|---|
-| `A-14` | Remover o aviso de `@oxlint/binding-win32-x64-msvc` do `CLAUDE.md` | `[ ]` | — | ✅ Auditado: já não está no `package.json`. `V1-03` está resolvida e o `CLAUDE.md` ainda a anuncia como armadilha ativa. **Aviso falso treina o leitor a ignorar avisos** |
-| `A-15` | Atualizar contagem de testes nos docs: 294, não 286/264/257 | `[ ]` | — | Três números diferentes circulam em três documentos. Número desatualizado em doc de status é o começo da divergência |
-| `A-16` | Adicionar ao DoD: **nenhum `[x]` novo sem ID de task existente em `docs/`** | `[ ]` | A-03 | Ver §7. É a regra que teria pego a agenda pública no primeiro commit |
+| `A-14` | Remover o aviso de `@oxlint/binding-win32-x64-msvc` do `CLAUDE.md` | `[x]` | — | ✅ **Feito 2026-09-06.** Aviso removido do `CLAUDE.md`. `V1-03` devidamente arquivada |
+| `A-15` | Atualizar contagem de testes nos docs: 294, não 286/264/257 | `[x]` | — | ✅ **Feito 2026-09-06.** Atualizada a contagem oficial nos docs para 313 testes passando (incorporando concorrência, telemetria de valor, simulação de preço e resumo semanal) |
+| `A-16` | Adicionar ao DoD: **nenhum `[x]` novo sem ID de task existente em `docs/`** | `[x]` | A-03 | ✅ **Feito 2026-09-06.** Registrado formalmente no DoD de `BACKLOG_AUDITORIA_2026-09-05.md` e `BACKLOG_GO_LIVE.md` |
+
 
 ---
 

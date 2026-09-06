@@ -66,3 +66,27 @@ export const paymentFeeRulesApi = {
     api.patch<PaymentFeeRule>(`/payment-fee-rules/${id}`, payload),
   delete: (id: string) => api.del<void>(`/payment-fee-rules/${id}`),
 };
+
+export type WeeklySummary = {
+  professional_name: string;
+  period_start: string;
+  period_end: string;
+  gross_revenue: string;
+  net_profit: string;
+  sales_count: number;
+  pending_opportunities_count: number;
+  weekly_summary_enabled: boolean;
+  whatsapp_message: string;
+  whatsapp_url?: string | null;
+  unsubscribe_url: string;
+};
+
+export const weeklySummaryApi = {
+  get: (useCurrentWeek = false) =>
+    api.get<WeeklySummary>(`/weekly-summary?use_current_week=${useCurrentWeek}`),
+  updateSettings: (enabled: boolean) =>
+    api.patch<{ weekly_summary_enabled: boolean }>("/weekly-summary/settings", {
+      weekly_summary_enabled: enabled,
+    }),
+};
+

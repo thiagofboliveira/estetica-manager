@@ -37,3 +37,15 @@ class ProfessionalRepository:
 
     def list_all(self) -> list[Professional]:
         return list(self._session.scalars(select(Professional)).all())
+
+    def get_by_weekly_summary_token(self, token: str) -> Professional | None:
+        return self._session.scalars(
+            select(Professional).where(Professional.weekly_summary_token == token.strip())
+        ).one_or_none()
+
+    def update_weekly_summary_settings(self, enabled: bool) -> Professional:
+        prof = self.get_current()
+        prof.weekly_summary_enabled = enabled
+        self._session.add(prof)
+        self._session.flush()
+        return prof

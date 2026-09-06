@@ -47,9 +47,9 @@ cd frontend && npm run dev                              # :5173
 `VITE_DEV_AUTH=true` no `frontend/.env.local` dispensa Supabase (botão "Entrar com Conta de Teste").
 
 ⚠️ **`backend/.env` precisa apontar para a porta 5434** — o compose deste branch usa 5434, e um `.env` herdado de outro branch pode apontar 5435.
-⚠️ **`frontend/package.json` tem `@oxlint/binding-win32-x64-msvc`** como devDependency, que quebra `npm install` em Linux/Mac (`EBADPLATFORM`). Registrado como task `V1-03`.
 
 ## Verificação — "DONE exige evidência"
+
 
 ```bash
 cd backend && .venv/bin/pytest -q && .venv/bin/ruff check .

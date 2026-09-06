@@ -199,7 +199,7 @@ Parte existe (consentimento, opt-out, anonimização, export). Falta o que muda 
 | `V8-01` | Múltiplos profissionais por clínica (agenda e lucro por profissional) | ambos | `clinics` já existe; falta o modelo financeiro por profissional |
 | `V8-02` | Permissões finas (recepcionista vs. profissional) | ambos | RBAC já tem `admin\|user`; falta granularidade |
 | `V8-03` | Agenda: recorrência, bloqueio de horário | ambos | §16.4 do MVP mantinha fora. Entra aqui, com base instalada pedindo |
-| `V8-04` | Agendamento online pela paciente (link público) | ambos | 🟠 Trinks/Avec vendem por isso. Superfície pública = LGPD própria |
+| `V8-04` | Agendamento online pela paciente (link público) | ambos | ✅ **Entregue antecipadamente em 2026-09-05** via router público (`api/v1/public_agenda.py`), telas `/agendar/:slug` e `/agendamento/:id`, e migrations 0017-0021. Motivo: canal orgânico de aquisição (Instagram/Google) da cliente zero (auditado em `BACKLOG_AUDITORIA_2026-09-05.md`) |
 | `V8-05` | Sync Google Calendar | backend | Só com base instalada que já peça |
 | `V8-06` | Anamnese / registro clínico | ambos | ⚠️ **Muda o regime jurídico** (§30.5). Depende de V7-05 e V7-06. Resolve E5 de forma definitiva (unidades consumidas) |
 | `V8-07` | Fotos antes/depois | ambos | Armazenamento de imagem de saúde. Depende de V8-06 |

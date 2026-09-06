@@ -17,6 +17,7 @@ iguais no mesmo dia usam chaves diferentes, geradas pelo cliente).
 import hashlib
 import json
 from datetime import UTC, datetime
+from decimal import Decimal
 from uuid import UUID
 
 from app.core.money import money
@@ -57,7 +58,7 @@ from app.repositories.return_opportunity import ReturnOpportunityRepository
 from app.repositories.sale import SaleRepository
 from app.repositories.sale_item import SaleItemRepository
 from app.repositories.session import SessionRepository
-from app.schemas.sale import SaleCreate
+from app.schemas.sale import SaleCreate, SaleSimulationInput, SaleSimulationOut
 from app.services.financial_settings_service import FinancialSettingsService
 
 IDEMPOTENCY_TTL_HOURS = 24
@@ -261,9 +262,13 @@ class SaleService:
         # Fecha oportunidades de retorno abertas para os procedimentos comprados (TASK-028)
         if self._return_opportunities:
             procedure_ids = [it.procedure_id for it in dto.items]
-            self._return_opportunities.close_for_patient_and_procedures(
+            closed_count = self._return_opportunities.close_for_patient_and_procedures(
                 dto.patient_id, procedure_ids, sale.id
             )
+            sale._reactivations_converted = closed_count
+        else:
+            sale._reactivations_converted = 0
+
 
         self._sales.flush()
         return sale
@@ -323,7 +328,80 @@ class SaleService:
             sessions.extend(self._sessions.list_for_sale_item(item_id))
         return sessions
 
+    def simulate(self, dto: SaleSimulationInput) -> SaleSimulationOut:
+        """A-10 / A-11: Simula precificação de procedimento sem persistir venda.
+        Calcula lucro real unitário e alerta se a margem for negativa (I1-I7)."""
+        proc = None
+        if dto.procedure_id:
+            proc = self._procedures.get(dto.procedure_id)
+            if proc is None:
+                raise ProcedureNotFoundForSaleError(dto.procedure_id)
+
+        price = money(dto.price) if dto.price is not None else (proc.price if proc else money("0.00"))
+        estimated_cost = (
+            money(dto.estimated_cost)
+            if dto.estimated_cost is not None
+            else (proc.estimated_cost if proc else money("0.00"))
+        )
+        split_override = proc.split_override if proc else None
+
+        settings = self._financial_settings_or_default()
+        fee_rules = self._payment_fee_rules.list_for_method(dto.payment_method.value)
+
+        line_item = CalcLineItem(
+            unit_price=price,
+            quantity=1,
+            unit_cost_estimated=estimated_cost,
+            session_costs=[estimated_cost],
+            split_override=split_override,
+        )
+
+        params = SaleParams(
+            discount_amount=money(dto.discount_amount),
+            payment_method=CalcPaymentMethod(dto.payment_method.value),
+            installments=dto.installments,
+            split_clinic_percentage=settings.split_clinic_percentage,
+            split_base=CalcSplitBase(settings.split_base.value),
+            fee_payer=CalcFeePayer(settings.fee_payer.value),
+            fee_rules=[
+                CalcFeeRule(
+                    installments_min=r.installments_min,
+                    installments_max=r.installments_max,
+                    fee_percentage=r.fee_percentage,
+                )
+                for r in fee_rules
+            ],
+            anticipates_all=settings.anticipates_all,
+            anticipation_rate_per_installment=settings.anticipation_rate_per_installment,
+        )
+
+        result: SaleCalculationResult = calculate_sale([line_item], params)
+
+        is_negative = result.net_profit < Decimal("0.00")
+        alert = None
+        if is_negative:
+            prejuizo = abs(result.net_profit)
+            alert = (
+                f"Atenção: Margem negativa ({result.margin:.1f}%). Prejuízo de R$ {prejuizo:.2f} "
+                "por atendimento (custo de insumos e taxas superam o valor cobrado)."
+            )
+
+        return SaleSimulationOut(
+            price=price,
+            estimated_cost=estimated_cost,
+            discount_amount=money(dto.discount_amount),
+            gross_amount=result.gross_amount,
+            fee_rate=result.fee_rate,
+            fee_amount=result.fee_amount,
+            cost_provisioned=result.cost_provisioned,
+            net_profit=result.net_profit,
+            margin=result.margin,
+            is_negative_margin=is_negative,
+            negative_margin_alert=alert,
+        )
+
     def _financial_settings_or_default(self):
+
         return FinancialSettingsService(
             self._financial_settings
         ).get_or_create_default()

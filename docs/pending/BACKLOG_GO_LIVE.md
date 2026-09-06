@@ -377,6 +377,9 @@ Herdada do projeto, com uma adição que esta auditoria tornou necessária:
 - [ ] 🆕 **Se toca autenticação ou o guard de `ENV`: existe teste que prova o comportamento
       em `ENV=production`.** Adicionado porque `B-01` e `S-01` passaram por toda a
       construção do MVP sem que nada os detectasse
+- [ ] 🆕 **Se toca superfície pública: existe consentimento registrado e rate limit testado.**
+- [ ] 🆕 **Nenhum `[x]` novo sem ID de task existente em `docs/`.**
+
 
 ---
 

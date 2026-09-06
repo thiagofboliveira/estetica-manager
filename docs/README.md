@@ -2,7 +2,7 @@
 
 Organização por **estado de execução**, não por assunto. A pergunta que esta pasta responde é: *o que já foi feito, o que está em andamento, e o que falta.*
 
-**Última auditoria de estado:** 2026-09-05 (verificada contra o código e contra os gates, não contra os docs)
+**Última auditoria de estado:** 2026-09-06 (verificada contra o código e contra os gates, não contra os docs)
 
 ---
 
@@ -23,6 +23,7 @@ Documentos **atemporais** (não têm estado de execução) ficam na raiz de `doc
 
 | Arquivo | Conteúdo | Estado |
 |---|---|---|
+| [`BACKLOG_AUDITORIA_2026-09-05.md`](finished/BACKLOG_AUDITORIA_2026-09-05.md) | Auditoria pós-Fase 2: agenda pública incorporada, LGPD, concorrência, telemetria de valor, simulador de preço, onboarding tolerante (I7) e resumo semanal | 17/17 ✅ |
 | [`BACKLOG_SPRINT3_backend.md`](finished/BACKLOG_SPRINT3_backend.md) | Split por procedimento (E6), Exportação CSV, Projeção de recebíveis, Antecipação (E7) | 16/16 ✅ |
 | [`BACKLOG_SPRINT2_backend.md`](finished/BACKLOG_SPRINT2_backend.md) | ROI, Anti-No-Show, Importação em lote, Templates + 3 ações corretivas (AC-01, AC-02, AC-07) | 23/23 ✅ |
 | [`BACKLOG_SPRINT2_frontend.md`](finished/BACKLOG_SPRINT2_frontend.md) | ROI, Anti-No-Show, Importação em lote, Templates, PWA + 4 ações corretivas | 27/27 ✅ |
@@ -47,9 +48,7 @@ Documentos **atemporais** (não têm estado de execução) ficam na raiz de `doc
 
 ## in_progress/
 
-| Arquivo | Conteúdo | Estado |
-|---|---|---|
-| [`BACKLOG_AUDITORIA_2026-09-05.md`](in_progress/BACKLOG_AUDITORIA_2026-09-05.md) | 🔴 **Comece aqui.** Auditoria pós-Fase 2: agenda pública entregue fora do plano, porta de decisão da Fase 3 travada por dependência circular, medição que mede setup e não valor | 3/16 — `A-01`, `A-02`, `A-02a` fechadas em 2026-09-05 |
+*Nenhum documento em andamento no momento.* Todos os itens auditados foram entregues com 100% dos gates verdes. Próximo passo: Fase 3 do [`BACKLOG_GO_LIVE.md`](pending/BACKLOG_GO_LIVE.md).
 
 > Antes disso, `BACKLOG_SPRINT2_backend.md` moveu para `finished/` em 2026-09-04 após as 3 ações corretivas (AC-01, AC-02, AC-07) serem corrigidas e testadas.
 

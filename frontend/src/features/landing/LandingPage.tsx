@@ -21,8 +21,10 @@ export function LandingPage() {
           <a href="#recursos">Recursos</a>
           <a href="#como-funciona">Como Funciona</a>
           <a href="#retencao">Régua de Retorno</a>
+          <a href="#precos">Preços</a>
           <a href="#depoimentos">Resultados</a>
         </nav>
+
 
         <div className={styles.navActions}>
           <ThemeToggle />
@@ -213,8 +215,62 @@ export function LandingPage() {
         </div>
       </section>
 
+      {/* Pricing Section (A-13) */}
+      <section id="precos" className={styles.pricingSection}>
+        <div className={styles.pricingHeader}>
+          <h2>Preço justo, transparente e sem pegadinhas</h2>
+          <p>
+            Tudo o que você precisa para gerenciar o lucro real e reter pacientes, 
+            pelo valor de uma fração de um atendimento.
+          </p>
+        </div>
+
+        <div className={styles.pricingCard}>
+          <div className={styles.pricingBadge}>
+            🛡️ Sem fidelidade, cancele quando quiser em 1 clique
+          </div>
+
+          <div className={styles.pricingPriceRow}>
+            <span className={styles.pricingCurrency}>R$</span>
+            <span className={styles.pricingAmount}>39</span>
+            <span className={styles.pricingPeriod}>/mês</span>
+          </div>
+          <div className={styles.pricingRation}>
+            💡 Uma única paciente recuperada paga 3 meses de assinatura.
+          </div>
+
+          <ul className={styles.pricingFeatures}>
+            <li>
+              <span>✓</span>
+              <span><strong>Cálculo de Lucro Real puro:</strong> saiba exatamente quanto ganha em cada procedimento (I1–I7).</span>
+            </li>
+            <li>
+              <span>✓</span>
+              <span><strong>Motor de Retenção:</strong> lista diária "Quem devo chamar hoje?" pronta no WhatsApp.</span>
+            </li>
+            <li>
+              <span>✓</span>
+              <span><strong>Agenda Pública na Bio:</strong> link com prevenção contra duplo agendamento e sem atrito.</span>
+            </li>
+            <li>
+              <span>✓</span>
+              <span><strong>Gestão de Pacotes e Sessões:</strong> conciliação automática sem misturar dinheiro e atendimento.</span>
+            </li>
+            <li>
+              <span>✓</span>
+              <span><strong>Total liberdade:</strong> sem contrato de 12 meses, sem multa rescisória de 50-80%, sem pegadinhas.</span>
+            </li>
+          </ul>
+
+          <Link to="/login" className={styles.pricingBtn}>
+            Começar Agora com Minha Conta →
+          </Link>
+        </div>
+      </section>
+
       {/* Final Call to Action */}
       <section className={styles.ctaSection}>
+
         <div className={styles.ctaContent}>
           <h2>Pronto para transformar a retenção da sua clínica?</h2>
           <p>

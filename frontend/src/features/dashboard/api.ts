@@ -29,7 +29,10 @@ export type Dashboard = {
   breakeven_remaining_amount: string | null;
   breakeven_remaining_sessions_estimate: number | null;
   breakeven_alert: boolean;
+
+  public_booking_count?: number;
 };
+
 
 export type ProcedureRankingRow = {
   procedure_id: string;

@@ -88,6 +88,44 @@ export function FinancialSettingsForm({ initial }: Props) {
   return (
     <div className="settings-section">
       <form onSubmit={submit} noValidate className="form">
+        <div style={{
+          background: "#fffbeb",
+          border: "1px solid #fde68a",
+          borderRadius: "8px",
+          padding: "12px 14px",
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          gap: "12px",
+          flexWrap: "wrap",
+        }}>
+          <div>
+            <strong style={{ fontSize: "0.85rem", color: "#92400e", display: "block" }}>
+              💡 Não tem certeza das suas taxas ou modelo agora? (I7)
+            </strong>
+            <span style={{ fontSize: "0.78rem", color: "#78350f" }}>
+              Preencha com os padrões médios de mercado (consultório próprio, Pix 0%, Débito 1.99%) e ajuste quando quiser.
+            </span>
+          </div>
+          <button
+            type="button"
+            className="button button--secondary"
+            style={{ fontSize: "0.8rem", padding: "6px 12px", minHeight: "34px" }}
+            onClick={() => {
+              setValue("has_split", "NO", { shouldDirty: true });
+              setValue("split_clinic_percentage", "0.00", { shouldDirty: true });
+              setValue("split_base", "GROSS", { shouldDirty: true });
+              setValue("fee_payer", "PROFESSIONAL", { shouldDirty: true });
+              setValue("pix_fee_percentage", "0.00", { shouldDirty: true });
+              setValue("debit_card_fee_percentage", "1.99", { shouldDirty: true });
+              setValue("default_payment_method", "PIX", { shouldDirty: true });
+              toast.show("Padrões de mercado aplicados (taxa estimada I7). Clique em Salvar.", "info");
+            }}
+          >
+            Usar padrões recomendados
+          </button>
+        </div>
+
         <fieldset className="form__field">
           <legend>Modelo de Atendimento & Comissão</legend>
           <p className="form__hint">

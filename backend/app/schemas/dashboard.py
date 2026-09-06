@@ -33,6 +33,10 @@ class DashboardOut(OutputSchema):
     breakeven_remaining_sessions_estimate: int | None = None
     breakeven_alert: bool = False
 
+    # A-09 — Medição de agendamentos pelo link público
+    public_booking_count: int = 0
+
+
 
 class ROIOut(OutputSchema):
     attributed_revenue: MoneyOut

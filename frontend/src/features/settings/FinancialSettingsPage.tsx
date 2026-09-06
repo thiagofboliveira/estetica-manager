@@ -1,6 +1,7 @@
 import { AsyncBoundary } from "@/ui/AsyncBoundary";
 import { FinancialSettingsForm } from "./FinancialSettingsForm";
 import { useFinancialSettings } from "./hooks";
+import { WeeklySummarySection } from "./WeeklySummarySection";
 
 export function FinancialSettingsPage() {
   const financialQuery = useFinancialSettings();
@@ -16,8 +17,14 @@ export function FinancialSettingsPage() {
         skeleton={<p>Carregando configurações financeiras…</p>}
         empty={<p>Não foi possível carregar as configurações.</p>}
       >
-        {(settings) => <FinancialSettingsForm initial={settings} />}
+        {(settings) => (
+          <>
+            <FinancialSettingsForm initial={settings} />
+            <WeeklySummarySection />
+          </>
+        )}
       </AsyncBoundary>
     </div>
   );
 }
+

@@ -76,8 +76,34 @@ export type Sale = {
   sessions: SessionOut[];
 };
 
+export type SaleSimulationInput = {
+  procedure_id?: string | null;
+  price?: string | null;
+  estimated_cost?: string | null;
+  payment_method?: PaymentMethod;
+  installments?: number;
+  discount_amount?: string;
+};
+
+export type SaleSimulationOut = {
+  price: string;
+  estimated_cost: string;
+  discount_amount: string;
+  gross_amount: string;
+  fee_rate: string;
+  fee_amount: string;
+  cost_provisioned: string;
+  net_profit: string;
+  margin: string | null;
+  is_negative_margin: boolean;
+  negative_margin_alert: string | null;
+};
+
 export const salesApi = {
   create: (payload: SaleCreateInput, idempotencyKey: string) =>
     api.post<Sale>("/sales", payload, { headers: { "Idempotency-Key": idempotencyKey } }),
   get: (id: string) => api.get<Sale>(`/sales/${id}`),
+  simulate: (payload: SaleSimulationInput) =>
+    api.post<SaleSimulationOut>("/sales/simulate", payload),
 };
+
