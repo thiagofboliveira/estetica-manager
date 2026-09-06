@@ -5,6 +5,8 @@ import { RequireAuth } from "@/app/layout/RequireAuth";
 import { LandingPage } from "@/features/landing/LandingPage";
 import { HowWeCalculatePage } from "@/features/landing/HowWeCalculatePage";
 import { LoginPage } from "@/features/onboarding/LoginPage";
+import { ResetPasswordPage } from "@/features/onboarding/ResetPasswordPage";
+import { AuthRecoveryListener } from "@/app/layout/AuthRecoveryListener";
 import { PatientsPage } from "@/features/patients/PatientsPage";
 import { NewPatientPage } from "@/features/patients/NewPatientPage";
 import { PatientImportPage } from "@/features/patients/PatientImportPage";
@@ -39,17 +41,22 @@ export const router = createBrowserRouter([
     // um erro de render nelas dava tela branca sem recuperação antes.
     element: <GlobalErrorBoundary />,
     children: [
-      { path: "/", element: <LandingPage /> },
-      { path: "/como-calculamos", element: <HowWeCalculatePage /> },
-      { path: "/termos", element: <TermsOfServicePage /> },
-      { path: "/privacidade", element: <PrivacyPolicyPage /> },
-      { path: "/login", element: <LoginPage /> },
-      { path: "/setup", element: <SetupWizardPage /> },
-      { path: "/agendar/:slug", element: <PublicBookingPage /> },
-      { path: "/agendamento/:id", element: <BookingManagementPage /> },
       {
-        element: <RequireAuth />,
+        element: <AuthRecoveryListener />,
         children: [
+          { path: "/", element: <LandingPage /> },
+          { path: "/como-calculamos", element: <HowWeCalculatePage /> },
+          { path: "/termos", element: <TermsOfServicePage /> },
+          { path: "/privacidade", element: <PrivacyPolicyPage /> },
+          { path: "/login", element: <LoginPage /> },
+          { path: "/redefinir-senha", element: <ResetPasswordPage /> },
+          { path: "/reset-password", element: <Navigate to="/redefinir-senha" replace /> },
+          { path: "/setup", element: <SetupWizardPage /> },
+          { path: "/agendar/:slug", element: <PublicBookingPage /> },
+          { path: "/agendamento/:id", element: <BookingManagementPage /> },
+          {
+            element: <RequireAuth />,
+            children: [
           {
             path: "/super-admin",
             element: <SuperAdminLayout />,
@@ -88,8 +95,11 @@ export const router = createBrowserRouter([
               { index: true, element: <Navigate to="usuarios" replace /> },
             ],
           },
+            ],
+          },
         ],
       },
     ],
   },
 ]);
+

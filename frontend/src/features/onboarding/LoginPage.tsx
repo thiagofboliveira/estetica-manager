@@ -58,7 +58,7 @@ export function LoginPage() {
       // Não revelamos se o e-mail existe ou não (mesma mensagem nos dois
       // casos) — evita enumerar contas cadastradas.
       await supabase.auth.resetPasswordForEmail(forgotEmail, {
-        redirectTo: `${window.location.origin}/login`,
+        redirectTo: `${window.location.origin}/redefinir-senha`,
       });
       setForgotStatus("sent");
     } catch {
