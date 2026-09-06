@@ -73,6 +73,23 @@ class SupabaseAdminClient:
                 "Falha de rede ao chamar o Supabase Auth — tente novamente"
             ) from exc
 
+        if resp.status_code == 422:
+            # Usuário já cadastrado no Supabase Auth: recupera o UUID existente
+            # para vincular ao User/Professional do banco de dados.
+            try:
+                get_resp = httpx.get(
+                    f"{self._base_url}/admin/users",
+                    headers=self._headers,
+                    timeout=10,
+                )
+                if get_resp.status_code == 200:
+                    users = get_resp.json().get("users", [])
+                    matched = next((u for u in users if u.get("email") == email), None)
+                    if matched and matched.get("id"):
+                        return UUID(matched["id"])
+            except Exception:
+                pass
+
         if resp.status_code >= 400:
             # Mensagem genérica de propósito: o corpo do erro do Supabase
             # pode ecoar dados que não devem virar HTTPException para o
