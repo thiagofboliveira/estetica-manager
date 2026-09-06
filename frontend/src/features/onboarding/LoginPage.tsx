@@ -37,7 +37,7 @@ export function LoginPage() {
       const token = await getSessionToken();
       setIsPending(false);
       if (!token) {
-        setError("Não foi possível autenticar no backend de desenvolvimento.");
+        setError("Não foi possível autenticar. Tente novamente.");
         return;
       }
       await goToReturnTo();
