@@ -77,11 +77,14 @@ class UserService:
             self._user_repo.add(user)
 
             # Garante a criação da entidade Professional correspondente (tenant)
+            from app.core.slug import generate_slug
+
             professional = Professional(
                 id=user_id,
                 clinic_id=clinic_id,
                 user_id=user_id,
                 name=name.strip(),
+                slug=generate_slug(name, user_id),
                 timezone=settings.DEFAULT_TIMEZONE,
                 is_active=True,
             )

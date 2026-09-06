@@ -86,11 +86,15 @@ class SystemService:
             self._session.flush()
 
             # Cria o tenant inicial associado ao primeiro usuário administrador
+            from app.core.slug import generate_slug
+
+            prof_name = clinic_name.strip() or admin_name.strip()
             professional = Professional(
                 id=root_id,
                 clinic_id=clinic_id,
                 user_id=root_id,
-                name=clinic_name.strip() or admin_name.strip(),
+                name=prof_name,
+                slug=generate_slug(prof_name, root_id),
                 timezone=settings.DEFAULT_TIMEZONE,
                 is_active=True,
             )
