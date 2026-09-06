@@ -101,7 +101,7 @@ export function FinancialSettingsForm({ initial }: Props) {
         }}>
           <div>
             <strong style={{ fontSize: "0.85rem", color: "#92400e", display: "block" }}>
-              💡 Não tem certeza das suas taxas ou modelo agora? (I7)
+              💡 Não tem certeza das suas taxas ou modelo agora?
             </strong>
             <span style={{ fontSize: "0.78rem", color: "#78350f" }}>
               Preencha com os padrões médios de mercado (consultório próprio, Pix 0%, Débito 1.99%) e ajuste quando quiser.
@@ -119,7 +119,7 @@ export function FinancialSettingsForm({ initial }: Props) {
               setValue("pix_fee_percentage", "0.00", { shouldDirty: true });
               setValue("debit_card_fee_percentage", "1.99", { shouldDirty: true });
               setValue("default_payment_method", "PIX", { shouldDirty: true });
-              toast.show("Padrões de mercado aplicados (taxa estimada I7). Clique em Salvar.", "info");
+              toast.show("Padrões recomendados de mercado aplicados. Clique em Salvar.", "info");
             }}
           >
             Usar padrões recomendados

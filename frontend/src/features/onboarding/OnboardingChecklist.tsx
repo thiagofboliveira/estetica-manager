@@ -127,7 +127,7 @@ export function OnboardingChecklist({ hasAnySale }: Props) {
         color: "#475569",
         lineHeight: 1.45,
       }}>
-        💡 <strong>Onboarding tolerante (I7):</strong> Em dúvida sobre custos de produtos ou taxas da maquininha? Nossos formulários aceitam o botão <em>"Não sei agora"</em> para preencher estimativas sugeridas de mercado. Você começa rápido e refina quando quiser.
+        💡 <strong>Comece com facilidade:</strong> Em dúvida sobre custos de produtos ou taxas da maquininha? Nossos formulários aceitam o botão <em>"Não sei agora"</em> para preencher estimativas sugeridas de mercado. Você começa rápido e refina quando quiser.
       </div>
     </section>
   );

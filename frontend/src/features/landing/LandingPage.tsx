@@ -150,7 +150,7 @@ export function LandingPage() {
               Vendeu um pacote de 10 sessões? O sistema reconhece o lucro proporcionalmente à medida 
               que as sessões são executadas, protegendo seu fluxo de caixa contra retiradas ilusórias.
             </p>
-            <div className={styles.cardFooterTag}>Conformidade Contábil Invariante I7</div>
+            <div className={styles.cardFooterTag}>Precisão Contábil Real</div>
           </div>
 
           {/* Card 3 */}
@@ -242,7 +242,7 @@ export function LandingPage() {
           <ul className={styles.pricingFeatures}>
             <li>
               <span>✓</span>
-              <span><strong>Cálculo de Lucro Real puro:</strong> saiba exatamente quanto ganha em cada procedimento (I1–I7).</span>
+              <span><strong>Cálculo de Lucro Real:</strong> saiba exatamente quanto sobra no seu bolso em cada atendimento.</span>
             </li>
             <li>
               <span>✓</span>

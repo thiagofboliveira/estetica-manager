@@ -212,10 +212,10 @@ export function ProcedureForm({ initial, onSubmit, submitLabel }: Props) {
               const p = Number(watch("price")) || 0;
               const defaultCost = p > 0 ? (p * 0.2).toFixed(2) : "30.00";
               setValue("estimated_cost", defaultCost as Money, { shouldDirty: true });
-              toast.show(`Custo estimado em 20% (${defaultCost}) — estimativa I7 aplicada.`, "info");
+              toast.show(`Custo estimado em 20% (${defaultCost}).`, "info");
             }}
           >
-            💡 Não sei agora (estimar 20% do preço — I7)
+            💡 Não sei agora (estimar 20% do preço)
           </button>
         </div>
         <Controller
@@ -230,7 +230,7 @@ export function ProcedureForm({ initial, onSubmit, submitLabel }: Props) {
           )}
         />
         <span style={{ fontSize: "0.76rem", color: "#64748b" }}>
-          Insumos e materiais consumidos na sessão. Salva como custo estimado (I7).
+          Insumos e materiais consumidos na sessão. Você pode ajustar a qualquer momento.
         </span>
       </label>
 
@@ -270,10 +270,10 @@ export function ProcedureForm({ initial, onSubmit, submitLabel }: Props) {
                 style={{ fontSize: "0.78rem", color: "#b45309", cursor: "pointer", background: "none", border: "none", padding: "0 2px", textDecoration: "underline" }}
                 onClick={() => {
                   setValue("return_interval_days", "30", { shouldDirty: true });
-                  toast.show("Retorno clínico sugerido para 30 dias (estimativa I7).", "info");
+                  toast.show("Retorno sugerido para 30 dias.", "info");
                 }}
               >
-                💡 Não sei agora (usar 30 dias — I7)
+                💡 Não sei agora (usar 30 dias)
               </button>
             </div>
             <input

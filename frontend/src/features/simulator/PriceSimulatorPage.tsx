@@ -66,11 +66,11 @@ export function PriceSimulatorPage() {
   return (
     <div className={styles.container}>
       <header className={styles.header}>
-        <div className={styles.badge}>Diferencial de Inteligência Financeira (V6-01 / V6-02)</div>
+        <div className={styles.badge}>Inteligência Financeira</div>
         <h1 className={styles.title}>Simulador de Preço & Margem de Lucro</h1>
         <p className={styles.subtitle}>
           Descubra o lucro líquido real de cada procedimento antes de fechar com a paciente. 
-          O cálculo considera suas taxas de maquininha, regras de antecipação e custo de insumos direto na API.
+          O cálculo considera suas taxas reais de maquininha, regras de repasse e custo de insumos.
         </p>
       </header>
 
@@ -177,7 +177,7 @@ export function PriceSimulatorPage() {
             <div className={styles.alertNegative} role="alert">
               <div className={styles.alertIcon}>⚠️</div>
               <div>
-                <strong>Alerta de Margem Negativa (V5-04):</strong>
+                <strong>Alerta de Margem Negativa:</strong>
                 <p>{simulation.negative_margin_alert}</p>
                 <span className={styles.alertAdvice}>
                   💡 Para não pagar para trabalhar, ajuste o preço cobrado ou renegocie o custo do produto com fornecedores.
@@ -213,7 +213,7 @@ export function PriceSimulatorPage() {
 
             <hr className={styles.divider} />
 
-            <h3 className={styles.breakdownTitle}>Detalhamento do Cálculo Puro (Invariante I1):</h3>
+            <h3 className={styles.breakdownTitle}>Detalhamento do Lucro Líquido:</h3>
             <dl className={styles.breakdownList}>
               <div className={styles.breakdownItem}>
                 <dt>Preço Bruto:</dt>
@@ -226,7 +226,7 @@ export function PriceSimulatorPage() {
                 </dd>
               </div>
               <div className={styles.breakdownItem}>
-                <dt>Custo Provisionado de Insumos:</dt>
+                <dt>Custo de Insumos:</dt>
                 <dd className={styles.textRed}>
                   - {simulation ? formatBRL(money(simulation.cost_provisioned)) : "—"}
                 </dd>
@@ -234,7 +234,7 @@ export function PriceSimulatorPage() {
             </dl>
 
             <div className={styles.auditFooter}>
-              <span>🔒 Cálculo oficial gerado pelo motor financeiro da API (sem aproximação no frontend).</span>
+              <span>🔒 Cálculo de precisão contábil considerando taxas, comissões e custos cadastrados.</span>
             </div>
           </div>
         </section>

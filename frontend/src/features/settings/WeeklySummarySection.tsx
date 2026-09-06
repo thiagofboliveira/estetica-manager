@@ -121,7 +121,7 @@ export function WeeklySummarySection() {
               <strong style={{ fontSize: "0.95rem", color: "#0f172a" }}>{formatBRL(summary.gross_revenue as Money)}</strong>
             </div>
             <div style={{ background: "#fff", padding: "10px", borderRadius: "6px", border: "1px solid #e2e8f0" }}>
-              <span style={{ fontSize: "0.72rem", color: "#64748b", display: "block" }}>Lucro Real (I1)</span>
+              <span style={{ fontSize: "0.72rem", color: "#64748b", display: "block" }}>Lucro Real</span>
               <strong style={{ fontSize: "0.95rem", color: "#16a34a" }}>{formatBRL(summary.net_profit as Money)}</strong>
             </div>
             <div style={{ background: "#fff", padding: "10px", borderRadius: "6px", border: "1px solid #e2e8f0" }}>
@@ -144,7 +144,7 @@ export function WeeklySummarySection() {
               📲 {summary.whatsapp_url ? "Abrir prévia no WhatsApp" : "Copiar mensagem para WhatsApp"}
             </button>
             <span style={{ fontSize: "0.75rem", color: "#64748b" }}>
-              🔒 Inclui link de descadastro em 1 clique (V5-02) no rodapé.
+              🔒 Inclui link de descadastro com 1 clique no rodapé.
             </span>
           </div>
         </div>
