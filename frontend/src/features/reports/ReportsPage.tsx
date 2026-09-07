@@ -137,7 +137,7 @@ export function ReportsPage() {
         <main>
           {category === "financial" && <FinancialReportTab params={params} />}
           {category === "appointments" && (
-            <AppointmentsReportTab dateRange={dateRange} params={params} />
+            <AppointmentsReportTab dateRange={dateRange} />
           )}
           {category === "retention" && <RetentionReportTab params={params} />}
           {category === "procedures" && <ProceduresReportTab params={params} />}

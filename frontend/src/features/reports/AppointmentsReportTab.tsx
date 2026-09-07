@@ -1,23 +1,45 @@
 import { useState, useMemo } from "react";
+import {
+  Bar,
+  BarChart,
+  CartesianGrid,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from "recharts";
 import { AsyncBoundary } from "@/ui/AsyncBoundary";
 import { useAgenda, useOpenPackages } from "@/features/agenda/hooks";
-import type { OpenPackage } from "@/features/agenda/api";
-import type { DashboardParams } from "@/features/dashboard/api";
-import { AppointmentsByServiceChart } from "@/features/dashboard/ProcedureChartsSection";
+import type { AgendaItem, OpenPackage } from "@/features/agenda/api";
 import { IconCalendar, IconDownload } from "@/ui/icons";
 import { downloadCsv } from "./exportApi";
 import type { PeriodDateRange } from "./types";
+import chartStyles from "@/features/dashboard/charts.module.css";
 import styles from "./ReportsPage.module.css";
 
 type Props = {
   dateRange: PeriodDateRange;
-  params: DashboardParams;
 };
 
-export function AppointmentsReportTab({ dateRange, params }: Props) {
-  const agendaQuery = useAgenda(dateRange.from, dateRange.to);
-  const openPackagesQuery = useOpenPackages();
+export function AppointmentsReportTab({ dateRange }: Props) {
+  // Permite que a profissional alterne rapidamente para ver os próximos 30 dias caso tenha agendado no futuro
+  const [scope, setScope] = useState<"period" | "next_30_days">("period");
   const [exporting, setExporting] = useState(false);
+
+  const effectiveRange = useMemo(() => {
+    if (scope === "next_30_days") {
+      const now = new Date();
+      const in30Days = new Date();
+      in30Days.setDate(in30Days.getDate() + 30);
+      const pad = (n: number) => n.toString().padStart(2, "0");
+      const fmt = (d: Date) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+      return { from: fmt(now), to: fmt(in30Days) };
+    }
+    return dateRange;
+  }, [scope, dateRange]);
+
+  const agendaQuery = useAgenda(effectiveRange.from, effectiveRange.to);
+  const openPackagesQuery = useOpenPackages();
 
   async function handleExportSessions() {
     try {
@@ -33,13 +55,14 @@ export function AppointmentsReportTab({ dateRange, params }: Props) {
   const items = agendaQuery.data ?? [];
 
   const stats = useMemo(() => {
+    const list = agendaQuery.data ?? [];
     let completed = 0;
     let scheduled = 0;
     let noShow = 0;
     let cancelled = 0;
     let publicBookings = 0;
 
-    for (const item of items) {
+    for (const item of list) {
       if (item.type === "BOOKING") {
         publicBookings++;
       }
@@ -58,13 +81,18 @@ export function AppointmentsReportTab({ dateRange, params }: Props) {
         case "CANCELLED":
           cancelled++;
           break;
+        default:
+          scheduled++;
+          break;
       }
     }
 
-    const total = items.length;
+    const total = list.length;
     const concludedOrMissed = completed + noShow;
-    const attendanceRate = concludedOrMissed > 0 ? Math.round((completed / concludedOrMissed) * 100) : null;
-    const noShowRate = concludedOrMissed > 0 ? Math.round((noShow / concludedOrMissed) * 100) : null;
+    const attendanceRate =
+      concludedOrMissed > 0 ? Math.round((completed / concludedOrMissed) * 100) : null;
+    const noShowRate =
+      concludedOrMissed > 0 ? Math.round((noShow / concludedOrMissed) * 100) : null;
     const cancelRate = total > 0 ? Math.round((cancelled / total) * 100) : null;
 
     return {
@@ -82,6 +110,15 @@ export function AppointmentsReportTab({ dateRange, params }: Props) {
 
   const openPackages: OpenPackage[] = openPackagesQuery.data ?? [];
 
+  // Formata as datas para exibição visual amigável
+  const rangeDisplay = useMemo(() => {
+    const parse = (s: string) => {
+      const [y, m, d] = s.split("-");
+      return `${d}/${m}/${y}`;
+    };
+    return `${parse(effectiveRange.from)} até ${parse(effectiveRange.to)}`;
+  }, [effectiveRange]);
+
   return (
     <div className={styles.page}>
       <div className={styles.sectionHeader}>
@@ -92,25 +129,67 @@ export function AppointmentsReportTab({ dateRange, params }: Props) {
           <div>
             <h2 className={styles.sectionTitle}>Relatório de Agendamentos e Presença</h2>
             <p className={styles.sectionSubtitle}>
-              Acompanhamento de sessões, taxa de comparecimento, faltas e reservas
+              Exibindo agendamentos de <strong>{rangeDisplay}</strong> ({items.length} registro{items.length === 1 ? "" : "s"})
             </p>
           </div>
         </div>
-        <button
-          type="button"
-          className={styles.exportBtn}
-          onClick={handleExportSessions}
-          disabled={exporting}
-        >
-          <IconDownload width="16" height="16" />
-          <span>{exporting ? "Baixando…" : "Exportar Atendimentos (CSV)"}</span>
-        </button>
+
+        <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap" }}>
+          {/* Alternador rápido de escopo */}
+          <div style={{ display: "inline-flex", background: "var(--bg-subtle)", padding: "3px", borderRadius: "8px", border: "1px solid var(--border)" }}>
+            <button
+              type="button"
+              onClick={() => setScope("period")}
+              style={{
+                border: "none",
+                padding: "6px 12px",
+                borderRadius: "6px",
+                fontSize: "12.5px",
+                fontWeight: 600,
+                cursor: "pointer",
+                background: scope === "period" ? "var(--bg-card)" : "transparent",
+                color: scope === "period" ? "var(--text-h)" : "var(--text-muted)",
+                boxShadow: scope === "period" ? "var(--shadow-sm)" : "none",
+              }}
+            >
+              Filtro Selecionado
+            </button>
+            <button
+              type="button"
+              onClick={() => setScope("next_30_days")}
+              style={{
+                border: "none",
+                padding: "6px 12px",
+                borderRadius: "6px",
+                fontSize: "12.5px",
+                fontWeight: 600,
+                cursor: "pointer",
+                background: scope === "next_30_days" ? "var(--bg-card)" : "transparent",
+                color: scope === "next_30_days" ? "var(--text-h)" : "var(--text-muted)",
+                boxShadow: scope === "next_30_days" ? "var(--shadow-sm)" : "none",
+              }}
+            >
+              Próximos 30 dias
+            </button>
+          </div>
+
+          <button
+            type="button"
+            className={styles.exportBtn}
+            onClick={handleExportSessions}
+            disabled={exporting}
+          >
+            <IconDownload width="16" height="16" />
+            <span>{exporting ? "Baixando…" : "Exportar Atendimentos (CSV)"}</span>
+          </button>
+        </div>
       </div>
 
       <AsyncBoundary
         query={agendaQuery}
         skeleton={<p>Carregando dados da agenda…</p>}
         empty={<p>Nenhum agendamento encontrado no período selecionado.</p>}
+        isEmpty={() => false}
       >
         {() => (
           <>
@@ -119,17 +198,7 @@ export function AppointmentsReportTab({ dateRange, params }: Props) {
                 <span className={styles.kpiLabel}>Total na Agenda</span>
                 <strong className={styles.kpiValue}>{stats.total}</strong>
                 <span className={styles.kpiNote}>
-                  Sessões e agendamentos previstos no período
-                </span>
-              </div>
-
-              <div className={styles.kpiCard}>
-                <span className={styles.kpiLabel}>Realizados / Concluídos</span>
-                <strong className={styles.kpiValue} style={{ color: "#10b981" }}>
-                  {stats.completed}
-                </strong>
-                <span className={styles.kpiNote}>
-                  Atendimentos com execução finalizada
+                  Sessões e agendamentos no intervalo selecionado
                 </span>
               </div>
 
@@ -143,6 +212,16 @@ export function AppointmentsReportTab({ dateRange, params }: Props) {
                 </span>
               </div>
 
+              <div className={styles.kpiCard}>
+                <span className={styles.kpiLabel}>Realizados / Concluídos</span>
+                <strong className={styles.kpiValue} style={{ color: "#10b981" }}>
+                  {stats.completed}
+                </strong>
+                <span className={styles.kpiNote}>
+                  Atendimentos com execução finalizada
+                </span>
+              </div>
+
               <div className={`${styles.kpiCard} ${stats.noShow > 0 ? styles.kpiCardAlert : ""}`}>
                 <span className={styles.kpiLabel}>Faltas (No-Show)</span>
                 <strong className={styles.kpiValue} style={{ color: stats.noShow > 0 ? "#ef4444" : undefined }}>
@@ -151,7 +230,7 @@ export function AppointmentsReportTab({ dateRange, params }: Props) {
                 <span className={styles.kpiNote}>
                   {stats.noShowRate !== null
                     ? `${stats.noShowRate}% de taxa de falta sobre agendamentos`
-                    : "Nenhuma falta registrada no período"}
+                    : "Nenhuma falta registrada"}
                 </span>
               </div>
 
@@ -176,7 +255,7 @@ export function AppointmentsReportTab({ dateRange, params }: Props) {
             <div className={styles.sectionCard}>
               <h3 className={styles.sectionTitle}>Eficiência e Taxa de Comparecimento</h3>
               <p className={styles.sectionSubtitle}>
-                Indicador direto de fidelidade e pontualidade da sua carteira de clientes
+                Indicador de assiduidade das clientes no período analisado
               </p>
 
               <div className={styles.rateBars}>
@@ -234,9 +313,21 @@ export function AppointmentsReportTab({ dateRange, params }: Props) {
               </div>
             </div>
 
-            {/* Gráfico de procedimentos mais agendados */}
+            {/* Gráficos e Pacotes em Aberto */}
             <div className={styles.chartsGrid}>
-              <AppointmentsByServiceChart params={params} />
+              {/* Gráfico Real com os Procedimentos dos Agendamentos da Agenda */}
+              <div className={chartStyles.card}>
+                <div className={chartStyles.header}>
+                  <div className={chartStyles.iconBadge}>
+                    <IconCalendar width="16" height="16" />
+                  </div>
+                  <h3 className={chartStyles.title}>Procedimentos Mais Agendados</h3>
+                </div>
+                <p className={chartStyles.subtitle}>
+                  Volume de sessões marcadas ou atendidas no período.
+                </p>
+                <ScheduledAppointmentsBarChart items={items} />
+              </div>
 
               {/* Card de Pacotes em Aberto */}
               <div className={styles.sectionCard}>
@@ -288,11 +379,16 @@ export function AppointmentsReportTab({ dateRange, params }: Props) {
             </div>
 
             {/* Tabela de Atendimentos no Período */}
-            {items.length > 0 && (
-              <div className={styles.sectionCard}>
-                <div className={styles.sectionHeader}>
-                  <h3 className={styles.sectionTitle}>Atendimentos no Período ({items.length})</h3>
-                </div>
+            <div className={styles.sectionCard}>
+              <div className={styles.sectionHeader}>
+                <h3 className={styles.sectionTitle}>Atendimentos no Período ({items.length})</h3>
+              </div>
+
+              {items.length === 0 ? (
+                <p style={{ color: "var(--text-muted)", fontSize: "13.5px", padding: "12px 0" }}>
+                  Nenhum agendamento encontrado para o intervalo de <strong>{rangeDisplay}</strong>. Caso tenha agendado para outra data, alterne para <em>"Próximos 30 dias"</em> ou ajuste o filtro de período no topo.
+                </p>
+              ) : (
                 <div className={styles.tableWrap}>
                   <table className={styles.table}>
                     <thead>
@@ -305,12 +401,13 @@ export function AppointmentsReportTab({ dateRange, params }: Props) {
                       </tr>
                     </thead>
                     <tbody>
-                      {items.slice(0, 10).map((item) => (
+                      {items.map((item) => (
                         <tr key={item.id}>
                           <td>
                             {new Date(item.scheduled_at).toLocaleString("pt-BR", {
                               day: "2-digit",
                               month: "2-digit",
+                              year: "numeric",
                               hour: "2-digit",
                               minute: "2-digit",
                             })}
@@ -332,11 +429,71 @@ export function AppointmentsReportTab({ dateRange, params }: Props) {
                     </tbody>
                   </table>
                 </div>
-              </div>
-            )}
+              )}
+            </div>
           </>
         )}
       </AsyncBoundary>
+    </div>
+  );
+}
+
+function ScheduledAppointmentsBarChart({ items }: { items: AgendaItem[] }) {
+  const chartData = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const item of items) {
+      const name = item.procedure_name || "Agendamento";
+      counts.set(name, (counts.get(name) || 0) + 1);
+    }
+    return Array.from(counts.entries())
+      .map(([name, value]) => ({ name, value }))
+      .sort((a, b) => b.value - a.value)
+      .slice(0, 10);
+  }, [items]);
+
+  if (chartData.length === 0) {
+    return (
+      <div className={chartStyles.emptyChart}>
+        Nenhum agendamento registrado no período selecionado.
+      </div>
+    );
+  }
+
+  return (
+    <div className={chartStyles.chartWrap}>
+      <ResponsiveContainer width="100%" height="100%">
+        <BarChart data={chartData} layout="vertical" margin={{ left: 8, right: 24 }}>
+          <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" horizontal={false} />
+          <XAxis
+            type="number"
+            allowDecimals={false}
+            tick={{ fill: "var(--text-muted)", fontSize: 11 }}
+            stroke="var(--border)"
+          />
+          <YAxis
+            type="category"
+            dataKey="name"
+            width={130}
+            tick={{ fill: "var(--text)", fontSize: 12 }}
+            stroke="var(--border)"
+          />
+          <Tooltip
+            cursor={{ fill: "var(--bg-subtle)" }}
+            contentStyle={{
+              background: "var(--bg-card)",
+              border: "1px solid var(--border)",
+              borderRadius: 8,
+              fontSize: 13,
+              color: "var(--text-h)",
+            }}
+            formatter={(value: any) => [
+              `${value} agendamento${value === 1 ? "" : "s"}`,
+              "Volume",
+            ]}
+          />
+          <Bar dataKey="value" fill="var(--accent)" radius={[0, 6, 6, 0]} />
+        </BarChart>
+      </ResponsiveContainer>
     </div>
   );
 }

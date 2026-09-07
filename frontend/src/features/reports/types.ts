@@ -27,8 +27,12 @@ export function resolvePeriodDateRange(
   }
 
   if (period === "this_month") {
-    const d = new Date(now.getFullYear(), now.getMonth(), 1);
-    return { from: formatLocalDate(d), to: todayStr };
+    const start = new Date(now.getFullYear(), now.getMonth(), 1);
+    const end = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+    return {
+      from: formatLocalDate(start),
+      to: formatLocalDate(end),
+    };
   }
 
   if (period === "last_month") {
