@@ -24,6 +24,7 @@ from app.api.v1 import (
     sales,
     sessions,
     super_admin,
+    supplies,
     system,
     users,
     vials,
@@ -217,3 +218,5 @@ app.include_router(anamnesis.router, prefix="/api/v1")
 app.include_router(public_anamnesis.router, prefix="/api/v1")
 app.include_router(patient_photos.router, prefix="/api/v1")
 app.include_router(vials.router, prefix="/api/v1")
+app.include_router(supplies.router, prefix="/api/v1")
+

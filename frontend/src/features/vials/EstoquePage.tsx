@@ -1,10 +1,19 @@
 import { useState, useMemo } from "react";
 import { Link } from "react-router-dom";
 import {
-  useActiveVials,
-  useAllVials,
-  useFinishVial,
-} from "./useVials";
+  useSupplies,
+  useRecentSupplyMovements,
+} from "@/features/supplies/useSupplies";
+import type {
+  Supply,
+  MovementType,
+} from "@/features/supplies/suppliesApi";
+import {
+  CreateSupplyModal,
+  RecordMovementModal,
+  CATEGORY_SHORT_LABELS,
+} from "@/features/supplies/SupplyModals";
+import { useActiveVials, useFinishVial } from "./useVials";
 import type { OpenVial } from "./vialsApi";
 import { CreateVialModal, ConsumeVialModal } from "./VialModals";
 import {
@@ -13,81 +22,127 @@ import {
   IconPlus,
   IconTarget,
   IconCheck,
+  IconSparkles,
 } from "@/ui/icons";
 import { formatBRL } from "@/lib/money/format";
 import { money } from "@/lib/money/money";
 import styles from "./EstoquePage.module.css";
 
 export function EstoquePage() {
-  const { data: activeVials = [], isLoading: loadingActive } = useActiveVials();
-  const { data: allVials = [], isLoading: loadingAll } = useAllVials();
+  const [activeTab, setActiveTab] = useState<"inventory" | "vials" | "movements">("inventory");
 
-  const [activeTab, setActiveTab] = useState<"active" | "history">("active");
-  const [isCreateOpen, setIsCreateOpen] = useState(false);
+  // Filtros do Inventário
+  const [searchQuery, setSearchQuery] = useState("");
+  const [categoryFilter, setCategoryFilter] = useState<string>("ALL");
+  const [lowStockOnly, setLowStockOnly] = useState(false);
+
+  // Modais de Insumos Gerais
+  const [isCreateSupplyOpen, setIsCreateSupplyOpen] = useState(false);
+  const [movementModalState, setMovementModalState] = useState<{
+    supply: Supply;
+    type: MovementType;
+  } | null>(null);
+
+  // Modais de Frascos Abertos (Perecíveis)
+  const [isCreateVialOpen, setIsCreateVialOpen] = useState(false);
   const [selectedVialForConsume, setSelectedVialForConsume] = useState<OpenVial | null>(null);
 
-  const finishedVials = useMemo(() => {
-    return allVials.filter((v) => v.status !== "active");
-  }, [allVials]);
+  // Queries
+  const suppliesQuery = useSupplies({
+    category: categoryFilter !== "ALL" ? categoryFilter : undefined,
+    search: searchQuery || undefined,
+    low_stock_only: lowStockOnly || undefined,
+  });
+  const recentMovementsQuery = useRecentSupplyMovements();
+  const activeVialsQuery = useActiveVials();
 
-  const totalRemainingUnits = useMemo(() => {
-    return activeVials.reduce((sum, v) => sum + (v.remaining_units || 0), 0);
-  }, [activeVials]);
+  const supplies = suppliesQuery.data ?? [];
+  const activeVials = activeVialsQuery.data ?? [];
+  const movements = recentMovementsQuery.data ?? [];
+
+  // Cálculos de KPIs
+  const lowStockCount = useMemo(() => {
+    return supplies.filter((s) => s.is_low_stock).length;
+  }, [supplies]);
 
   const totalRiskBrl = useMemo(() => {
-    return activeVials.reduce((sum, v) => sum + (v.estimated_loss_risk ? Number(v.estimated_loss_risk) : 0), 0);
+    return activeVials.reduce(
+      (sum, v) => sum + (v.estimated_loss_risk ? Number(v.estimated_loss_risk) : 0),
+      0
+    );
   }, [activeVials]);
 
-  const isLoading = loadingActive || loadingAll;
+  const isLoading = suppliesQuery.isLoading && activeVialsQuery.isLoading;
 
   if (isLoading) {
     return (
       <div className={styles.page}>
         <header className={styles.header}>
           <div className={styles.titleArea}>
-            <h1 className={styles.title}>Estoque & Insumos Críticos</h1>
+            <h1 className={styles.title}>Estoque & Insumos da Clínica</h1>
           </div>
         </header>
-        <p style={{ color: "var(--text-muted, #64748b)" }}>Carregando insumos e frascos...</p>
+        <p style={{ color: "var(--text-muted, #64748b)" }}>Carregando dados de estoque...</p>
       </div>
     );
   }
 
   return (
     <div className={styles.page}>
-      {/* Header */}
+      {/* Header Superior */}
       <header className={styles.header}>
         <div className={styles.titleArea}>
-          <h1 className={styles.title}>Estoque & Insumos Críticos</h1>
+          <h1 className={styles.title}>Estoque & Insumos Clínicos</h1>
           <p className={styles.subtitle}>
-            Monitore a validade de frascos de toxina botulínica e bioestimuladores abertos para zerar desperdícios.
+            Gestão completa de insumos: preenchedores, toxinas, fios de sustentação, descartáveis e controle de frascos abertos.
           </p>
         </div>
 
-        <button
-          type="button"
-          className={styles.primaryBtn}
-          onClick={() => setIsCreateOpen(true)}
-        >
-          <IconPlus width="16" height="16" />
-          <span>+ Abrir Novo Frasco</span>
-        </button>
+        <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
+          <button
+            type="button"
+            className={styles.actionBtn}
+            onClick={() => setIsCreateVialOpen(true)}
+          >
+            <IconDroplet width="15" height="15" color="var(--accent)" />
+            <span>Abrir Frasco Multidose</span>
+          </button>
+
+          <button
+            type="button"
+            className={styles.primaryBtn}
+            onClick={() => setIsCreateSupplyOpen(true)}
+          >
+            <IconPlus width="15" height="15" />
+            <span>+ Novo Insumo</span>
+          </button>
+        </div>
       </header>
 
-      {/* Top Metrics */}
+      {/* Top Metrics Grid */}
       <div className={styles.metricsGrid}>
         <div className={styles.metricCard}>
-          <span className={styles.metricLabel}>Frascos em Aberto</span>
-          <span className={styles.metricValue}>{activeVials.length}</span>
-          <span className={styles.metricNote}>Em refrigeração / uso clínico</span>
+          <span className={styles.metricLabel}>Itens Cadastrados</span>
+          <span className={styles.metricValue}>{supplies.length}</span>
+          <span className={styles.metricNote}>Insumos em controle no catálogo</span>
+        </div>
+
+        <div className={`${styles.metricCard} ${lowStockCount > 0 ? styles.metricCardAlert : ""}`}>
+          <span className={styles.metricLabel}>Alerta de Reposição</span>
+          <span className={styles.metricValue} style={{ color: lowStockCount > 0 ? "#b45309" : undefined }}>
+            {lowStockCount} {lowStockCount === 1 ? "insumo baixo" : "insumos baixos"}
+          </span>
+          <span className={styles.metricNote}>
+            {lowStockCount > 0 ? "Abaixo do estoque mínimo configurado" : "Todos os níveis adequados"}
+          </span>
         </div>
 
         <div className={styles.metricCard}>
-          <span className={styles.metricLabel}>Unidades Disponíveis</span>
+          <span className={styles.metricLabel}>Frascos Abertos em Uso</span>
           <span className={styles.metricValue} style={{ color: "var(--accent, #6366f1)" }}>
-            {totalRemainingUnits} U
+            {activeVials.length}
           </span>
-          <span className={styles.metricNote}>Saldo total para procedimentos</span>
+          <span className={styles.metricNote}>Toxinas / Bioestimuladores com validade</span>
         </div>
 
         <div className={`${styles.metricCard} ${totalRiskBrl > 0 ? styles.metricCardAlert : ""}`}>
@@ -96,60 +151,131 @@ export function EstoquePage() {
             {formatBRL(money(totalRiskBrl.toFixed(2)))}
           </span>
           <span className={styles.metricNote}>
-            {totalRiskBrl > 0 ? "Em frascos abertos com validade correndo" : "Nenhum valor em risco"}
+            {totalRiskBrl > 0 ? "Valor em frascos abertos para aplicar a tempo" : "Nenhum valor em risco"}
           </span>
-        </div>
-
-        <div className={styles.metricCard}>
-          <span className={styles.metricLabel}>Frascos Finalizados</span>
-          <span className={styles.metricValue}>{finishedVials.length}</span>
-          <span className={styles.metricNote}>Histórico de consumo concluído</span>
         </div>
       </div>
 
-      {/* Tabs */}
+      {/* Navegação de Abas */}
       <div className={styles.tabGroup}>
         <button
           type="button"
-          className={`${styles.tabBtn} ${activeTab === "active" ? styles.tabBtnActive : ""}`}
-          onClick={() => setActiveTab("active")}
+          className={`${styles.tabBtn} ${activeTab === "inventory" ? styles.tabBtnActive : ""}`}
+          onClick={() => setActiveTab("inventory")}
         >
-          Frascos Abertos ({activeVials.length})
+          📦 Inventário Geral (Armário) ({supplies.length})
         </button>
         <button
           type="button"
-          className={`${styles.tabBtn} ${activeTab === "history" ? styles.tabBtnActive : ""}`}
-          onClick={() => setActiveTab("history")}
+          className={`${styles.tabBtn} ${activeTab === "vials" ? styles.tabBtnActive : ""}`}
+          onClick={() => setActiveTab("vials")}
         >
-          Histórico ({finishedVials.length})
+          💧 Frascos Abertos ({activeVials.length})
+        </button>
+        <button
+          type="button"
+          className={`${styles.tabBtn} ${activeTab === "movements" ? styles.tabBtnActive : ""}`}
+          onClick={() => setActiveTab("movements")}
+        >
+          📋 Histórico de Movimentações
         </button>
       </div>
 
-      {/* Tab 1: Frascos Abertos */}
-      {activeTab === "active" && (
-        <>
-          {activeVials.length === 0 ? (
+      {/* ABA 1: INVENTÁRIO GERAL */}
+      {activeTab === "inventory" && (
+        <section style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+          {/* Barra de Filtros e Busca */}
+          <div className={styles.toolbar}>
+            <div className={styles.filtersGroup}>
+              <input
+                type="text"
+                className={styles.searchInput}
+                placeholder="Buscar por nome ou marca..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+
+              <select
+                className={styles.selectInput}
+                value={categoryFilter}
+                onChange={(e) => setCategoryFilter(e.target.value)}
+              >
+                <option value="ALL">Todas as Categorias</option>
+                <option value="FILLER">Preenchedores (Ácido Hialurônico)</option>
+                <option value="INJECTABLE">Injetáveis / Fracionados</option>
+                <option value="THREAD">Fios de Sustentação</option>
+                <option value="ANESTHETIC">Anestésicos</option>
+                <option value="CONSUMABLE">Descartáveis & Consumíveis</option>
+                <option value="OTHER">Outros Insumos</option>
+              </select>
+
+              <label className={styles.toggleLabel}>
+                <input
+                  type="checkbox"
+                  checked={lowStockOnly}
+                  onChange={(e) => setLowStockOnly(e.target.checked)}
+                />
+                <span>Apenas estoque baixo</span>
+              </label>
+            </div>
+          </div>
+
+          {supplies.length === 0 ? (
             <div className={styles.emptyState}>
-              <div style={{ color: "var(--text-muted)", marginBottom: "4px" }}>
-                <IconDroplet width="40" height="40" />
-              </div>
-              <h3 className={styles.emptyTitle}>Nenhum frasco aberto no momento</h3>
+              <IconSparkles width="36" height="36" color="var(--accent)" />
+              <h3 className={styles.emptyTitle}>Nenhum insumo encontrado</h3>
               <p className={styles.emptyDesc}>
-                Abriu um novo frasco de Botox® ou bioestimulador hoje? Registre aqui para monitorar o saldo de unidades e receber alertas automáticos de validade clínica.
+                {searchQuery || categoryFilter !== "ALL" || lowStockOnly
+                  ? "Tente ajustar os filtros de busca para encontrar o item desejado."
+                  : "Cadastre seus preenchedores, fios, toxinas e descartáveis para controlar entradas, saídas e alertas de compra."}
               </p>
               <button
                 type="button"
                 className={styles.primaryBtn}
-                onClick={() => setIsCreateOpen(true)}
+                onClick={() => setIsCreateSupplyOpen(true)}
               >
-                <IconPlus width="16" height="16" />
-                <span>Registrar Novo Frasco</span>
+                <IconPlus width="14" height="14" />
+                <span>Cadastrar Primeiro Insumo</span>
+              </button>
+            </div>
+          ) : (
+            <div className={styles.vialsGrid}>
+              {supplies.map((supply) => (
+                <SupplyCardItem
+                  key={supply.id}
+                  supply={supply}
+                  onRecordMovement={(type) => setMovementModalState({ supply, type })}
+                  onOpenVial={() => setIsCreateVialOpen(true)}
+                />
+              ))}
+            </div>
+          )}
+        </section>
+      )}
+
+      {/* ABA 2: FRASCOS ABERTOS (USO CLÍNICO & VALIDADE CURTA) */}
+      {activeTab === "vials" && (
+        <section style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+          {activeVials.length === 0 ? (
+            <div className={styles.emptyState}>
+              <IconDroplet width="40" height="40" color="var(--accent)" />
+              <h3 className={styles.emptyTitle}>Nenhum frasco aberto no momento</h3>
+              <p className={styles.emptyDesc}>
+                Ao reconstituir um frasco de Botox® ou bioestimulador, registre a abertura aqui para acompanhar as unidades restantes e evitar que o frasco vença na geladeira.
+              </p>
+              <button
+                type="button"
+                className={styles.primaryBtn}
+                onClick={() => setIsCreateVialOpen(true)}
+              >
+                <IconPlus width="14" height="14" />
+                <span>Registrar Abertura de Frasco</span>
               </button>
             </div>
           ) : (
             <div className={styles.vialsGrid}>
               {activeVials.map((vial) => (
-                <ActiveVialCard
+                <ActiveVialCardItem
                   key={vial.id}
                   vial={vial}
                   onConsume={() => setSelectedVialForConsume(vial)}
@@ -157,32 +283,95 @@ export function EstoquePage() {
               ))}
             </div>
           )}
-        </>
+        </section>
       )}
 
-      {/* Tab 2: Histórico */}
-      {activeTab === "history" && (
-        <>
-          {finishedVials.length === 0 ? (
+      {/* ABA 3: HISTÓRICO DE MOVIMENTAÇÕES */}
+      {activeTab === "movements" && (
+        <section className={styles.tableContainer}>
+          {movements.length === 0 ? (
             <div className={styles.emptyState}>
-              <h3 className={styles.emptyTitle}>Nenhum frasco finalizado ainda</h3>
+              <h3 className={styles.emptyTitle}>Nenhuma movimentação recente registrada</h3>
               <p className={styles.emptyDesc}>
-                Conforme você consumir ou finalizar frascos em aberto, o registro histórico completo ficará armazenado aqui para auditoria de custos.
+                Conforme você registrar entradas de compra, saídas de atendimento ou descartes, o log de auditoria aparecerá aqui.
               </p>
             </div>
           ) : (
-            <div className={styles.vialsGrid}>
-              {finishedVials.map((vial) => (
-                <HistoryVialCard key={vial.id} vial={vial} />
-              ))}
-            </div>
+            <table className={styles.dataTable}>
+              <thead>
+                <tr>
+                  <th>Data / Hora</th>
+                  <th>Tipo</th>
+                  <th>Quantidade</th>
+                  <th>Custo Unitário</th>
+                  <th>Observações</th>
+                </tr>
+              </thead>
+              <tbody>
+                {movements.map((mov) => {
+                  let badgeBg = "rgba(34, 197, 94, 0.12)";
+                  let badgeColor = "#15803d";
+                  let label = "Entrada / Compra";
+
+                  if (mov.movement_type === "EXIT") {
+                    badgeBg = "rgba(59, 130, 246, 0.12)";
+                    badgeColor = "#1d4ed8";
+                    label = "Saída / Atendimento";
+                  } else if (mov.movement_type === "LOSS") {
+                    badgeBg = "rgba(239, 68, 68, 0.15)";
+                    badgeColor = "#dc2626";
+                    label = "Perda / Descarte";
+                  } else if (mov.movement_type === "ADJUSTMENT") {
+                    badgeBg = "rgba(245, 158, 11, 0.15)";
+                    badgeColor = "#b45309";
+                    label = "Ajuste de Balanço";
+                  }
+
+                  return (
+                    <tr key={mov.id}>
+                      <td>{new Date(mov.created_at).toLocaleString("pt-BR")}</td>
+                      <td>
+                        <span
+                          className={styles.badge}
+                          style={{ background: badgeBg, color: badgeColor }}
+                        >
+                          {label}
+                        </span>
+                      </td>
+                      <td>
+                        <strong>{mov.quantity}</strong>
+                      </td>
+                      <td>
+                        {mov.unit_price ? formatBRL(money(mov.unit_price)) : "—"}
+                      </td>
+                      <td style={{ color: "var(--text-muted)" }}>
+                        {mov.notes || "—"}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
           )}
-        </>
+        </section>
       )}
 
-      {/* Modais */}
-      {isCreateOpen && (
-        <CreateVialModal onClose={() => setIsCreateOpen(false)} />
+      {/* Modais de Insumos Gerais */}
+      {isCreateSupplyOpen && (
+        <CreateSupplyModal onClose={() => setIsCreateSupplyOpen(false)} />
+      )}
+
+      {movementModalState && (
+        <RecordMovementModal
+          supply={movementModalState.supply}
+          defaultType={movementModalState.type}
+          onClose={() => setMovementModalState(null)}
+        />
+      )}
+
+      {/* Modais de Frascos Abertos */}
+      {isCreateVialOpen && (
+        <CreateVialModal onClose={() => setIsCreateVialOpen(false)} />
       )}
 
       {selectedVialForConsume && (
@@ -195,7 +384,99 @@ export function EstoquePage() {
   );
 }
 
-function ActiveVialCard({
+function SupplyCardItem({
+  supply,
+  onRecordMovement,
+  onOpenVial,
+}: {
+  supply: Supply;
+  onRecordMovement: (type: MovementType) => void;
+  onOpenVial: () => void;
+}) {
+  let catClass = styles.catOther;
+  if (supply.category === "FILLER") catClass = styles.catFiller;
+  if (supply.category === "INJECTABLE") catClass = styles.catInjectable;
+  if (supply.category === "THREAD") catClass = styles.catThread;
+  if (supply.category === "ANESTHETIC") catClass = styles.catAnesthetic;
+  if (supply.category === "CONSUMABLE") catClass = styles.catConsumable;
+
+  return (
+    <div className={styles.vialCard}>
+      <div className={styles.vialCardHeader}>
+        <div>
+          <span className={`${styles.categoryPill} ${catClass}`}>
+            {CATEGORY_SHORT_LABELS[supply.category] || supply.category}
+          </span>
+          <h3 className={styles.vialName} style={{ marginTop: "6px" }}>
+            {supply.name}
+          </h3>
+          <div className={styles.vialMeta}>
+            {supply.brand ? `${supply.brand} • ` : ""}
+            {supply.cost_price ? `Custo: ${formatBRL(money(supply.cost_price))}` : "Sem custo informado"}
+          </div>
+        </div>
+
+        {supply.is_low_stock && (
+          <span className={styles.stockLowAlert}>
+            <IconAlertTriangle width="12" height="12" />
+            <span>Estoque Baixo</span>
+          </span>
+        )}
+      </div>
+
+      <div className={styles.stockLevel}>
+        <span className={styles.stockNumber}>{supply.current_stock}</span>
+        <span className={styles.stockUnit}>{supply.unit_measure} em armário</span>
+      </div>
+
+      {supply.min_stock_alert != null && (
+        <div style={{ fontSize: "12px", color: "var(--text-muted)" }}>
+          Mínimo para alerta: {supply.min_stock_alert} {supply.unit_measure}
+        </div>
+      )}
+
+      {supply.notes && (
+        <p style={{ fontSize: "12px", color: "var(--text-muted)", margin: 0 }}>
+          {supply.notes}
+        </p>
+      )}
+
+      <div className={styles.vialActions}>
+        <button
+          type="button"
+          className={`${styles.actionBtn} ${styles.actionBtnPrimary}`}
+          onClick={() => onRecordMovement("ENTRY")}
+        >
+          <IconPlus width="13" height="13" />
+          <span>+ Entrada</span>
+        </button>
+
+        <button
+          type="button"
+          className={styles.actionBtn}
+          onClick={() => onRecordMovement("EXIT")}
+          disabled={supply.current_stock <= 0}
+        >
+          <span>- Baixa / Uso</span>
+        </button>
+
+        {supply.category === "INJECTABLE" && (
+          <button
+            type="button"
+            className={styles.actionBtn}
+            onClick={onOpenVial}
+            title="Abrir e monitorar validade na geladeira"
+          >
+            <IconDroplet width="13" height="13" color="var(--accent)" />
+            <span>Abrir Frasco</span>
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function ActiveVialCardItem({
   vial,
   onConsume,
 }: {
@@ -277,7 +558,7 @@ function ActiveVialCard({
         <div className={styles.riskBanner}>
           <IconAlertTriangle width="16" height="16" color="#d97706" />
           <span>
-            <strong>{formatBRL(money(lossValue.toFixed(2)))}</strong> em risco de desperdício caso vença.
+            <strong>{formatBRL(money(lossValue.toFixed(2)))}</strong> em risco caso vença.
           </span>
           <Link
             to="/retornos"
@@ -311,51 +592,6 @@ function ActiveVialCard({
           <span>Finalizar Frasco</span>
         </button>
       </div>
-    </div>
-  );
-}
-
-function HistoryVialCard({ vial }: { vial: OpenVial }) {
-  return (
-    <div className={styles.vialCard} style={{ opacity: 0.85 }}>
-      <div className={styles.vialCardHeader}>
-        <div>
-          <h3 className={styles.vialName}>{vial.medication_name}</h3>
-          <div className={styles.vialMeta}>
-            {vial.lot_number ? `Lote: ${vial.lot_number} • ` : ""}
-            Aberto em {new Date(vial.opened_at).toLocaleDateString("pt-BR")}
-            {vial.cost_price ? ` • Custo: ${formatBRL(money(vial.cost_price))}` : ""}
-          </div>
-        </div>
-        <span
-          className={styles.badge}
-          style={{
-            background: vial.status === "finished" ? "rgba(100, 116, 139, 0.15)" : "rgba(239, 68, 68, 0.15)",
-            color: vial.status === "finished" ? "#475569" : "#dc2626",
-          }}
-        >
-          {vial.status === "finished" ? "Finalizado" : "Descartado"}
-        </span>
-      </div>
-
-      <div className={styles.progressArea}>
-        <div className={styles.progressInfo}>
-          <span>
-            Total aproveitado: <strong>{vial.used_units}</strong> de {vial.total_units} {vial.unit_measure}
-          </span>
-          {vial.remaining_units > 0 && (
-            <span style={{ color: "#dc2626" }}>
-              Descarte: {vial.remaining_units} {vial.unit_measure}
-            </span>
-          )}
-        </div>
-      </div>
-
-      {vial.notes && (
-        <p style={{ fontSize: "12.5px", color: "var(--text-muted)", margin: 0 }}>
-          {vial.notes}
-        </p>
-      )}
     </div>
   );
 }

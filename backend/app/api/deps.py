@@ -61,6 +61,8 @@ from app.services.user_service import UserService
 from app.services.vial_service import VialService
 from app.services.weekly_summary_service import WeeklySummaryService
 from app.repositories.vial_repository import OpenVialRepository
+from app.services.supply_service import SupplyService
+from app.repositories.supply_repository import SupplyRepository
 
 CurrentProfessional = Annotated[UUID, Depends(get_current_professional_id)]
 
@@ -483,3 +485,17 @@ def get_vial_service(
 
 
 VialSvc = Annotated[VialService, Depends(get_vial_service)]
+
+
+def get_supply_service(
+    session: DbSession, professional_id: CurrentProfessional
+) -> SupplyService:
+    return SupplyService(
+        session=session,
+        professional_id=professional_id,
+        supply_repo=SupplyRepository(session, professional_id),
+    )
+
+
+SupplySvc = Annotated[SupplyService, Depends(get_supply_service)]
+

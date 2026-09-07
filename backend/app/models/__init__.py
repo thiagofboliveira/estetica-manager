@@ -33,6 +33,12 @@ from app.models.return_opportunity import (
 from app.models.sale import Sale, SaleStatus, SaleType
 from app.models.sale_item import SaleItem
 from app.models.session import Session, SessionStatus
+from app.models.supply import (
+    MovementType,
+    Supply,
+    SupplyCategory,
+    SupplyMovement,
+)
 from app.models.terms_acceptance import TermsAcceptance
 from app.models.user import User
 from app.models.vial import OpenVial, VialStatus
@@ -43,6 +49,10 @@ __all__ = [
     "TimestampMixin",
     "Clinic",
     "User",
+    "Supply",
+    "SupplyCategory",
+    "SupplyMovement",
+    "MovementType",
     "Professional",
     "Patient",
     "PatientPhoto",

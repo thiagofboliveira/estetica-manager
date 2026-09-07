@@ -39,6 +39,12 @@ class OpenVial(TenantModel):
         nullable=True,
         index=True,
     )
+    supply_id: Mapped[UUID | None] = mapped_column(
+        PGUUID(as_uuid=True),
+        ForeignKey("supplies.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
 
     medication_name: Mapped[str] = mapped_column(
         String(255),
