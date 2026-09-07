@@ -10,10 +10,14 @@ import {
   type SessionUpdateInput,
 } from "./api";
 
-export function useAgenda(from: string, to: string) {
+export function useAgenda(
+  from: string,
+  to: string,
+  options?: { scope?: "me" | "clinic"; professional_id?: string },
+) {
   return useQuery({
-    queryKey: qk.sessionsRange(from, to),
-    queryFn: () => sessionsApi.getAgenda(from, to),
+    queryKey: qk.sessionsRange(from, to, options),
+    queryFn: () => sessionsApi.getAgenda(from, to, options),
     ...CACHE.MONEY,
     enabled: Boolean(from && to),
   });

@@ -444,7 +444,10 @@ export function VisualTimelineAgenda({
                             </div>
 
                             <div className={styles.cardBody}>
-                              <span className={styles.procedureName}>{item.procedure_name}</span>
+                              <span className={styles.procedureName}>
+                                {item.procedure_name}
+                                {item.professional_name ? ` • ${item.professional_name}` : ""}
+                              </span>
                               {item.type === "SESSION" && item.sequence_number && item.total_sessions && (
                                 <span className={styles.sessionProgress}>
                                   Sessão {item.sequence_number} de {item.total_sessions}
@@ -553,7 +556,7 @@ export function VisualTimelineAgenda({
                     </div>
 
                     <div style={{ fontSize: "13.5px", color: "var(--text)" }}>
-                      <span>{item.procedure_name}</span>
+                      <span>{item.procedure_name}{item.professional_name ? ` • ${item.professional_name}` : ""}</span>
                       {item.note && <span style={{ color: "var(--text-muted)", marginLeft: "8px" }}>Obs: {item.note}</span>}
                     </div>
                   </div>

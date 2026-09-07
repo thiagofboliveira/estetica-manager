@@ -3,7 +3,13 @@ from uuid import UUID
 
 from fastapi import APIRouter, HTTPException, Query, Response, status
 
-from app.api.deps import AgendaSvc, SessionSvc
+from app.api.deps import (
+    AgendaSvc,
+    CurrentUser,
+    DbSession,
+    SessionSvc,
+    resolve_clinic_scope,
+)
 from app.domain.sales.session_state_machine import InvalidSessionTransitionError
 from app.schemas.session import (
     AgendaItemOut,
@@ -29,8 +35,12 @@ def get_free_slots(svc: AgendaSvc, day: date = Query(alias="date")) -> FreeSlots
 @router.get("/sessions", response_model=list[AgendaItemOut])
 def get_sessions_agenda(
     svc: SessionSvc,
+    user: CurrentUser,
+    session: DbSession,
     date_from: date = Query(alias="from"),
     date_to: date = Query(alias="to"),
+    scope: str = Query(default="me", description="me | clinic"),
+    professional_id: UUID | None = Query(default=None),
 ) -> list[AgendaItemOut]:
     """Retorna a agenda do período (sessões agendadas + bookings provisórios),
     convertidas no fuso horário da profissional (TASK-032, MVP v6 §16)."""
@@ -39,7 +49,22 @@ def get_sessions_agenda(
             status.HTTP_422_UNPROCESSABLE_ENTITY,
             "A data final deve ser maior ou igual à data inicial.",
         )
-    return svc.get_agenda(date_from, date_to)
+
+    target_pids, resolved_scope, _ = resolve_clinic_scope(
+        user=user,
+        session=session,
+        scope=scope,
+        target_professional_id=professional_id,
+    )
+
+    if resolved_scope == "me" and target_pids == [user.id]:
+        return svc.get_agenda(date_from, date_to)
+
+    return svc.get_aggregated_agenda(
+        professional_ids=target_pids,
+        from_date=date_from,
+        to_date=date_to,
+    )
 
 
 @router.get("/sessions/unconfirmed", response_model=list[UnconfirmedSessionOut])

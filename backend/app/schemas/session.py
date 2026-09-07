@@ -44,6 +44,8 @@ class AgendaItemOut(OutputSchema):
     total_sessions: int | None = None
     note: str | None = None
     confirmed_at: datetime | None = None
+    professional_id: UUID | None = None
+    professional_name: str | None = None
 
 
 class UnconfirmedSessionOut(OutputSchema):

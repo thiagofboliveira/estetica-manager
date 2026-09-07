@@ -1,9 +1,17 @@
 from datetime import date
 from decimal import Decimal
+from uuid import UUID
 
 from fastapi import APIRouter, HTTPException, Query, status
 
-from app.api.deps import AttributionSvc, DashboardSvc, EventSvc
+from app.api.deps import (
+    AttributionSvc,
+    CurrentUser,
+    DashboardSvc,
+    DbSession,
+    EventSvc,
+    resolve_clinic_scope,
+)
 from app.domain.events import EventName
 from app.schemas.dashboard import (
     DashboardOut,
@@ -21,27 +29,46 @@ _VALID_FILTERS = {"today", "last_7_days", "this_month", "last_month", "custom"}
 def get_dashboard(
     svc: DashboardSvc,
     events: EventSvc,
+    user: CurrentUser,
+    session: DbSession,
     period: str = Query(
         default="this_month",
         description="today|last_7_days|this_month|last_month|custom",
     ),
-
     date_from: date | None = Query(
         default=None, description="Obrigatório se period=custom"
     ),
     date_to: date | None = Query(
         default=None, description="Obrigatório se period=custom"
     ),
+    scope: str = Query(default="me", description="me | clinic"),
+    professional_id: UUID | None = Query(default=None),
 ) -> DashboardOut:
     if period not in _VALID_FILTERS:
         raise HTTPException(
             status.HTTP_422_UNPROCESSABLE_ENTITY,
             f"period inválido: {period!r}. Use um de {sorted(_VALID_FILTERS)}",
         )
+
+    target_pids, resolved_scope, prof_count = resolve_clinic_scope(
+        user=user,
+        session=session,
+        scope=scope,
+        target_professional_id=professional_id,
+    )
+
     try:
-        result, resolved = svc.get_dashboard(
-            filter_name=period, custom_from=date_from, custom_to=date_to
-        )
+        if resolved_scope == "me" and target_pids == [user.id]:
+            result, resolved = svc.get_dashboard(
+                filter_name=period, custom_from=date_from, custom_to=date_to
+            )
+        else:
+            result, resolved = svc.get_aggregated_dashboard(
+                professional_ids=target_pids,
+                filter_name=period,
+                custom_from=date_from,
+                custom_to=date_to,
+            )
     except ValueError as exc:
         raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, str(exc)) from exc
 
@@ -70,6 +97,8 @@ def get_dashboard(
         breakeven_remaining_sessions_estimate=result.breakeven_remaining_sessions_estimate,
         breakeven_alert=result.breakeven_alert,
         public_booking_count=public_booking_count,
+        scope=resolved_scope,
+        professionals_count=prof_count,
     )
 
 
@@ -123,10 +152,61 @@ def get_roi(
 @router.get("/receivables", response_model=ReceivablesOut)
 def get_receivables(
     svc: DashboardSvc,
+    user: CurrentUser,
+    session: DbSession,
     months_ahead: int = Query(default=12, ge=1, le=24),
+    scope: str = Query(default="me", description="me | clinic"),
+    professional_id: UUID | None = Query(default=None),
 ) -> ReceivablesOut:
     """Retorna projeção de fluxo de caixa futuro de recebíveis de cartão de crédito parcelado (EPIC-S3-03)."""
-    projection = svc.get_receivables_projection(months_ahead=months_ahead)
+    target_pids, resolved_scope, _ = resolve_clinic_scope(
+        user=user,
+        session=session,
+        scope=scope,
+        target_professional_id=professional_id,
+    )
+    if resolved_scope == "me" and target_pids == [user.id]:
+        projection = svc.get_receivables_projection(months_ahead=months_ahead)
+    else:
+        # Aggregated projection over the target professionals
+        from app.db.session import tenant_session
+        from app.domain.financial.receivables import (
+            SaleReceivableInput,
+            project_monthly_receivables,
+        )
+        from app.repositories.professional import ProfessionalRepository
+        from app.repositories.sale import SaleRepository
+
+        prof = ProfessionalRepository(session, user.id).get_current()
+        from app.core.tz import today_in_timezone
+        today = today_in_timezone(prof.timezone)
+
+        all_sales_inputs: list[SaleReceivableInput] = []
+        for pid in target_pids:
+            with tenant_session(pid) as sess:
+                s_repo = SaleRepository(sess, pid)
+                for s in s_repo.list(limit=5000):
+                    if s.status.value == "ACTIVE":
+                        all_sales_inputs.append(
+                            SaleReceivableInput(
+                                sale_id=str(s.id),
+                                sold_at=s.sold_at,
+                                payment_method=s.payment_method.value
+                                if hasattr(s.payment_method, "value")
+                                else str(s.payment_method),
+                                installments=s.installments,
+                                net_received_amount=s.gross_amount - s.fee_amount_applied,
+                                is_anticipated=bool(
+                                    (s.snapshot_payload or {}).get("anticipates_all", False)
+                                ),
+                            )
+                        )
+        projection = project_monthly_receivables(
+            sales=all_sales_inputs,
+            reference_date=today,
+            months_ahead=months_ahead,
+        )
+
     total = sum((p.total_amount for p in projection), Decimal("0.00"))
 
     return ReceivablesOut(

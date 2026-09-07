@@ -1,4 +1,6 @@
 import { useState, useMemo } from "react";
+import { useAuth } from "@/lib/auth/AuthContext";
+import { ClinicScopeSelector, type ClinicScopeValue } from "@/features/clinic-management/ClinicScopeSelector";
 import type { DashboardParams, DashboardPeriod } from "@/features/dashboard/api";
 import {
   IconWallet,
@@ -30,6 +32,10 @@ const PERIOD_OPTIONS: { value: DashboardPeriod; label: string }[] = [
 ];
 
 export function ReportsPage() {
+  const { user } = useAuth();
+  const [clinicScope, setClinicScope] = useState<ClinicScopeValue>(() => ({
+    scope: user?.role === "admin" && user?.clinic_id ? "clinic" : "me",
+  }));
   const [category, setCategory] = useState<ReportCategory>("financial");
   const [period, setPeriod] = useState<DashboardPeriod>("this_month");
   const [dateFrom, setDateFrom] = useState("");
@@ -42,8 +48,10 @@ export function ReportsPage() {
       period,
       date_from: period === "custom" && !isInvalidRange ? dateFrom : undefined,
       date_to: period === "custom" && !isInvalidRange ? dateTo : undefined,
+      scope: clinicScope.scope,
+      professional_id: clinicScope.professional_id,
     }),
-    [period, dateFrom, dateTo, isInvalidRange],
+    [period, dateFrom, dateTo, isInvalidRange, clinicScope],
   );
 
   const dateRange = useMemo(
@@ -60,6 +68,10 @@ export function ReportsPage() {
             Visão integrada da saúde financeira, ocupação da agenda, fidelização e desempenho do catálogo
           </p>
         </div>
+        <ClinicScopeSelector
+          value={clinicScope}
+          onChange={setClinicScope}
+        />
       </header>
 
       {/* Botões no topo segregando relatórios/dashboards por categoria */}

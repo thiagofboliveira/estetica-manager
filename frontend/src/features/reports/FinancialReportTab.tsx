@@ -66,7 +66,7 @@ export function FinancialReportTab({ params }: Props) {
 
             <div className={styles.chartsGrid}>
               <ProfitByServiceChart params={params} />
-              <ExpensesByCategoryChart />
+              <ExpensesByCategoryChart params={params} />
             </div>
           </>
         )}

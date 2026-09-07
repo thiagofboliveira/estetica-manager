@@ -17,7 +17,11 @@ export const qk = {
   packages: () => [...qk.financial(), "packages"] as const,
   packagesOpen: () => [...qk.packages(), "open"] as const,
   sessions: () => [...qk.financial(), "sessions"] as const,
-  sessionsRange: (from: string, to: string) => [...qk.sessions(), { from, to }] as const,
+  sessionsRange: (
+    from: string,
+    to: string,
+    options?: { scope?: string; professional_id?: string },
+  ) => [...qk.sessions(), { from, to, ...(options ?? {}) }] as const,
   freeSlots: (date: string) => [...qk.sessions(), "free-slots", date] as const,
   sales: () => [...qk.financial(), "sales"] as const,
 
@@ -37,8 +41,11 @@ export const qk = {
     date_to?: string;
     page?: number;
     page_size?: number;
+    scope?: string;
+    professional_id?: string;
   }) => [...qk.financial(), "procedure-ranking", params] as const,
-  expensesByCategory: () => [...qk.financial(), "expenses-by-category"] as const,
+  expensesByCategory: (params?: { scope?: string; professional_id?: string }) =>
+    [...qk.financial(), "expenses-by-category", params ?? {}] as const,
   roi: (params: { period: string; date_from?: string; date_to?: string }) =>
     [...qk.financial(), "roi", params] as const,
 } as const;

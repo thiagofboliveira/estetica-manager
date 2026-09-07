@@ -27,3 +27,22 @@ class ExpensesByCategoryService:
             for e in self._fixed_expenses.list_active()
         ]
         return build_expenses_by_category(expenses)
+
+    def get_aggregated_breakdown(
+        self, professional_ids: list
+    ) -> list[ExpenseByCategoryRow]:
+        from app.db.session import tenant_session
+
+        all_expenses: list[FixedExpenseForDashboard] = []
+        for pid in professional_ids:
+            with tenant_session(pid) as sess:
+                repo = FixedExpenseRepository(sess, pid)
+                for e in repo.list_active():
+                    all_expenses.append(
+                        FixedExpenseForDashboard(
+                            amount=e.amount,
+                            periodicity=e.periodicity.value,
+                            category=e.category,
+                        )
+                    )
+        return build_expenses_by_category(all_expenses)

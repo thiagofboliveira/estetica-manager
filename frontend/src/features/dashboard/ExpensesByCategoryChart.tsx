@@ -13,8 +13,15 @@ const BAR_COLORS = ["var(--accent)", "var(--accent-rose)", "var(--warning)", "va
  * ver backend/app/models/fixed_expense.py: sem taxonomia fechada de
  * propósito). "Sem categoria" é um balde legítimo, não um erro.
  */
-export function ExpensesByCategoryChart() {
-  const query = useExpensesByCategory();
+type Props = {
+  params?: {
+    scope?: "me" | "clinic";
+    professional_id?: string;
+  };
+};
+
+export function ExpensesByCategoryChart({ params }: Props = {}) {
+  const query = useExpensesByCategory(params);
 
   return (
     <section className={styles.card} aria-label="Despesas correntes por tipo">

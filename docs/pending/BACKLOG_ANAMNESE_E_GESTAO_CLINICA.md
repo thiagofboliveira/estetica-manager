@@ -66,16 +66,16 @@
 
 | ID | Status | Task | Depende | Descrição / Critérios de Aceite |
 |---|:--:|---|:--:|---|
-| `GC-01` | ⏳ Pendente | Suporte a `scope=clinic` nos Serviços de Relatórios | — | Estender `DashboardService`, `ProcedureRankingService` e relatórios de agendamento para aceitar agregação por `clinic_id` quando o usuário solicitante possuir `role: admin`. |
-| `GC-02` | ⏳ Pendente | Endpoints de Relatórios com Filtro Opcional de Profissional | `GC-01` | Permitir que o admin consulte o consolidado da clínica inteira ou filtre por um `professional_id` específico vinculado àquela clínica. Se for usuário padrão ou solo, o filtro padrão da própria conta permanece inalterado. |
-| `GC-03` | ⏳ Pendente | Testes de Integração de Métricas Agregadas | `GC-02` | Testar no `pytest` que: (a) o dono visualiza o somatório de todos os profissionais da clínica; (b) um profissional isolado não enxerga dados de outro profissional; (c) usuário padrão continua operando normalmente. |
+| `GC-01` | ✅ Concluído | Suporte a `scope=clinic` nos Serviços de Relatórios | — | Estender `DashboardService`, `ProcedureRankingService` e relatórios de agendamento para aceitar agregação por `clinic_id` quando o usuário solicitante possuir `role: admin`. |
+| `GC-02` | ✅ Concluído | Endpoints de Relatórios com Filtro Opcional de Profissional | `GC-01` | Permitir que o admin consulte o consolidado da clínica inteira ou filtre por um `professional_id` específico vinculado àquela clínica. Se for usuário padrão ou solo, o filtro padrão da própria conta permanece inalterado. |
+| `GC-03` | ✅ Concluído | Testes de Integração de Métricas Agregadas | `GC-02` | Testar no `pytest` que: (a) o dono visualiza o somatório de todos os profissionais da clínica; (b) um profissional isolado não enxerga dados de outro profissional; (c) usuário padrão continua operando normalmente. |
 
 ### Épico C2: Interface de Relatórios Consolidados (Frontend)
 
 | ID | Status | Task | Depende | Descrição / Critérios de Aceite |
 |---|:--:|---|:--:|---|
-| `GC-04` | ⏳ Pendente | Seletor de Escopo nos Relatórios (Apenas para `admin` com equipe) | `GC-02` | Na página `/relatorios`, caso a clínica tenha múltiplos profissionais e o usuário seja `admin`, exibir seletor discreto: "Toda a Clínica (Consolidado)" ou nome de uma profissional específica. Oculto para usuários comuns/solo. |
-| `GC-05` | ⏳ Pendente | Cards Consolidados no Dashboard do Dono | `GC-04` | Exibição clara de faturamento bruto total da clínica, total de atendimentos da equipe, despesas fixas corporativas e margem líquida real consolidada. |
+| `GC-04` | ✅ Concluído | Seletor de Escopo nos Relatórios (Apenas para `admin` com equipe) | `GC-02` | Na página `/relatorios`, caso a clínica tenha múltiplos profissionais e o usuário seja `admin`, exibir seletor discreto: "Toda a Clínica (Consolidado)" ou nome de uma profissional específica. Oculto para usuários comuns/solo. |
+| `GC-05` | ✅ Concluído | Cards Consolidados no Dashboard do Dono | `GC-04` | Exibição clara de faturamento bruto total da clínica, total de atendimentos da equipe, despesas fixas corporativas e margem líquida real consolidada. |
 
 ---
 

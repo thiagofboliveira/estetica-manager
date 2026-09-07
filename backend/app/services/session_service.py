@@ -268,6 +268,47 @@ class SessionService:
         agenda.sort(key=lambda item: item.scheduled_at)
         return agenda
 
+    def get_aggregated_agenda(
+        self,
+        *,
+        professional_ids: list[UUID],
+        from_date: date,
+        to_date: date,
+    ) -> list[AgendaItemOut]:
+        from app.db.session import tenant_session
+        from app.repositories.booking import BookingRepository
+        from app.repositories.patient import PatientRepository
+        from app.repositories.procedure import ProcedureRepository
+        from app.repositories.professional import ProfessionalRepository
+        from app.repositories.sale import SaleRepository
+        from app.repositories.sale_item import SaleItemRepository
+        from app.repositories.session import SessionRepository
+
+        all_agenda: list[AgendaItemOut] = []
+        for pid in professional_ids:
+            with tenant_session(pid) as sess:
+                p_repo = ProfessionalRepository(sess, pid)
+                prof = p_repo.get_by_id(pid)
+                prof_name = prof.name if prof else "Profissional"
+
+                sess_service = SessionService(
+                    session_repo=SessionRepository(sess, pid),
+                    sale_item_repo=SaleItemRepository(sess, pid),
+                    sale_repo=SaleRepository(sess, pid),
+                    procedure_repo=ProcedureRepository(sess, pid),
+                    patient_repo=PatientRepository(sess, pid),
+                    booking_repo=BookingRepository(sess, pid),
+                    professional_repo=p_repo,
+                )
+                items = sess_service.get_agenda(from_date, to_date)
+                for item in items:
+                    item.professional_id = pid
+                    item.professional_name = prof_name
+                    all_agenda.append(item)
+
+        all_agenda.sort(key=lambda x: x.scheduled_at)
+        return all_agenda
+
     def get_open_packages(self) -> list[OpenPackageOut]:
         pending_sessions = self._sessions.list_open_package_sessions()
         grouped: dict[UUID, list[Session]] = {}

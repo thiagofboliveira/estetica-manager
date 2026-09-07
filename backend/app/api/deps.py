@@ -162,6 +162,46 @@ SuperAdminUser = Annotated[User, Depends(require_superadmin)]
 GlobalSuperAdminUser = Annotated[User, Depends(require_superadmin)]
 
 
+def resolve_clinic_scope(
+    user: User,
+    session: Session,
+    scope: str = "me",
+    target_professional_id: UUID | None = None,
+) -> tuple[list[UUID], str, int]:
+    """Resolve os professional_ids a serem consultados com base no escopo e permissões (GC-01, GC-02).
+
+    Retorna: (target_professional_ids, resolved_scope, professionals_count)
+    """
+    if (scope == "me" or not scope) and target_professional_id in (None, user.id):
+        return [user.id], "me", 1
+
+    if user.role not in ("admin", "superadmin") and not user.is_superuser:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Acesso a relatórios agregados ou de outros profissionais é restrito a administradores da clínica.",
+        )
+
+    if not user.clinic_id:
+        return [user.id], "me", 1
+
+    prof_repo = ProfessionalRepository(session, user.id)
+    clinic_professionals = prof_repo.list_by_clinic(user.clinic_id)
+    clinic_pids = [p.id for p in clinic_professionals]
+
+    if user.id not in clinic_pids:
+        clinic_pids.append(user.id)
+
+    if target_professional_id is not None:
+        if target_professional_id not in clinic_pids:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Profissional informado não pertence a esta clínica.",
+            )
+        return [target_professional_id], "professional", 1
+
+    return clinic_pids, "clinic", len(clinic_pids)
+
+
 def get_event_service(
     session: DbSession, professional_id: CurrentProfessional
 ) -> EventService:

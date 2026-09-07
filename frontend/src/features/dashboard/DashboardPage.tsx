@@ -1,10 +1,12 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { AsyncBoundary } from "@/ui/AsyncBoundary";
 import { EmptyState } from "@/ui/EmptyState";
 import { formatBRL } from "@/lib/money/format";
 import { money } from "@/lib/money/money";
 import { formatLocalDate } from "@/lib/format/date";
+import { useAuth } from "@/lib/auth/AuthContext";
+import { ClinicScopeSelector, type ClinicScopeValue } from "@/features/clinic-management/ClinicScopeSelector";
 import { useDashboard } from "./hooks";
 import type { Dashboard } from "./api";
 import { useAgenda, useUnconfirmedSessions, useOpenPackages } from "@/features/agenda/hooks";
@@ -25,6 +27,11 @@ import {
 import styles from "./DashboardPage.module.css";
 
 export function DashboardPage() {
+  const { user } = useAuth();
+  const [clinicScope, setClinicScope] = useState<ClinicScopeValue>(() => ({
+    scope: user?.role === "admin" && user?.clinic_id ? "clinic" : "me",
+  }));
+
   const todayStr = useMemo(() => formatLocalDate(new Date()), []);
   const todayDateFormatted = useMemo(() => {
     return new Date().toLocaleDateString("pt-BR", {
@@ -35,9 +42,19 @@ export function DashboardPage() {
     });
   }, []);
 
-  const dashboardParams = useMemo(() => ({ period: "this_month" as const }), []);
+  const dashboardParams = useMemo(
+    () => ({
+      period: "this_month" as const,
+      scope: clinicScope.scope,
+      professional_id: clinicScope.professional_id,
+    }),
+    [clinicScope],
+  );
   const dashboardQuery = useDashboard(dashboardParams);
-  const todayAgendaQuery = useAgenda(todayStr, todayStr);
+  const todayAgendaQuery = useAgenda(todayStr, todayStr, {
+    scope: clinicScope.scope,
+    professional_id: clinicScope.professional_id,
+  });
   const unconfirmedQuery = useUnconfirmedSessions();
   const retentionQuery = useRetentionCards();
   const openPackagesQuery = useOpenPackages();
@@ -68,6 +85,11 @@ export function DashboardPage() {
           <h1 className={styles.greeting}>Painel de Controle</h1>
           <p className={styles.dateSubtitle}>{todayDateFormatted}</p>
         </div>
+        <ClinicScopeSelector
+          value={clinicScope}
+          onChange={setClinicScope}
+          professionalsCount={dashboardQuery.data?.professionals_count}
+        />
       </header>
 
       {/* Checklist de primeiro acesso (não bloqueante) */}
@@ -126,7 +148,10 @@ export function DashboardPage() {
                 <div key={session.id} className={styles.appointmentItem}>
                   <div className={styles.appointmentInfo}>
                     <span className={styles.appointmentPatient}>{session.patient_name}</span>
-                    <span className={styles.appointmentProcedure}>{session.procedure_name}</span>
+                    <span className={styles.appointmentProcedure}>
+                      {session.procedure_name}
+                      {session.professional_name ? ` • ${session.professional_name}` : ""}
+                    </span>
                   </div>
                   <span className={styles.appointmentTime}>
                     {new Date(session.scheduled_at).toLocaleTimeString("pt-BR", {

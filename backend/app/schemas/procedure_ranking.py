@@ -22,3 +22,5 @@ class ProcedureRankingOut(OutputSchema):
     total_count: int
     page: int
     page_size: int
+    scope: str = "me"
+    professionals_count: int = 1

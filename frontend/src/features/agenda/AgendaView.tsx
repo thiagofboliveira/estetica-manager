@@ -2,6 +2,8 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { AsyncBoundary } from "@/ui/AsyncBoundary";
 import { formatLocalDate } from "@/lib/format/date";
+import { useAuth } from "@/lib/auth/AuthContext";
+import { ClinicScopeSelector, type ClinicScopeValue } from "@/features/clinic-management/ClinicScopeSelector";
 import type { AgendaItem, SessionStatus } from "./api";
 import { useAgenda, useScheduleSession } from "./hooks";
 import { VisualTimelineAgenda } from "./VisualTimelineAgenda";
@@ -28,6 +30,11 @@ function getMonthGridRange(reference: Date): { from: string; to: string } {
 export function AgendaView() {
   const navigate = useNavigate();
   const scheduleSession = useScheduleSession();
+  const { user } = useAuth();
+
+  const [clinicScope, setClinicScope] = useState<ClinicScopeValue>(() => ({
+    scope: user?.role === "admin" && user?.clinic_id ? "clinic" : "me",
+  }));
 
   const [mode, setMode] = useState<ViewMode>("week");
   const [slotToBook, setSlotToBook] = useState<string | null>(null);
@@ -48,7 +55,10 @@ export function AgendaView() {
   const dateTo =
     mode === "today" ? todayStr : mode === "week" ? next7DaysStr : mode === "month" ? monthGridRange.to : customTo;
 
-  const query = useAgenda(dateFrom, dateTo);
+  const query = useAgenda(dateFrom, dateTo, {
+    scope: clinicScope.scope,
+    professional_id: clinicScope.professional_id,
+  });
 
   async function handleUpdateSessionStatus(session: AgendaItem, status: SessionStatus) {
     const statusLabel = status === "COMPLETED" ? "Concluída" : "Falta (No-show)";
@@ -82,7 +92,7 @@ export function AgendaView() {
 
   return (
     <div className="agenda-view">
-      <div className="agenda-view__controls" style={{ marginBottom: "18px" }}>
+      <div className="agenda-view__controls" style={{ marginBottom: "18px", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "12px" }}>
         <div className="tab-group" role="group" aria-label="Período da agenda">
           <button
             type="button"
@@ -120,6 +130,11 @@ export function AgendaView() {
             Personalizado
           </button>
         </div>
+
+        <ClinicScopeSelector
+          value={clinicScope}
+          onChange={setClinicScope}
+        />
 
         {mode === "custom" && (
           <div className="form__row" style={{ marginTop: "12px" }}>

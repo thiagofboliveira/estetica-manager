@@ -8,6 +8,7 @@ banco (tests/test_dashboard.py).
 """
 
 from datetime import date
+from uuid import UUID
 
 from app.core.tz import today_in_timezone
 from app.domain.financial.dashboard import (
@@ -147,3 +148,100 @@ class DashboardService:
             reference_date=today,
             months_ahead=months_ahead,
         )
+
+    def get_aggregated_dashboard(
+        self,
+        *,
+        professional_ids: list[UUID],
+        filter_name: str,
+        custom_from: date | None = None,
+        custom_to: date | None = None,
+    ) -> tuple[DashboardResult, ResolvedPeriod]:
+        from app.db.session import tenant_session
+
+        professional = self._professionals.get_current()
+        today = today_in_timezone(professional.timezone)
+
+        period = resolve_period(
+            filter_name=filter_name,
+            today=today,
+            custom_from=custom_from,
+            custom_to=custom_to,
+        )
+
+        all_sales: list[SaleForDashboard] = []
+        total_session_count = 0
+        total_no_show_count = 0
+        all_fixed_expenses: list[FixedExpenseForDashboard] = []
+        has_any_sale = False
+        all_recent_sales: list[SaleForDashboard] = []
+
+        is_current_month = period.kind is PeriodKind.MONTH and period.date_to == today
+        recent_from, recent_to = (
+            last_n_closed_months_range(today, n=RECENT_TICKET_MONTHS)
+            if is_current_month
+            else (None, None)
+        )
+
+        for pid in professional_ids:
+            with tenant_session(pid) as sess:
+                s_repo = SaleRepository(sess, pid)
+                sess_repo = SessionRepository(sess, pid)
+                fe_repo = FixedExpenseRepository(sess, pid)
+
+                if s_repo.has_any_sale():
+                    has_any_sale = True
+
+                for s in s_repo.list_in_period(period.date_from, period.date_to):
+                    all_sales.append(
+                        SaleForDashboard(
+                            gross_amount=s.gross_amount,
+                            net_profit=s.net_profit,
+                            expected_receipt_date=s.expected_receipt_date,
+                            sold_at=s.sold_at,
+                        )
+                    )
+
+                total_session_count += sess_repo.count_completed_in_period(
+                    period.date_from, period.date_to, professional.timezone
+                )
+                total_no_show_count += sess_repo.count_no_show_in_period(
+                    period.date_from, period.date_to, professional.timezone
+                )
+
+                for e in fe_repo.list_active():
+                    all_fixed_expenses.append(
+                        FixedExpenseForDashboard(
+                            amount=e.amount, periodicity=e.periodicity.value
+                        )
+                    )
+
+                if is_current_month and recent_from and recent_to:
+                    for s in s_repo.list_in_period(recent_from, recent_to):
+                        all_recent_sales.append(
+                            SaleForDashboard(
+                                gross_amount=s.gross_amount,
+                                net_profit=s.net_profit,
+                                expected_receipt_date=s.expected_receipt_date,
+                                sold_at=s.sold_at,
+                            )
+                        )
+
+        average_ticket_recent = (
+            calculate_recent_average_ticket(all_recent_sales)
+            if is_current_month
+            else None
+        )
+
+        result = build_dashboard(
+            sales=all_sales,
+            session_count=total_session_count,
+            no_show_count=total_no_show_count,
+            fixed_expenses=all_fixed_expenses,
+            period_kind=period.kind,
+            today=today,
+            date_to=period.date_to,
+            has_any_sale_ever=has_any_sale,
+            average_ticket_recent=average_ticket_recent,
+        )
+        return result, period

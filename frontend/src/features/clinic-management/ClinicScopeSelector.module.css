@@ -1,0 +1,83 @@
+.container {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.scopeNav {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  background: var(--bg-subtle);
+  padding: 3px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+}
+
+.scopeBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 7px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.15s ease;
+  box-shadow: none;
+}
+
+.scopeBtn:hover {
+  color: var(--text-h);
+}
+
+.scopeBtnActive {
+  background: var(--bg-card);
+  color: var(--text-h);
+  border-color: var(--border);
+  box-shadow: var(--shadow-sm);
+  font-weight: 600;
+}
+
+.scopeSelect {
+  padding: 6px 10px;
+  font-size: 12.5px;
+  background: var(--bg-subtle);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  cursor: pointer;
+  outline: none;
+  transition: all 0.15s ease;
+}
+
+.scopeSelect:hover,
+.scopeSelect:focus {
+  border-color: var(--border-focus);
+}
+
+.scopeSelectActive {
+  background: var(--bg-card);
+  color: var(--text-h);
+  border-color: var(--accent);
+  font-weight: 600;
+}
+
+.consolidatedBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 20px;
+  background: rgba(184, 150, 106, 0.12);
+  border: 1px solid rgba(184, 150, 106, 0.25);
+  color: var(--accent);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}

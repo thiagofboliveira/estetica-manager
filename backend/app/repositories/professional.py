@@ -38,6 +38,15 @@ class ProfessionalRepository:
     def list_all(self) -> list[Professional]:
         return list(self._session.scalars(select(Professional)).all())
 
+    def list_by_clinic(self, clinic_id: UUID) -> list[Professional]:
+        return list(
+            self._session.scalars(
+                select(Professional)
+                .where(Professional.clinic_id == clinic_id)
+                .where(Professional.is_active.is_(True))
+            ).all()
+        )
+
     def get_by_weekly_summary_token(self, token: str) -> Professional | None:
         return self._session.scalars(
             select(Professional).where(Professional.weekly_summary_token == token.strip())

@@ -28,6 +28,8 @@ export type AgendaItem = {
   total_sessions: number | null;
   note: string | null;
   confirmed_at: string | null;
+  professional_id?: string | null;
+  professional_name?: string | null;
 };
 
 export type OpenPackage = {
@@ -88,8 +90,10 @@ export type UnconfirmedSession = {
 };
 
 export const sessionsApi = {
-  getAgenda: (from: string, to: string) => {
+  getAgenda: (from: string, to: string, options?: { scope?: "me" | "clinic"; professional_id?: string }) => {
     const qs = new URLSearchParams({ from, to });
+    if (options?.scope) qs.set("scope", options.scope);
+    if (options?.professional_id) qs.set("professional_id", options.professional_id);
     return api.get<AgendaItem[]>(`/sessions?${qs.toString()}`);
   },
   getOpenPackages: () => api.get<OpenPackage[]>("/packages/open"),

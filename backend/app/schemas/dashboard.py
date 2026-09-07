@@ -36,6 +36,10 @@ class DashboardOut(OutputSchema):
     # A-09 — Medição de agendamentos pelo link público
     public_booking_count: int = 0
 
+    # Gestão de Clínica / Escopo Agregado (GC-01, GC-02)
+    scope: str = "me"
+    professionals_count: int = 1
+
 
 
 class ROIOut(OutputSchema):

@@ -6,6 +6,8 @@ export type DashboardParams = {
   period: DashboardPeriod;
   date_from?: string;
   date_to?: string;
+  scope?: "me" | "clinic";
+  professional_id?: string;
 };
 
 export type Dashboard = {
@@ -31,6 +33,8 @@ export type Dashboard = {
   breakeven_alert: boolean;
 
   public_booking_count?: number;
+  scope?: string;
+  professionals_count?: number;
 };
 
 
@@ -53,6 +57,8 @@ export type ProcedureRanking = {
   total_count: number;
   page: number;
   page_size: number;
+  scope?: string;
+  professionals_count?: number;
 };
 
 export type ProcedureRankingParams = DashboardParams & {
@@ -85,6 +91,8 @@ export const dashboardApi = {
     const qs = new URLSearchParams({ period: params.period });
     if (params.date_from) qs.set("date_from", params.date_from);
     if (params.date_to) qs.set("date_to", params.date_to);
+    if (params.scope) qs.set("scope", params.scope);
+    if (params.professional_id) qs.set("professional_id", params.professional_id);
     return api.get<Dashboard>(`/dashboard?${qs.toString()}`);
   },
   getProcedureRanking: (params: ProcedureRankingParams) => {
@@ -93,9 +101,17 @@ export const dashboardApi = {
     if (params.date_to) qs.set("date_to", params.date_to);
     if (params.page) qs.set("page", String(params.page));
     if (params.page_size) qs.set("page_size", String(params.page_size));
+    if (params.scope) qs.set("scope", params.scope);
+    if (params.professional_id) qs.set("professional_id", params.professional_id);
     return api.get<ProcedureRanking>(`/reports/procedures?${qs.toString()}`);
   },
-  getExpensesByCategory: () => api.get<ExpensesByCategory>("/reports/expenses-by-category"),
+  getExpensesByCategory: (params?: { scope?: "me" | "clinic"; professional_id?: string }) => {
+    const qs = new URLSearchParams();
+    if (params?.scope) qs.set("scope", params.scope);
+    if (params?.professional_id) qs.set("professional_id", params.professional_id);
+    const qStr = qs.toString() ? `?${qs.toString()}` : "";
+    return api.get<ExpensesByCategory>(`/reports/expenses-by-category${qStr}`);
+  },
   getRoi: (params: DashboardParams) => {
     const qs = new URLSearchParams({ period: params.period });
     if (params.date_from) qs.set("date_from", params.date_from);

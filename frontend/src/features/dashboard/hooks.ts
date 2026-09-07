@@ -21,10 +21,10 @@ export function useProcedureRanking(params: ProcedureRankingParams) {
   });
 }
 
-export function useExpensesByCategory() {
+export function useExpensesByCategory(params?: { scope?: "me" | "clinic"; professional_id?: string }) {
   return useQuery({
-    queryKey: qk.expensesByCategory(),
-    queryFn: () => dashboardApi.getExpensesByCategory(),
+    queryKey: qk.expensesByCategory(params),
+    queryFn: () => dashboardApi.getExpensesByCategory(params),
     ...CACHE.SETTINGS,
   });
 }
