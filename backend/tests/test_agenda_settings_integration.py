@@ -71,3 +71,24 @@ def test_patch_atualiza_janela_de_trabalho(
         },
         headers=auth_headers,
     )
+
+
+def test_sessions_agenda_endpoint_scopes(
+    client: TestClient, auth_headers: dict[str, str]
+) -> None:
+    # Test scope=me
+    resp_me = client.get(
+        "/api/v1/sessions?from=2026-09-01&to=2026-09-30&scope=me",
+        headers=auth_headers,
+    )
+    assert resp_me.status_code == 200, resp_me.text
+    assert isinstance(resp_me.json(), list)
+
+    # Test scope=clinic (runs aggregated agenda)
+    resp_clinic = client.get(
+        "/api/v1/sessions?from=2026-09-01&to=2026-09-30&scope=clinic",
+        headers=auth_headers,
+    )
+    assert resp_clinic.status_code == 200, resp_clinic.text
+    assert isinstance(resp_clinic.json(), list)
+

@@ -43,8 +43,8 @@ class SessionService:
         procedure_repo: ProcedureRepository,
         patient_repo: PatientRepository,
         booking_repo: BookingRepository,
-        return_opportunity_repo: ReturnOpportunityRepository,
-        professional_repo: ProfessionalRepository,
+        return_opportunity_repo: ReturnOpportunityRepository | None = None,
+        professional_repo: ProfessionalRepository | None = None,
     ) -> None:
         self._sessions = session_repo
         self._sale_items = sale_item_repo
@@ -130,7 +130,7 @@ class SessionService:
                 if sale_item.return_interval_applied is not None
                 else 0
             )
-            if interval > 0:
+            if interval > 0 and self._return_opportunities:
                 sale = self._sales.get(sale_item.sale_id)
                 if sale:
                     due = calculate_due_date(
@@ -280,6 +280,7 @@ class SessionService:
         from app.repositories.patient import PatientRepository
         from app.repositories.procedure import ProcedureRepository
         from app.repositories.professional import ProfessionalRepository
+        from app.repositories.return_opportunity import ReturnOpportunityRepository
         from app.repositories.sale import SaleRepository
         from app.repositories.sale_item import SaleItemRepository
         from app.repositories.session import SessionRepository
@@ -298,6 +299,7 @@ class SessionService:
                     procedure_repo=ProcedureRepository(sess, pid),
                     patient_repo=PatientRepository(sess, pid),
                     booking_repo=BookingRepository(sess, pid),
+                    return_opportunity_repo=ReturnOpportunityRepository(sess, pid),
                     professional_repo=p_repo,
                 )
                 items = sess_service.get_agenda(from_date, to_date)
