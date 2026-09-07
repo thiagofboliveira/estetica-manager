@@ -1,9 +1,34 @@
-import { Link } from "react-router-dom";
+import { useEffect } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import styles from "./LandingPage.module.css";
 import { ThemeToggle } from "@/ui/ThemeToggle";
 import { IconSparkles } from "@/ui/icons";
+import { useAuth } from "@/lib/auth/AuthContext";
 
 export function LandingPage() {
+  const { user, isLoading } = useAuth();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (!isLoading && user) {
+      if (user.role === "superadmin") {
+        navigate("/super-admin", { replace: true });
+      } else {
+        navigate("/dashboard", { replace: true });
+      }
+    }
+  }, [user, isLoading, navigate]);
+
+  // Se houver indício de token no storage e estiver checando auth, aguarda sem piscar a landing
+  const hasStoredToken =
+    typeof window !== "undefined" &&
+    (Boolean(localStorage.getItem("estetica.auth")) ||
+      Boolean(sessionStorage.getItem("estetica.dev-auth.token")));
+
+  if (user || (isLoading && hasStoredToken)) {
+    return null;
+  }
+
   return (
     <div className={styles.landingContainer}>
       {/* Header / Navbar */}

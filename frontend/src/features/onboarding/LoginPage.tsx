@@ -1,4 +1,4 @@
-import { type FormEvent, useState } from "react";
+import { type FormEvent, useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { devLogin, getSessionToken } from "@/lib/auth/session";
 import { useAuth } from "@/lib/auth/AuthContext";
@@ -10,7 +10,7 @@ const DEV_AUTH = import.meta.env.VITE_DEV_AUTH === "true";
 
 export function LoginPage() {
   const navigate = useNavigate();
-  const { checkAuth } = useAuth();
+  const { user, isLoading, checkAuth } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -22,11 +22,32 @@ export function LoginPage() {
     "idle",
   );
 
+  useEffect(() => {
+    if (!isLoading && user) {
+      const returnTo =
+        sessionStorage.getItem("returnTo") ??
+        (user.role === "superadmin" ? "/super-admin" : "/dashboard");
+      sessionStorage.removeItem("returnTo");
+      navigate(returnTo, { replace: true });
+    }
+  }, [user, isLoading, navigate]);
+
   async function goToReturnTo() {
     await checkAuth();
-    const returnTo = sessionStorage.getItem("returnTo") ?? "/dashboard";
+    const returnTo =
+      sessionStorage.getItem("returnTo") ??
+      (user?.role === "superadmin" ? "/super-admin" : "/dashboard");
     sessionStorage.removeItem("returnTo");
     navigate(returnTo, { replace: true });
+  }
+
+  const hasStoredToken =
+    typeof window !== "undefined" &&
+    (Boolean(localStorage.getItem("estetica.auth")) ||
+      Boolean(sessionStorage.getItem("estetica.dev-auth.token")));
+
+  if (user || (isLoading && hasStoredToken)) {
+    return null;
   }
 
   async function handleDevLogin(e?: FormEvent) {
