@@ -1,4 +1,4 @@
-﻿import { useState } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { AsyncBoundary } from "@/ui/AsyncBoundary";
 import { formatLocalDate } from "@/lib/format/date";
@@ -66,7 +66,18 @@ export function AgendaView() {
   }
 
   function handleConvertBooking(booking: AgendaItem) {
-    navigate(`/vendas/nova?booking_id=${booking.id}&patient_name=${encodeURIComponent(booking.patient_name)}`);
+    const params = new URLSearchParams();
+    params.set("booking_id", booking.id);
+    if (booking.patient_id) {
+      params.set("patient_id", booking.patient_id);
+    }
+    if (booking.patient_name) {
+      params.set("patient_name", booking.patient_name);
+    }
+    if (booking.procedure_id) {
+      params.set("procedure_id", booking.procedure_id);
+    }
+    navigate(`/vendas/nova?${params.toString()}`);
   }
 
   return (

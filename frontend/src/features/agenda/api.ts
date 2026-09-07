@@ -19,6 +19,7 @@ export type AgendaItem = {
   patient_id: string | null;
   patient_name: string;
   patient_phone: string | null;
+  procedure_id?: string | null;
   procedure_name: string;
   scheduled_at: string;
   modality: Modality;

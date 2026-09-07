@@ -117,6 +117,7 @@ def test_public_agenda_and_booking_flow():
     assert matched_booking["type"] == "BOOKING"
     assert matched_booking["patient_name"] == "Juliana Silveira"
     assert matched_booking["procedure_name"] == "Limpeza de Pele Profunda"
+    assert matched_booking["procedure_id"] == str(procedure_id)
     assert matched_booking["status"] == "SCHEDULED"
     assert matched_booking["confirmed_at"] is None
 

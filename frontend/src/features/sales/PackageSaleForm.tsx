@@ -16,7 +16,7 @@ import type { Procedure } from "@/features/procedures/api";
 import type { Sale } from "./api";
 
 import { Link, useSearchParams } from "react-router-dom";
-import { usePatient } from "@/features/patients/hooks";
+import { usePatient, usePatients } from "@/features/patients/hooks";
 
 const lineSchema = z.object({
   procedureId: z.string().min(1, "Selecione o procedimento"),
@@ -69,7 +69,11 @@ const emptyLine = { procedureId: "", procedureName: "", unitPrice: ZERO, quantit
 export function PackageSaleForm() {
   const [searchParams] = useSearchParams();
   const patientIdParam = searchParams.get("patient_id");
+  const procedureIdParam = searchParams.get("procedure_id");
+  const patientNameParam = searchParams.get("patient_name");
+
   const preloadedPatientQuery = usePatient(patientIdParam || "");
+  const searchPatientsQuery = usePatients(!patientIdParam && patientNameParam ? patientNameParam : "");
 
   const proceduresQuery = useProcedures();
   const createSale = useCreateSale();
@@ -87,7 +91,7 @@ export function PackageSaleForm() {
   } = useForm<FormValues>({
     resolver: zodResolver(schema),
     defaultValues: {
-      patientId: "",
+      patientId: patientIdParam || "",
       lines: [emptyLine],
       discount: ZERO,
       paymentMethod: "PIX",
@@ -99,14 +103,33 @@ export function PackageSaleForm() {
     if (preloadedPatientQuery.data && !selectedPatient) {
       setSelectedPatient(preloadedPatientQuery.data);
       setValue("patientId", preloadedPatientQuery.data.id);
+    } else if (!patientIdParam && patientNameParam && searchPatientsQuery.data && !selectedPatient) {
+      const match = searchPatientsQuery.data.find(
+        (p) => p.name.trim().toLowerCase() === patientNameParam.trim().toLowerCase()
+      );
+      if (match) {
+        setSelectedPatient(match);
+        setValue("patientId", match.id);
+      }
     }
-  }, [preloadedPatientQuery.data, selectedPatient, setValue]);
+  }, [preloadedPatientQuery.data, patientIdParam, patientNameParam, searchPatientsQuery.data, selectedPatient, setValue]);
 
   const { fields, append, remove } = useFieldArray({ control, name: "lines" });
 
   const lines = watch("lines");
   const discount = watch("discount");
   const paymentMethod = watch("paymentMethod");
+
+  useMemo(() => {
+    if (procedureIdParam && proceduresQuery.data && lines.length > 0 && !lines[0].procedureId) {
+      const found = proceduresQuery.data.find((p) => p.id === procedureIdParam);
+      if (found) {
+        setValue("lines.0.procedureId", found.id);
+        setValue("lines.0.procedureName", found.name);
+        setValue("lines.0.unitPrice", found.price as Money);
+      }
+    }
+  }, [procedureIdParam, proceduresQuery.data, lines, setValue]);
 
   function handlePickProcedure(index: number, procedure: Procedure) {
     setValue(`lines.${index}.procedureId`, procedure.id);

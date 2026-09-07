@@ -5,7 +5,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { AsyncBoundary } from "@/ui/AsyncBoundary";
 import { useProcedures } from "@/features/procedures/hooks";
-import { usePatient } from "@/features/patients/hooks";
+import { usePatient, usePatients } from "@/features/patients/hooks";
 import { formatBRL } from "@/lib/money/format";
 import { money } from "@/lib/money/money";
 import { ApiError } from "@/lib/http/client";
@@ -35,7 +35,11 @@ export function SaleForm() {
   const [searchParams] = useSearchParams();
   const bookingId = searchParams.get("booking_id");
   const patientIdParam = searchParams.get("patient_id");
+  const procedureIdParam = searchParams.get("procedure_id");
+  const patientNameParam = searchParams.get("patient_name");
+
   const preloadedPatientQuery = usePatient(patientIdParam || "");
+  const searchPatientsQuery = usePatients(!patientIdParam && patientNameParam ? patientNameParam : "");
 
   const proceduresQuery = useProcedures();
   const createSale = useCreateSale();
@@ -52,8 +56,8 @@ export function SaleForm() {
   } = useForm<FormValues>({
     resolver: zodResolver(schema),
     defaultValues: {
-      patientId: "",
-      procedureId: "",
+      patientId: patientIdParam || "",
+      procedureId: procedureIdParam || "",
       paymentMethod: "PIX",
       installments: "1",
     },
@@ -62,9 +66,26 @@ export function SaleForm() {
   useEffect(() => {
     if (preloadedPatientQuery.data && !selectedPatient) {
       setSelectedPatient(preloadedPatientQuery.data);
-      setValue("patientId", preloadedPatientQuery.data.id);
+      setValue("patientId", preloadedPatientQuery.data.id, { shouldValidate: true });
+    } else if (!patientIdParam && patientNameParam && searchPatientsQuery.data && !selectedPatient) {
+      const match = searchPatientsQuery.data.find(
+        (p) => p.name.trim().toLowerCase() === patientNameParam.trim().toLowerCase()
+      );
+      if (match) {
+        setSelectedPatient(match);
+        setValue("patientId", match.id, { shouldValidate: true });
+      }
     }
-  }, [preloadedPatientQuery.data, selectedPatient, setValue]);
+  }, [preloadedPatientQuery.data, patientIdParam, patientNameParam, searchPatientsQuery.data, selectedPatient, setValue]);
+
+  useEffect(() => {
+    if (procedureIdParam && proceduresQuery.data) {
+      const exists = proceduresQuery.data.some((p) => p.id === procedureIdParam);
+      if (exists) {
+        setValue("procedureId", procedureIdParam, { shouldValidate: true });
+      }
+    }
+  }, [procedureIdParam, proceduresQuery.data, setValue]);
 
   const procedureId = watch("procedureId");
   const paymentMethod = watch("paymentMethod");

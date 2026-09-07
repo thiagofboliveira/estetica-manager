@@ -35,6 +35,7 @@ class AgendaItemOut(OutputSchema):
     patient_id: UUID | None
     patient_name: str
     patient_phone: str | None = None
+    procedure_id: UUID | None = None
     procedure_name: str
     scheduled_at: datetime
     modality: Modality
