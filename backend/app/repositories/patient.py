@@ -226,3 +226,19 @@ class PatientRepository(TenantRepository[Patient]):
             self._inactive_for_days_base(days).subquery()
         )
         return self._session.scalar(stmt) or 0
+
+    def list_birthdays(self, month: int | None = None) -> list[Patient]:
+        stmt = (
+            self._scoped()
+            .where(Patient.is_active.is_(True))
+            .where(Patient.birth_date.is_not(None))
+        )
+        if month is not None:
+            stmt = stmt.where(func.extract("month", Patient.birth_date) == month)
+        stmt = stmt.order_by(
+            func.extract("month", Patient.birth_date).asc(),
+            func.extract("day", Patient.birth_date).asc(),
+            Patient.name.asc(),
+        )
+        return list(self._session.scalars(stmt))
+

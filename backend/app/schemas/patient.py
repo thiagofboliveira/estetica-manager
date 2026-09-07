@@ -115,3 +115,17 @@ class PatientBatchImportResult(OutputSchema):
     opportunities_created_count: int = 0
     errors: list[PatientBatchImportError]
     patients: list[PatientOut]
+
+
+class PatientBirthdayOut(OutputSchema):
+    patient_id: UUID
+    patient_name: str
+    patient_phone: str | None = None
+    birth_date: date
+    day: int
+    month: int
+    days_until: int
+    is_today: bool
+    formatted_date: str
+    whatsapp_url: str | None = None
+

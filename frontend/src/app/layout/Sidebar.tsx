@@ -11,6 +11,7 @@ import {
   IconTrendingUp,
   IconClipboard,
   IconDroplet,
+  IconWhatsApp,
 } from "@/ui/icons";
 import styles from "./Sidebar.module.css";
 
@@ -18,6 +19,7 @@ const NAV_ITEMS = [
   { to: "/dashboard", label: "Dashboard", Icon: IconDashboard, end: true },
   { to: "/agenda", label: "Agenda", Icon: IconCalendar, end: false },
   { to: "/retornos", label: "Quem chamar hoje?", Icon: IconTarget, end: false },
+  { to: "/disparos-whatsapp", label: "Disparos WhatsApp", Icon: IconWhatsApp, end: false },
   { to: "/relatorios", label: "Relatórios", Icon: IconBarChart, end: false },
   { to: "/pacientes", label: "Pacientes", Icon: IconUsers, end: false },
   { to: "/anamnese", label: "Anamnese", Icon: IconClipboard, end: false },

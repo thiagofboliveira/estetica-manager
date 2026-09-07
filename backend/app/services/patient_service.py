@@ -1,8 +1,11 @@
-from datetime import UTC, datetime, timedelta
+from __future__ import annotations
+
+from datetime import UTC, date, datetime, timedelta
 from uuid import UUID, uuid4
 
 from app.core.phone import InvalidPhoneError, normalize_br_phone
 from app.core.tz import today_in_timezone
+from app.domain.messaging.templates import build_whatsapp_link
 from app.domain.retention.enums import ReturnOpportunityStatus
 from app.models.patient import Gender, Patient
 from app.models.return_opportunity import ReturnOpportunity
@@ -15,6 +18,7 @@ from app.schemas.patient import (
     PatientBatchImportItem,
     PatientBatchImportRequest,
     PatientBatchImportResult,
+    PatientBirthdayOut,
     PatientCreate,
     PatientOut,
     PatientUpdate,
@@ -294,3 +298,66 @@ class PatientService:
             if patient.updated_at
             else None,
         }
+
+    def list_birthdays(self, month: int | None = None) -> list[PatientBirthdayOut]:
+        patients = self._repo.list_birthdays(month=month)
+        today = today_in_timezone("America/Sao_Paulo")
+
+        meses = [
+            "Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho",
+            "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"
+        ]
+
+        result: list[PatientBirthdayOut] = []
+        for p in patients:
+            if not p.birth_date:
+                continue
+            b_day = p.birth_date.day
+            b_month = p.birth_date.month
+
+            # Trata ano bissexto para 29 de fevereiro
+            safe_day = 28 if b_month == 2 and b_day == 29 else b_day
+
+            try:
+                this_year_bday = date(today.year, b_month, safe_day)
+            except ValueError:
+                this_year_bday = date(today.year, b_month, 28)
+
+            if this_year_bday < today:
+                try:
+                    next_bday = date(today.year + 1, b_month, safe_day)
+                except ValueError:
+                    next_bday = date(today.year + 1, b_month, 28)
+            else:
+                next_bday = this_year_bday
+
+            days_until = (next_bday - today).days
+            is_today = days_until == 0
+
+            first_name = p.name.strip().split()[0] if p.name else ""
+            wpp_msg = (
+                f"Oi {first_name}! 🎉 Passando para te desejar um Feliz Aniversário! "
+                f"Muita saúde, alegria e momentos especiais neste novo ciclo. "
+                f"Para comemorar, preparamos um presente especial para você: "
+                f"um mimo exclusivo no seu próximo procedimento este mês! Vamos agendar seu momento de autocuidado? ✨"
+            )
+            wpp_link = build_whatsapp_link(p.phone, wpp_msg) if p.phone else None
+
+            result.append(
+                PatientBirthdayOut(
+                    patient_id=p.id,
+                    patient_name=p.name,
+                    patient_phone=p.phone,
+                    birth_date=p.birth_date,
+                    day=b_day,
+                    month=b_month,
+                    days_until=days_until,
+                    is_today=is_today,
+                    formatted_date=f"{b_day} de {meses[b_month - 1]}",
+                    whatsapp_url=wpp_link,
+                )
+            )
+
+        result.sort(key=lambda item: item.days_until)
+        return result
+

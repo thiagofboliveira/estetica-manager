@@ -8,6 +8,7 @@ from app.models.patient import Gender
 from app.schemas.patient import (
     PatientBatchImportRequest,
     PatientBatchImportResult,
+    PatientBirthdayOut,
     PatientCreate,
     PatientListOut,
     PatientOut,
@@ -69,6 +70,14 @@ def list_patients(
         page=page,
         page_size=page_size,
     )
+
+
+@router.get("/birthdays", response_model=list[PatientBirthdayOut])
+def list_patient_birthdays(
+    svc: PatientSvc,
+    month: int | None = Query(default=None, ge=1, le=12),
+) -> list[PatientBirthdayOut]:
+    return svc.list_birthdays(month=month)
 
 
 @router.get("/{patient_id}", response_model=PatientOut)

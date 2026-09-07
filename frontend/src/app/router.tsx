@@ -25,6 +25,7 @@ import { FixedExpensesPage } from "@/features/fixed-expenses/FixedExpensesPage";
 import { PriceSimulatorPage } from "@/features/simulator/PriceSimulatorPage";
 import { ReportsPage } from "@/features/reports/ReportsPage";
 import { EstoquePage } from "@/features/vials/EstoquePage";
+import { WhatsAppCampaignsPage } from "@/features/whatsapp-campaigns/WhatsAppCampaignsPage";
 import { SetupWizardPage } from "@/features/admin/SetupWizardPage";
 
 import { AdminLayout } from "@/features/admin/AdminLayout";
@@ -78,6 +79,7 @@ export const router = createBrowserRouter([
             children: [
               { path: "/dashboard", element: <DashboardPage /> },
               { path: "/retornos", element: <RetentionPage /> },
+              { path: "/disparos-whatsapp", element: <WhatsAppCampaignsPage /> },
               { path: "/pacientes", element: <PatientsPage /> },
               { path: "/pacientes/novo", element: <NewPatientPage /> },
               { path: "/pacientes/importar", element: <PatientImportPage /> },
