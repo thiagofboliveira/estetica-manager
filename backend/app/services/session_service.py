@@ -1,4 +1,5 @@
 from datetime import UTC, date, datetime, time, timedelta
+from decimal import Decimal
 from uuid import UUID
 from zoneinfo import ZoneInfo
 
@@ -14,6 +15,7 @@ from app.domain.retention.opportunity_rules import calculate_due_date
 from app.domain.sales.session_state_machine import SessionStatus, validate_transition
 from app.models.return_opportunity import ReturnOpportunity
 from app.models.session import Session
+from app.models.supply import MovementType, Supply, SupplyMovement
 from app.repositories.booking import BookingRepository
 from app.repositories.patient import PatientRepository
 from app.repositories.procedure import ProcedureRepository
@@ -89,6 +91,9 @@ class SessionService:
                 if session.completed_at is None:
                     session.completed_at = datetime.now(UTC)
 
+                # Dá baixa automática nos insumos da ficha técnica e calcula o custo real
+                self._consume_procedure_supplies(session)
+
                 # Verifica se é a última sessão do item para gerar oportunidade de retorno (TASK-025/TASK-026)
                 self._check_and_create_return_opportunity(session)
 
@@ -105,6 +110,46 @@ class SessionService:
 
         self._sessions.flush()
         return session, warnings
+
+    def _consume_procedure_supplies(self, session: Session) -> Decimal | None:
+        """Consome automaticamente os insumos cadastrados na ficha técnica do procedimento (Opção 1)
+        e recalcula o custo real realizado da sessão e da venda."""
+        sale_item = self._sale_items.get(session.sale_item_id)
+        if not sale_item:
+            return None
+
+        procedure = self._procedures.get(sale_item.procedure_id)
+        if not procedure or not getattr(procedure, "supplies", None):
+            return None
+
+        total_realized_cost = Decimal("0.00")
+
+        for ps in procedure.supplies:
+            supply = self._sessions._session.get(Supply, ps.supply_id)
+            if not supply:
+                continue
+
+            qty = ps.quantity
+            supply.current_stock -= qty
+            unit_cost = supply.cost_price or Decimal("0.00")
+            total_realized_cost += (unit_cost * qty)
+
+            movement = SupplyMovement(
+                professional_id=session.professional_id,
+                clinic_id=supply.clinic_id,
+                supply_id=supply.id,
+                movement_type=MovementType.EXIT,
+                quantity=qty,
+                unit_price=supply.cost_price,
+                notes=f"Baixa automática (Ficha Técnica): Sessão #{session.sequence_number} de {procedure.name}",
+            )
+            self._sessions._session.add(movement)
+
+        if total_realized_cost > Decimal("0.00") and session.cost_override is None:
+            session.cost_override = money(total_realized_cost)
+            self._recalculate_sale_cost_realized(session.sale_item_id)
+
+        return total_realized_cost
 
     def _check_and_create_return_opportunity(self, session: Session) -> None:
         sale_item = self._sale_items.get(session.sale_item_id)

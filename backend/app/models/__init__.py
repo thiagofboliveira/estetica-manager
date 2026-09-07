@@ -24,6 +24,7 @@ from app.models.patient import Patient
 from app.models.patient_photo import PatientPhoto, PhotoType
 from app.models.payment_fee_rule import PaymentFeeRule
 from app.models.procedure import Modality, Procedure, ProcedureType
+from app.models.procedure_supply import ProcedureSupply
 from app.models.professional import Professional
 from app.models.return_opportunity import (
     ContactChannel,
@@ -60,6 +61,7 @@ __all__ = [
     "OpenVial",
     "VialStatus",
     "Procedure",
+    "ProcedureSupply",
     "ProcedureType",
     "Modality",
     "FinancialSettings",

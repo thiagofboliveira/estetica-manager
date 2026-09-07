@@ -5,9 +5,10 @@ import { z } from "zod";
 import { ApiError } from "@/lib/http/client";
 import { CurrencyInput } from "@/ui/CurrencyInput";
 import { ZERO, type Money } from "@/lib/money/money";
-import type { Modality, Procedure, ProcedureType } from "./api";
+import type { Modality, Procedure, ProcedureSupplyItem, ProcedureType } from "./api";
 import { toast } from "@/ui/ToastContext";
 import { SUGGESTED_PROCEDURE_PHOTOS, getProcedurePhoto } from "@/features/public-booking/procedureImages";
+import { useSupplies } from "@/features/supplies/useSupplies";
 
 const schema = z.object({
   name: z.string().min(1, "Nome é obrigatório"),
@@ -21,7 +22,9 @@ const schema = z.object({
   image_url: z.string().optional(),
 });
 
-export type ProcedureFormValues = z.infer<typeof schema>;
+export type ProcedureFormValues = z.infer<typeof schema> & {
+  supplies?: ProcedureSupplyItem[];
+};
 
 type Props = {
   initial?: Procedure;
@@ -32,6 +35,13 @@ type Props = {
 export function ProcedureForm({ initial, onSubmit, submitLabel }: Props) {
   const [serverError, setServerError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
+  const { data: availableSupplies = [] } = useSupplies();
+  const [suppliesList, setSuppliesList] = useState<ProcedureSupplyItem[]>(
+    initial?.supplies ?? []
+  );
+  const [selectedSupplyId, setSelectedSupplyId] = useState("");
+  const [supplyQty, setSupplyQty] = useState("1");
+
   const {
     register,
     control,
@@ -59,18 +69,93 @@ export function ProcedureForm({ initial, onSubmit, submitLabel }: Props) {
   const currentImageUrl = watch("image_url");
   const activePreview = currentImageUrl?.trim() || (name ? getProcedurePhoto(name) : "");
 
-  // Qualquer edição após salvar invalida o "Salvo com sucesso" —
-  // senão a mensagem fica presa mesmo depois de mudar campos sem reenviar.
+  useEffect(() => {
+    if (initial?.supplies) {
+      setSuppliesList(initial.supplies);
+    }
+  }, [initial?.supplies]);
+
+  // Qualquer edição após salvar invalida o "Salvo com sucesso"
   useEffect(() => {
     const sub = watch(() => setSaved(false));
     return () => sub.unsubscribe();
   }, [watch]);
 
+  const handleAddSupply = () => {
+    if (!selectedSupplyId) return;
+    const supply = availableSupplies.find((s) => s.id === selectedSupplyId);
+    if (!supply) return;
+
+    const qty = parseFloat(supplyQty) || 1;
+    const existingIndex = suppliesList.findIndex((item) => item.supply_id === supply.id);
+
+    if (existingIndex >= 0) {
+      const updated = [...suppliesList];
+      const newQty = Number(updated[existingIndex].quantity) + qty;
+      updated[existingIndex] = {
+        ...updated[existingIndex],
+        quantity: newQty,
+        subtotal_cost: supply.cost_price ? (Number(supply.cost_price) * newQty).toFixed(2) : undefined,
+      };
+      setSuppliesList(updated);
+    } else {
+      setSuppliesList([
+        ...suppliesList,
+        {
+          supply_id: supply.id,
+          quantity: qty,
+          supply_name: supply.name,
+          unit_measure: supply.unit_measure,
+          cost_price: supply.cost_price ?? null,
+          subtotal_cost: supply.cost_price ? (Number(supply.cost_price) * qty).toFixed(2) : undefined,
+        },
+      ]);
+    }
+    setSelectedSupplyId("");
+    setSupplyQty("1");
+    toast.success(`Insumo "${supply.name}" adicionado à ficha técnica!`);
+  };
+
+  const handleUpdateSupplyQty = (supplyId: string, newQty: number) => {
+    if (newQty <= 0) {
+      handleRemoveSupply(supplyId);
+      return;
+    }
+    setSuppliesList((prev) =>
+      prev.map((item) => {
+        if (item.supply_id === supplyId) {
+          const cost = Number(item.cost_price || 0);
+          return {
+            ...item,
+            quantity: newQty,
+            subtotal_cost: cost > 0 ? (cost * newQty).toFixed(2) : undefined,
+          };
+        }
+        return item;
+      })
+    );
+  };
+
+  const handleRemoveSupply = (supplyId: string) => {
+    setSuppliesList((prev) => prev.filter((item) => item.supply_id !== supplyId));
+  };
+
+  const totalSuppliesCost = suppliesList.reduce((acc, item) => {
+    const cost = Number(item.cost_price || 0);
+    const qty = Number(item.quantity || 0);
+    return acc + cost * qty;
+  }, 0);
+
+  const priceVal = Number(watch("price") || 0);
+  const currentCostVal = Number(watch("estimated_cost") || 0);
+  const currentProfit = priceVal - currentCostVal;
+  const currentMarginPct = priceVal > 0 ? Math.round((currentProfit / priceVal) * 100) : 0;
+
   const submit = handleSubmit(async (values) => {
     setServerError(null);
     setSaved(false);
     try {
-      await onSubmit(values);
+      await onSubmit({ ...values, supplies: suppliesList });
       setSaved(true);
       toast.success("Procedimento salvo com sucesso!");
     } catch (e) {
@@ -233,6 +318,272 @@ export function ProcedureForm({ initial, onSubmit, submitLabel }: Props) {
           Insumos e materiais consumidos na sessão. Você pode ajustar a qualquer momento.
         </span>
       </label>
+
+      {/* SEÇÃO DA FICHA TÉCNICA DE INSUMOS */}
+      <div
+        style={{
+          marginTop: "12px",
+          marginBottom: "16px",
+          padding: "16px",
+          background: "#f8fafc",
+          borderRadius: "12px",
+          border: "1.5px solid #e2e8f0",
+        }}
+      >
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "flex-start",
+            flexWrap: "wrap",
+            gap: "8px",
+          }}
+        >
+          <div>
+            <h3
+              style={{
+                margin: 0,
+                fontSize: "0.98rem",
+                fontWeight: 600,
+                color: "#0f172a",
+                display: "flex",
+                alignItems: "center",
+                gap: "6px",
+              }}
+            >
+              🧪 Ficha Técnica do Procedimento (Baixa Automática)
+            </h3>
+            <p style={{ margin: "3px 0 0", fontSize: "0.82rem", color: "#64748b" }}>
+              Insumos e doses que este procedimento consome. O sistema dará baixa no estoque automaticamente a cada sessão realizada ou venda.
+            </p>
+          </div>
+          {suppliesList.length > 0 && totalSuppliesCost > 0 && (
+            <button
+              type="button"
+              onClick={() => {
+                setValue("estimated_cost", totalSuppliesCost.toFixed(2) as Money, { shouldDirty: true });
+                toast.show(`Custo estimado atualizado para R$ ${totalSuppliesCost.toFixed(2)} com base na ficha!`, "info");
+              }}
+              style={{
+                background: "#fef3c7",
+                color: "#92400e",
+                border: "1px solid #f59e0b",
+                borderRadius: "6px",
+                padding: "5px 12px",
+                fontSize: "0.8rem",
+                fontWeight: 600,
+                cursor: "pointer",
+              }}
+            >
+              ✨ Usar custo da ficha (R$ {totalSuppliesCost.toFixed(2)})
+            </button>
+          )}
+        </div>
+
+        {/* Adicionar Insumo */}
+        <div style={{ display: "flex", gap: "8px", marginTop: "14px", flexWrap: "wrap" }}>
+          <select
+            value={selectedSupplyId}
+            onChange={(e) => setSelectedSupplyId(e.target.value)}
+            style={{
+              flex: "1 1 240px",
+              padding: "8px 10px",
+              borderRadius: "6px",
+              border: "1px solid #cbd5e1",
+              fontSize: "0.85rem",
+              background: "#fff",
+            }}
+          >
+            <option value="">Selecione um insumo do estoque...</option>
+            {availableSupplies.map((s) => (
+              <option key={s.id} value={s.id}>
+                {s.name} ({s.unit_measure}) {s.cost_price ? `• Custo: R$ ${Number(s.cost_price).toFixed(2)}` : ""} • Saldo: {s.current_stock}
+              </option>
+            ))}
+          </select>
+
+          <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+            <span style={{ fontSize: "0.8rem", color: "#475569" }}>Dose/Qtd:</span>
+            <input
+              type="number"
+              step="any"
+              min="0.01"
+              value={supplyQty}
+              onChange={(e) => setSupplyQty(e.target.value)}
+              style={{
+                width: "80px",
+                padding: "8px",
+                borderRadius: "6px",
+                border: "1px solid #cbd5e1",
+                fontSize: "0.85rem",
+                background: "#fff",
+              }}
+            />
+          </div>
+
+          <button
+            type="button"
+            onClick={handleAddSupply}
+            disabled={!selectedSupplyId}
+            style={{
+              padding: "8px 14px",
+              background: selectedSupplyId ? "#0f766e" : "#94a3b8",
+              color: "#fff",
+              border: "none",
+              borderRadius: "6px",
+              fontSize: "0.85rem",
+              fontWeight: 500,
+              cursor: selectedSupplyId ? "pointer" : "not-allowed",
+            }}
+          >
+            + Adicionar
+          </button>
+        </div>
+
+        {/* Lista de Insumos da Ficha */}
+        <div style={{ marginTop: "12px" }}>
+          {suppliesList.length === 0 ? (
+            <div
+              style={{
+                padding: "14px",
+                background: "#fff",
+                borderRadius: "8px",
+                border: "1px dashed #cbd5e1",
+                textAlign: "center",
+                fontSize: "0.82rem",
+                color: "#64748b",
+              }}
+            >
+              Nenhum insumo vinculado ainda. Selecione um insumo acima para automatizar o controle de estoque e custo real.
+            </div>
+          ) : (
+            <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+              {suppliesList.map((item) => {
+                const supply = availableSupplies.find((s) => s.id === item.supply_id);
+                const name = item.supply_name || supply?.name || "Insumo";
+                const unit = item.unit_measure || supply?.unit_measure || "UN";
+                const unitCost = Number(item.cost_price || supply?.cost_price || 0);
+                const subtotal = unitCost * Number(item.quantity);
+
+                return (
+                  <div
+                    key={item.supply_id}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      background: "#fff",
+                      padding: "8px 12px",
+                      borderRadius: "6px",
+                      border: "1px solid #e2e8f0",
+                      fontSize: "0.85rem",
+                      gap: "8px",
+                      flexWrap: "wrap",
+                    }}
+                  >
+                    <div style={{ display: "flex", alignItems: "center", gap: "8px", flex: "1 1 200px" }}>
+                      <span style={{ fontWeight: 600, color: "#1e293b" }}>{name}</span>
+                      <span
+                        style={{
+                          fontSize: "0.72rem",
+                          background: "#f1f5f9",
+                          padding: "2px 6px",
+                          borderRadius: "4px",
+                          color: "#475569",
+                          fontWeight: 500,
+                        }}
+                      >
+                        {unit}
+                      </span>
+                    </div>
+
+                    <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+                        <span style={{ fontSize: "0.78rem", color: "#64748b" }}>Qtd:</span>
+                        <input
+                          type="number"
+                          step="any"
+                          value={item.quantity}
+                          onChange={(e) => handleUpdateSupplyQty(item.supply_id, parseFloat(e.target.value) || 0)}
+                          style={{
+                            width: "65px",
+                            padding: "4px 6px",
+                            fontSize: "0.82rem",
+                            borderRadius: "4px",
+                            border: "1px solid #cbd5e1",
+                          }}
+                        />
+                      </div>
+
+                      <div style={{ textAlign: "right", minWidth: "90px" }}>
+                        <div style={{ fontSize: "0.82rem", fontWeight: 600, color: "#0f172a" }}>
+                          R$ {subtotal.toFixed(2)}
+                        </div>
+                        {unitCost > 0 && (
+                          <div style={{ fontSize: "0.72rem", color: "#64748b" }}>
+                            R$ {unitCost.toFixed(2)} / {unit}
+                          </div>
+                        )}
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveSupply(item.supply_id)}
+                        style={{
+                          background: "none",
+                          border: "none",
+                          color: "#ef4444",
+                          cursor: "pointer",
+                          padding: "4px",
+                          fontSize: "1rem",
+                        }}
+                        title="Remover da ficha técnica"
+                      >
+                        🗑️
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+
+              {/* Barra de Lucratividade em Tempo Real */}
+              <div
+                style={{
+                  marginTop: "8px",
+                  padding: "10px 14px",
+                  background: "#f0fdf4",
+                  borderRadius: "8px",
+                  border: "1px solid #bbf7d0",
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  flexWrap: "wrap",
+                  gap: "8px",
+                  fontSize: "0.85rem",
+                }}
+              >
+                <div>
+                  <span style={{ color: "#166534", fontWeight: 600 }}>Custo Total em Insumos: </span>
+                  <span style={{ color: "#15803d", fontWeight: 700 }}>R$ {totalSuppliesCost.toFixed(2)}</span>
+                </div>
+                {priceVal > 0 && (
+                  <div>
+                    <span style={{ color: "#166534" }}>Margem Bruta Estimada: </span>
+                    <span
+                      style={{
+                        color: currentMarginPct >= 50 ? "#15803d" : "#b45309",
+                        fontWeight: 700,
+                      }}
+                    >
+                      {currentMarginPct}% (R$ {currentProfit.toFixed(2)} de lucro)
+                    </span>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
 
       <fieldset className="form__field">
         <legend>Sessões</legend>

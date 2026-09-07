@@ -3,6 +3,7 @@ from uuid import UUID
 from app.core.money import money
 from app.domain.catalog.procedure_templates import find_procedure_template
 from app.models.procedure import Procedure, ProcedureType, SessionPlan
+from app.models.procedure_supply import ProcedureSupply
 from app.repositories.procedure import ProcedureRepository
 from app.schemas.procedure import (
     ProcedureCreate,
@@ -38,7 +39,22 @@ class ProcedureService:
             session_plan=dto.session_plan,
             image_url=dto.image_url,
         )
-        return self._repo.add(procedure)
+        procedure = self._repo.add(procedure)
+        self._repo.flush()
+
+        if dto.supplies:
+            for item in dto.supplies:
+                ps = ProcedureSupply(
+                    professional_id=procedure.professional_id,
+                    procedure_id=procedure.id,
+                    supply_id=item.supply_id,
+                    quantity=item.quantity,
+                )
+                self._repo._session.add(ps)
+            self._repo.flush()
+            self._repo._session.refresh(procedure)
+
+        return procedure
 
     def create_from_template(self, dto: ProcedureFromTemplateCreate) -> Procedure:
         """Cria procedimento a partir de template com overrides opcionais (TASK-BACK-S2-19)."""
@@ -110,6 +126,8 @@ class ProcedureService:
         procedure = self.get(procedure_id)
         data = dto.model_dump(exclude_unset=True)
 
+        supplies_data = data.pop("supplies", None)
+
         if "price" in data and data["price"] is not None:
             data["price"] = money(data["price"])
         if "estimated_cost" in data and data["estimated_cost"] is not None:
@@ -119,6 +137,23 @@ class ProcedureService:
 
         for field, value in data.items():
             setattr(procedure, field, value)
+
+        if supplies_data is not None:
+            # Sincroniza insumos da ficha técnica
+            for old_ps in list(procedure.supplies):
+                self._repo._session.delete(old_ps)
+            self._repo.flush()
+
+            for item in (dto.supplies or []):
+                ps = ProcedureSupply(
+                    professional_id=procedure.professional_id,
+                    procedure_id=procedure.id,
+                    supply_id=item.supply_id,
+                    quantity=item.quantity,
+                )
+                self._repo._session.add(ps)
+            self._repo.flush()
+            self._repo._session.refresh(procedure)
 
         self._repo.flush()
         return procedure

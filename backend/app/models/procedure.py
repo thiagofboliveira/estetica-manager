@@ -11,7 +11,7 @@ from decimal import Decimal
 from enum import StrEnum
 
 from sqlalchemy import Enum, Numeric, String
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.models.base import TenantModel
 
@@ -75,4 +75,11 @@ class Procedure(TenantModel):
         nullable=False,
     )
     image_url: Mapped[str | None] = mapped_column(String(500), nullable=True)
+
+    supplies = relationship(
+        "ProcedureSupply",
+        back_populates="procedure",
+        cascade="all, delete-orphan",
+        lazy="selectin",
+    )
 

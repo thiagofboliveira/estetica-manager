@@ -1,11 +1,21 @@
 from datetime import datetime
+from decimal import Decimal
 from uuid import UUID
 
-from pydantic import Field, model_validator
+from pydantic import BaseModel, Field, model_validator
 
 from app.models.procedure import Modality, ProcedureType, SessionPlan
 from app.schemas.base import InputSchema, OutputSchema
 from app.schemas.types import MoneyOut
+
+
+class ProcedureSupplyItem(BaseModel):
+    supply_id: UUID
+    quantity: Decimal = Field(default=Decimal("1.00"), ge=0)
+    supply_name: str | None = None
+    unit_measure: str | None = None
+    cost_price: MoneyOut | None = None
+    subtotal_cost: MoneyOut | None = None
 
 
 class ProcedureCreate(InputSchema):
@@ -22,6 +32,7 @@ class ProcedureCreate(InputSchema):
     is_invasive: bool = False
     session_plan: SessionPlan = SessionPlan.SINGLE
     image_url: str | None = None
+    supplies: list[ProcedureSupplyItem] | None = None
 
     @model_validator(mode="after")
     def _produto_sem_intervalo_de_retorno(self) -> "ProcedureCreate":
@@ -43,6 +54,7 @@ class ProcedureUpdate(InputSchema):
     is_invasive: bool | None = None
     session_plan: SessionPlan | None = None
     image_url: str | None = None
+    supplies: list[ProcedureSupplyItem] | None = None
 
 
 class ProcedureOut(OutputSchema):
@@ -58,6 +70,7 @@ class ProcedureOut(OutputSchema):
     is_invasive: bool
     session_plan: SessionPlan
     image_url: str | None = None
+    supplies: list[ProcedureSupplyItem] = []
     created_at: datetime
     updated_at: datetime
 

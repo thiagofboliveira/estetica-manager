@@ -5,12 +5,13 @@ from fastapi import APIRouter, HTTPException, Query, status
 from app.api.deps import EventSvc, ProcedureSvc
 from app.domain.catalog.procedure_templates import list_procedure_templates
 from app.domain.events import EventName
-from app.models.procedure import SessionPlan
+from app.models.procedure import Procedure, SessionPlan
 from app.schemas.procedure import (
     ProcedureCreate,
     ProcedureFromTemplateCreate,
     ProcedureListOut,
     ProcedureOut,
+    ProcedureSupplyItem,
     ProcedureTemplateOut,
     ProcedureUpdate,
 )
@@ -22,6 +23,30 @@ from app.services.procedure_service import (
 router = APIRouter(prefix="/procedures", tags=["procedures"])
 
 
+def _to_procedure_out(proc: Procedure) -> ProcedureOut:
+    supplies_out: list[ProcedureSupplyItem] = []
+    if getattr(proc, "supplies", None):
+        for ps in proc.supplies:
+            s_name = ps.supply.name if getattr(ps, "supply", None) else None
+            u_measure = ps.supply.unit_measure if getattr(ps, "supply", None) else None
+            cost = ps.supply.cost_price if getattr(ps, "supply", None) else None
+            subtotal = (cost * ps.quantity) if cost is not None else None
+            supplies_out.append(
+                ProcedureSupplyItem(
+                    supply_id=ps.supply_id,
+                    quantity=ps.quantity,
+                    supply_name=s_name,
+                    unit_measure=u_measure,
+                    cost_price=str(cost) if cost is not None else None,
+                    subtotal_cost=str(subtotal) if subtotal is not None else None,
+                )
+            )
+
+    out = ProcedureOut.model_validate(proc)
+    out.supplies = supplies_out
+    return out
+
+
 @router.post("", response_model=ProcedureOut, status_code=status.HTTP_201_CREATED)
 def create_procedure(
     payload: ProcedureCreate, svc: ProcedureSvc, events: EventSvc
@@ -30,7 +55,7 @@ def create_procedure(
     # G-13: emitido na rota, não no service — evita alterar a assinatura
     # de ProcedureService (e seus testes) só para injetar telemetria.
     events.track_first(EventName.FIRST_PROCEDURE_CREATED)
-    return ProcedureOut.model_validate(procedure)
+    return _to_procedure_out(procedure)
 
 
 @router.get("/templates", response_model=list[ProcedureTemplateOut])
@@ -63,7 +88,7 @@ def create_procedure_from_template(
     """Cria procedimento a partir de um template pré-definido (EPIC-S2-04, TASK-BACK-S2-19)."""
     try:
         procedure = svc.create_from_template(payload)
-        return ProcedureOut.model_validate(procedure)
+        return _to_procedure_out(procedure)
     except ProcedureAlreadyExistsError as exc:
         raise HTTPException(status.HTTP_409_CONFLICT, str(exc)) from exc
     except ValueError as exc:
@@ -86,7 +111,7 @@ def list_procedures(
         session_plan=session_plan,
     )
     return ProcedureListOut(
-        items=[ProcedureOut.model_validate(p) for p in items],
+        items=[_to_procedure_out(p) for p in items],
         total_count=svc.count(is_invasive=is_invasive, session_plan=session_plan),
         page=page,
         page_size=page_size,
@@ -101,7 +126,7 @@ def get_procedure(procedure_id: UUID, svc: ProcedureSvc) -> ProcedureOut:
         raise HTTPException(
             status.HTTP_404_NOT_FOUND, "Procedimento não encontrado"
         ) from exc
-    return ProcedureOut.model_validate(procedure)
+    return _to_procedure_out(procedure)
 
 
 @router.patch("/{procedure_id}", response_model=ProcedureOut)
@@ -114,7 +139,7 @@ def update_procedure(
         raise HTTPException(
             status.HTTP_404_NOT_FOUND, "Procedimento não encontrado"
         ) from exc
-    return ProcedureOut.model_validate(procedure)
+    return _to_procedure_out(procedure)
 
 
 @router.delete("/{procedure_id}", status_code=status.HTTP_204_NO_CONTENT)

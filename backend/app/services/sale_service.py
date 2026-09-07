@@ -44,10 +44,12 @@ from app.domain.financial.calculator import (
 from app.domain.financial.calculator import (
     SplitBase as CalcSplitBase,
 )
+from app.models.procedure import ProcedureType
 from app.models.sale import Sale, SaleStatus
 from app.models.sale_item import SaleItem
 from app.models.session import Session as SessionModel
 from app.models.session import SessionStatus
+from app.models.supply import MovementType, Supply, SupplyMovement
 from app.repositories.booking import BookingRepository
 from app.repositories.financial_settings import FinancialSettingsRepository
 from app.repositories.patient import PatientRepository
@@ -258,6 +260,24 @@ class SaleService:
                     modality=proc.default_modality,
                 )
                 self._sessions.add(session)
+
+            # Se for venda de PRODUTO e tiver insumos cadastrados, dá baixa imediata do estoque
+            if proc.type == ProcedureType.PRODUCT and getattr(proc, "supplies", None):
+                for ps in proc.supplies:
+                    supply = self._sales._session.get(Supply, ps.supply_id)
+                    if supply:
+                        qty = ps.quantity * Decimal(item_dto.quantity)
+                        supply.current_stock -= qty
+                        movement = SupplyMovement(
+                            professional_id=sale.professional_id,
+                            clinic_id=supply.clinic_id,
+                            supply_id=supply.id,
+                            movement_type=MovementType.EXIT,
+                            quantity=qty,
+                            unit_price=supply.cost_price,
+                            notes=f"Baixa automática por venda de produto: {proc.name} ({item_dto.quantity}x)",
+                        )
+                        self._sales._session.add(movement)
 
         # Fecha oportunidades de retorno abertas para os procedimentos comprados (TASK-028)
         if self._return_opportunities:

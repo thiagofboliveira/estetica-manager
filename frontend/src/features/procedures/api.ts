@@ -4,6 +4,15 @@ export type ProcedureType = "SERVICE" | "PRODUCT";
 export type Modality = "IN_PERSON" | "REMOTE";
 export type SessionPlan = "SINGLE" | "MULTIPLE";
 
+export type ProcedureSupplyItem = {
+  supply_id: string;
+  quantity: number | string;
+  supply_name?: string | null;
+  unit_measure?: string | null;
+  cost_price?: string | null;
+  subtotal_cost?: string | null;
+};
+
 export type Procedure = {
   id: string;
   name: string;
@@ -16,6 +25,7 @@ export type Procedure = {
   is_invasive: boolean;
   session_plan: SessionPlan;
   image_url?: string | null;
+  supplies?: ProcedureSupplyItem[];
   created_at: string;
   updated_at: string;
 };
@@ -30,6 +40,7 @@ export type ProcedureCreateInput = {
   is_invasive?: boolean;
   session_plan?: SessionPlan;
   image_url?: string | null;
+  supplies?: ProcedureSupplyItem[];
 };
 
 export type ProcedureUpdateInput = Partial<
@@ -43,6 +54,8 @@ export type ProcedureUpdateInput = Partial<
     | "default_modality"
     | "is_invasive"
     | "session_plan"
+    | "image_url"
+    | "supplies"
   >
 > & {
   is_active?: boolean;
