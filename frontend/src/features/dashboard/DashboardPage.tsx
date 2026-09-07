@@ -28,8 +28,9 @@ import styles from "./DashboardPage.module.css";
 
 export function DashboardPage() {
   const { user } = useAuth();
+  const isAdmin = user?.role === "admin" || user?.role === "superadmin" || Boolean(user?.is_superuser);
   const [clinicScope, setClinicScope] = useState<ClinicScopeValue>(() => ({
-    scope: user?.role === "admin" && user?.clinic_id ? "clinic" : "me",
+    scope: isAdmin && user?.clinic_id ? "clinic" : "me",
   }));
 
   const todayStr = useMemo(() => formatLocalDate(new Date()), []);

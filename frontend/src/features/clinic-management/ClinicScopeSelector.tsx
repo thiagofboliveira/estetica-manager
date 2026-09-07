@@ -30,7 +30,8 @@ export function ClinicScopeSelector({
 }: ClinicScopeSelectorProps) {
   const { user } = useAuth();
 
-  const isEligible = Boolean(user?.role === "admin" && user?.clinic_id);
+  const isAdmin = user?.role === "admin" || user?.role === "superadmin" || Boolean(user?.is_superuser);
+  const isEligible = Boolean(isAdmin && user?.clinic_id);
 
   const { data: users = [] } = useQuery<ClinicUserItem[]>({
     queryKey: ["clinic", "users", user?.clinic_id],
@@ -39,8 +40,7 @@ export function ClinicScopeSelector({
     staleTime: 5 * 60 * 1000,
   });
 
-  // Não renderiza se o usuário não for admin de clínica ou se for clínica de 1 pessoa só (solo)
-  if (!isEligible || users.length <= 1) {
+  if (!isEligible) {
     return null;
   }
 
@@ -72,7 +72,7 @@ export function ClinicScopeSelector({
         </button>
       </div>
 
-      {users.length > 2 && (
+      {users.length > 1 && (
         <select
           className={`${styles.scopeSelect} ${isSpecificOther ? styles.scopeSelectActive : ""}`}
           value={value.professional_id ?? (value.scope === "clinic" ? "all" : "me")}
@@ -102,10 +102,10 @@ export function ClinicScopeSelector({
         </select>
       )}
 
-      {isAllClinic && (professionalsCount ?? users.length) > 1 && (
+      {isAllClinic && (
         <span className={styles.consolidatedBadge}>
           <IconBuilding width="13" height="13" />
-          Consolidado ({professionalsCount ?? users.length} profissionais)
+          Consolidado ({professionalsCount ?? Math.max(users.length, 1)} { (professionalsCount ?? Math.max(users.length, 1)) === 1 ? "profissional" : "profissionais" })
         </span>
       )}
     </div>

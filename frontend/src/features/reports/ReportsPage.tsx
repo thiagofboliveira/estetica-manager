@@ -33,8 +33,9 @@ const PERIOD_OPTIONS: { value: DashboardPeriod; label: string }[] = [
 
 export function ReportsPage() {
   const { user } = useAuth();
+  const isAdmin = user?.role === "admin" || user?.role === "superadmin" || Boolean(user?.is_superuser);
   const [clinicScope, setClinicScope] = useState<ClinicScopeValue>(() => ({
-    scope: user?.role === "admin" && user?.clinic_id ? "clinic" : "me",
+    scope: isAdmin && user?.clinic_id ? "clinic" : "me",
   }));
   const [category, setCategory] = useState<ReportCategory>("financial");
   const [period, setPeriod] = useState<DashboardPeriod>("this_month");
