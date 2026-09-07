@@ -4,6 +4,7 @@ import {
   publicBookingApi,
   type PublicBooking,
 } from "./api";
+import { anamnesisApi } from "@/features/anamnesis/api";
 import styles from "./BookingManagementPage.module.css";
 
 export function BookingManagementPage() {
@@ -31,6 +32,8 @@ export function BookingManagementPage() {
   // Estados de Cancelamento
   const [cancelling, setCancelling] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [anamnesisToken, setAnamnesisToken] = useState<string | null>(null);
+  const [anamnesisSubmitted, setAnamnesisSubmitted] = useState(false);
 
   useEffect(() => {
     if (!id || !token) {
@@ -44,6 +47,16 @@ export function BookingManagementPage() {
       .then((data) => setBooking(data))
       .catch((err) => setError(err.message || "Agendamento não encontrado."))
       .finally(() => setLoading(false));
+
+    anamnesisApi
+      .getByBooking(id, token)
+      .then((res) => {
+        setAnamnesisToken(res.public_token);
+        setAnamnesisSubmitted(Boolean(res.submitted_at));
+      })
+      .catch(() => {
+        // Ignora silenciosamente se o profissional não tiver anamnese
+      });
   }, [id, token]);
 
   useEffect(() => {
@@ -312,6 +325,63 @@ export function BookingManagementPage() {
                     Voltar
                   </button>
                 </div>
+              </div>
+            )}
+
+            {/* Card de Ficha de Anamnese */}
+            {!isCancelled && !isRescheduling && anamnesisToken && (
+              <div
+                style={{
+                  background: anamnesisSubmitted ? "#f8fafc" : "#f0fdf4",
+                  border: `1px solid ${anamnesisSubmitted ? "#e2e8f0" : "#bbf7d0"}`,
+                  borderRadius: "16px",
+                  padding: "20px",
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center",
+                  textAlign: "center",
+                  gap: "10px",
+                  marginBottom: "20px",
+                }}
+              >
+                <div style={{ fontSize: "1.75rem" }}>{anamnesisSubmitted ? "✓" : "📋"}</div>
+                <h3
+                  style={{
+                    margin: 0,
+                    fontSize: "1.1rem",
+                    fontWeight: 700,
+                    color: anamnesisSubmitted ? "#334155" : "#166534",
+                  }}
+                >
+                  {anamnesisSubmitted
+                    ? "Ficha de Anamnese Preenchida com Sucesso!"
+                    : "Agilize seu Atendimento: Ficha de Saúde"}
+                </h3>
+                <p
+                  style={{
+                    margin: 0,
+                    fontSize: "0.88rem",
+                    color: "#475569",
+                    maxWidth: "480px",
+                  }}
+                >
+                  {anamnesisSubmitted
+                    ? "Suas respostas já foram anexadas com segurança ao seu prontuário."
+                    : "Para sua segurança e melhor resultado, preencha sua ficha rápida de saúde (leva menos de 2 minutos)."}
+                </p>
+                <Link
+                  to={`/anamnese/${anamnesisToken}`}
+                  className={styles.primaryBtn}
+                  style={{
+                    textDecoration: "none",
+                    width: "auto",
+                    padding: "10px 22px",
+                    fontSize: "0.95rem",
+                    background: anamnesisSubmitted ? "#475569" : "var(--accent)",
+                  }}
+                >
+                  {anamnesisSubmitted ? "Rever Minhas Respostas" : "Preencher Ficha de Anamnese Agora"}
+                </Link>
               </div>
             )}
 

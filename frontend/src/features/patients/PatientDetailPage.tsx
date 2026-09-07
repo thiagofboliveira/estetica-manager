@@ -3,9 +3,11 @@ import { useNavigate, useParams } from "react-router-dom";
 import { AsyncBoundary } from "@/ui/AsyncBoundary";
 import { PatientForm, type PatientFormValues } from "./PatientForm";
 import { useAnonymizePatient, useOptOutPatient, usePatient, useUpdatePatient } from "./hooks";
+import { usePatientAnamnesis, useGenerateSubmissionToken } from "@/features/anamnesis/hooks";
+import { IconAlertTriangle, IconCheck, IconCopy } from "@/ui/icons";
 import { patientsApi } from "./api";
 
-type Tab = "data" | "history";
+type Tab = "data" | "history" | "anamnesis";
 
 export function PatientDetailPage() {
   const { id = "" } = useParams();
@@ -14,8 +16,12 @@ export function PatientDetailPage() {
   const update = useUpdatePatient(id);
   const anonymize = useAnonymizePatient(id);
   const optOut = useOptOutPatient(id);
+  const anamnesisQuery = usePatientAnamnesis(id);
+  const generateTokenMut = useGenerateSubmissionToken();
+
   const [tab, setTab] = useState<Tab>("data");
   const [exporting, setExporting] = useState(false);
+  const [copiedAnamnesis, setCopiedAnamnesis] = useState(false);
 
   async function handleSubmit(values: PatientFormValues) {
     await update.mutateAsync({
@@ -79,6 +85,31 @@ export function PatientDetailPage() {
               ? `https://wa.me/55${cleanPhone}?text=${encodeURIComponent(`Olá, ${patient.name}!`)}`
               : null;
 
+          const anamnesisList = anamnesisQuery.data || [];
+          const allRiskAlerts = Array.from(
+            new Set(
+              anamnesisList
+                .filter((s) => s.has_risk_alerts)
+                .flatMap((s) => s.risk_alerts_summary)
+            )
+          );
+
+          async function handleCopyAnamnesis() {
+            try {
+              const res = await generateTokenMut.mutateAsync({
+                patient_id: patient.id,
+                patient_name: patient.name,
+                patient_phone: patient.phone || undefined,
+              });
+              const url = `${window.location.origin}/anamnese/${res.public_token}`;
+              await navigator.clipboard.writeText(url);
+              setCopiedAnamnesis(true);
+              setTimeout(() => setCopiedAnamnesis(false), 2500);
+            } catch {
+              alert("Não foi possível gerar o link de anamnese no momento.");
+            }
+          }
+
           return (
             <>
               <header className="patient-header">
@@ -130,6 +161,29 @@ export function PatientDetailPage() {
                 </div>
               </header>
 
+              {allRiskAlerts.length > 0 && (
+                <div
+                  style={{
+                    background: "#fef2f2",
+                    border: "1px solid #fecaca",
+                    borderRadius: "12px",
+                    padding: "12px 18px",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "12px",
+                    color: "#991b1b",
+                    margin: "16px 0",
+                    fontSize: "0.95rem",
+                  }}
+                >
+                  <IconAlertTriangle width="22" height="22" />
+                  <div>
+                    <strong>Atenção Clínica / Contraindicações Identificadas:</strong>{" "}
+                    {allRiskAlerts.join(" • ")}
+                  </div>
+                </div>
+              )}
+
               <div className="tab-group" role="tablist" aria-label="Abas do paciente">
                 <button
                   type="button"
@@ -148,6 +202,16 @@ export function PatientDetailPage() {
                   onClick={() => setTab("history")}
                 >
                   Resumo, Privacidade & LGPD
+                </button>
+                <button
+                  type="button"
+                  role="tab"
+                  aria-selected={tab === "anamnesis"}
+                  className="tab-button tap-target"
+                  onClick={() => setTab("anamnesis")}
+                >
+                  Ficha de Anamnese {anamnesisList.length > 0 ? `(${anamnesisList.length})` : ""}
+                  {allRiskAlerts.length > 0 && " ⚠️"}
                 </button>
               </div>
 
@@ -229,6 +293,129 @@ export function PatientDetailPage() {
                         </button>
                       </div>
                     </div>
+                  </div>
+                )}
+
+                {tab === "anamnesis" && (
+                  <div className="card" style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "12px" }}>
+                      <div>
+                        <h3 style={{ margin: 0, fontSize: "1.1rem", fontWeight: 700, color: "var(--text-h)" }}>
+                          Histórico de Anamnese & Saúde
+                        </h3>
+                        <p style={{ margin: "2px 0 0", fontSize: "0.85rem", color: "var(--text-muted)" }}>
+                          Fichas respondidas pela paciente com respostas e histórico de saúde
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        className="button button--secondary tap-target"
+                        onClick={handleCopyAnamnesis}
+                      >
+                        {copiedAnamnesis ? <IconCheck width="16" height="16" /> : <IconCopy width="16" height="16" />}
+                        <span>{copiedAnamnesis ? "Link Copiado!" : "Copiar Link para Paciente Preencher"}</span>
+                      </button>
+                    </div>
+
+                    {anamnesisList.length === 0 ? (
+                      <div style={{ padding: "40px 20px", textAlign: "center", color: "var(--text-muted)" }}>
+                        <p style={{ margin: 0 }}>Nenhuma ficha de anamnese respondida por esta paciente ainda.</p>
+                        <p style={{ margin: "6px 0 16px", fontSize: "0.85rem" }}>
+                          Copie o link acima e envie pelo WhatsApp para a paciente preencher antes do procedimento.
+                        </p>
+                        <button
+                          type="button"
+                          className="button tap-target"
+                          onClick={handleCopyAnamnesis}
+                        >
+                          Copiar Link da Anamnese
+                        </button>
+                      </div>
+                    ) : (
+                      <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+                        {anamnesisList.map((sub, idx) => (
+                          <div
+                            key={sub.id}
+                            style={{
+                              border: "1px solid var(--border)",
+                              borderRadius: "12px",
+                              padding: "16px",
+                              background: "var(--bg-card)",
+                            }}
+                          >
+                            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: "10px", marginBottom: "12px" }}>
+                              <div>
+                                <span style={{ fontWeight: 700, fontSize: "0.95rem" }}>
+                                  Preenchimento #{anamnesisList.length - idx}
+                                </span>
+                                <span style={{ marginLeft: "8px", fontSize: "0.85rem", color: "var(--text-muted)" }}>
+                                  {sub.submitted_at ? new Date(sub.submitted_at).toLocaleString("pt-BR") : "Pendente"}
+                                </span>
+                              </div>
+                              {sub.has_risk_alerts ? (
+                                <span style={{
+                                  background: "#fef2f2",
+                                  color: "#dc2626",
+                                  border: "1px solid #fecaca",
+                                  padding: "3px 8px",
+                                  borderRadius: "6px",
+                                  fontSize: "0.8rem",
+                                  fontWeight: 600,
+                                  display: "inline-flex",
+                                  alignItems: "center",
+                                  gap: "4px",
+                                }}>
+                                  <IconAlertTriangle width="13" height="13" />
+                                  {sub.risk_alerts_summary?.length || 1} Alerta(s) Clínico(s)
+                                </span>
+                              ) : (
+                                <span style={{
+                                  background: "#f0fdf4",
+                                  color: "#16a34a",
+                                  border: "1px solid #bbf7d0",
+                                  padding: "3px 8px",
+                                  borderRadius: "6px",
+                                  fontSize: "0.8rem",
+                                  fontWeight: 500,
+                                }}>
+                                  ✓ Sem Riscos Declarados
+                                </span>
+                              )}
+                            </div>
+
+                            {sub.has_risk_alerts && (
+                              <div style={{
+                                background: "#fffbeb",
+                                border: "1px solid #fef3c7",
+                                borderRadius: "8px",
+                                padding: "10px 14px",
+                                marginBottom: "14px",
+                                color: "#92400e",
+                                fontSize: "0.85rem",
+                              }}>
+                                <strong>Alertas apontados:</strong> {sub.risk_alerts_summary?.join(", ")}
+                              </div>
+                            )}
+
+                            <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                              {Object.entries(sub.answers || {}).map(([key, val]) => (
+                                <div key={key} style={{ fontSize: "0.88rem", padding: "6px 0", borderBottom: "1px solid var(--border-light, #f1f5f9)" }}>
+                                  <span style={{ fontWeight: 500, color: "var(--text)" }}>
+                                    {val !== undefined && val !== null ? String(val) : "—"}
+                                  </span>
+                                </div>
+                              ))}
+                            </div>
+
+                            {sub.signature_name && (
+                              <div style={{ marginTop: "12px", fontSize: "0.8rem", color: "var(--text-muted)" }}>
+                                Declaração assinada por: <strong>{sub.signature_name}</strong>
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 )}
               </div>

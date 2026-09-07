@@ -9,6 +9,7 @@ import {
   IconWallet,
   IconReceipt,
   IconTrendingUp,
+  IconClipboard,
 } from "@/ui/icons";
 import styles from "./Sidebar.module.css";
 
@@ -18,6 +19,7 @@ const NAV_ITEMS = [
   { to: "/retornos", label: "Quem chamar hoje?", Icon: IconTarget, end: false },
   { to: "/relatorios", label: "Relatórios", Icon: IconBarChart, end: false },
   { to: "/pacientes", label: "Pacientes", Icon: IconUsers, end: false },
+  { to: "/anamnese", label: "Anamnese", Icon: IconClipboard, end: false },
   { to: "/procedimentos", label: "Procedimentos", Icon: IconSparkles, end: false },
   { to: "/simulador", label: "Simulador de Preço", Icon: IconTrendingUp, end: false },
   { to: "/financeiro", label: "Financeiro", Icon: IconWallet, end: false },

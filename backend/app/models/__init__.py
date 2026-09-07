@@ -4,6 +4,12 @@
 # Registra o listener before_flush que bloqueia UPDATE em campos
 # congelados (T-020b, invariante I3) — importar por efeito colateral.
 from app.models import listeners  # noqa: F401,E402
+from app.models.anamnesis import (
+    AnamnesisQuestion,
+    AnamnesisSubmission,
+    AnamnesisTemplate,
+    QuestionFieldType,
+)
 from app.models.base import Base, TenantModel, TimestampMixin
 from app.models.booking import Booking, BookingStatus
 from app.models.clinic import Clinic
@@ -59,4 +65,8 @@ __all__ = [
     "Booking",
     "BookingStatus",
     "TermsAcceptance",
+    "AnamnesisTemplate",
+    "AnamnesisQuestion",
+    "AnamnesisSubmission",
+    "QuestionFieldType",
 ]

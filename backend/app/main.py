@@ -7,6 +7,7 @@ from pydantic import BaseModel
 from sqlalchemy import text
 
 from app.api.v1 import (
+    anamnesis,
     bookings,
     dashboard,
     export,
@@ -16,6 +17,7 @@ from app.api.v1 import (
     payment_fee_rules,
     procedures,
     public_agenda,
+    public_anamnesis,
     reports,
     retention,
     sales,
@@ -209,3 +211,5 @@ app.include_router(users.router, prefix="/api/v1")
 app.include_router(super_admin.router, prefix="/api/v1")
 app.include_router(public_agenda.router, prefix="/api/v1")
 app.include_router(weekly_summary.router, prefix="/api/v1")
+app.include_router(anamnesis.router, prefix="/api/v1")
+app.include_router(public_anamnesis.router, prefix="/api/v1")

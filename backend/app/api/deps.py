@@ -16,6 +16,11 @@ from app.core.rate_limit import InMemoryRateLimiter
 from app.core.security import get_current_professional_id
 from app.db.session import get_tenant_session, unsafe_session_without_tenant
 from app.models.user import User
+from app.repositories.anamnesis import (
+    AnamnesisQuestionRepository,
+    AnamnesisSubmissionRepository,
+    AnamnesisTemplateRepository,
+)
 from app.repositories.booking import BookingRepository
 from app.repositories.clinic import ClinicRepository
 from app.repositories.event import EventRepository
@@ -32,6 +37,7 @@ from app.repositories.session import SessionRepository
 from app.repositories.terms_acceptance import TermsAcceptanceRepository
 from app.repositories.user import UserRepository
 from app.services.agenda_service import AgendaService
+from app.services.anamnesis_service import AnamnesisService
 from app.services.attribution_service import AttributionService
 from app.services.booking_service import BookingService
 from app.services.clinic_service import ClinicService
@@ -396,4 +402,15 @@ def get_weekly_summary_service(
     )
 
 
+def get_anamnesis_service(
+    session: DbSession, professional_id: CurrentProfessional
+) -> AnamnesisService:
+    return AnamnesisService(
+        template_repo=AnamnesisTemplateRepository(session, professional_id),
+        question_repo=AnamnesisQuestionRepository(session, professional_id),
+        submission_repo=AnamnesisSubmissionRepository(session, professional_id),
+    )
+
+
+AnamnesisSvc = Annotated[AnamnesisService, Depends(get_anamnesis_service)]
 WeeklySummarySvc = Annotated[WeeklySummaryService, Depends(get_weekly_summary_service)]

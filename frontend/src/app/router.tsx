@@ -36,6 +36,8 @@ import { TermsOfServicePage } from "@/features/legal/TermsOfServicePage";
 import { PrivacyPolicyPage } from "@/features/legal/PrivacyPolicyPage";
 import { PublicBookingPage } from "@/features/public-booking/PublicBookingPage";
 import { BookingManagementPage } from "@/features/public-booking/BookingManagementPage";
+import { AnamnesisPage } from "@/features/anamnesis/AnamnesisPage";
+import { PublicAnamnesisPage } from "@/features/anamnesis/PublicAnamnesisPage";
 
 export const router = createBrowserRouter([
   {
@@ -57,6 +59,7 @@ export const router = createBrowserRouter([
           { path: "/setup", element: <SetupWizardPage /> },
           { path: "/agendar/:slug", element: <PublicBookingPage /> },
           { path: "/agendamento/:id", element: <BookingManagementPage /> },
+          { path: "/anamnese/:token", element: <PublicAnamnesisPage /> },
           {
             element: <RequireAuth />,
             children: [
@@ -78,6 +81,7 @@ export const router = createBrowserRouter([
               { path: "/pacientes/novo", element: <NewPatientPage /> },
               { path: "/pacientes/importar", element: <PatientImportPage /> },
               { path: "/pacientes/:id", element: <PatientDetailPage /> },
+              { path: "/anamnese", element: <AnamnesisPage /> },
               { path: "/procedimentos", element: <ProceduresPage /> },
               { path: "/procedimentos/novo", element: <NewProcedurePage /> },
               { path: "/procedimentos/:id", element: <ProcedureDetailPage /> },
