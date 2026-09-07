@@ -124,13 +124,14 @@ class TestFiltroJaTratou:
     def test_paciente_sem_venda_nem_sessao_nao_conta_como_ja_tratou(
         self, client: TestClient, auth_headers: dict[str, str]
     ) -> None:
+        marker = uuid.uuid4().hex
         patient_id = _create_patient(
-            client, auth_headers, f"Nunca Tratou {uuid.uuid4()}"
+            client, auth_headers, f"Nunca Tratou {marker}"
         )
 
         resp = client.get(
             "/api/v1/patients",
-            params={"has_completed_treatment": "true", "page_size": 200},
+            params={"search": marker, "has_completed_treatment": "true"},
             headers=auth_headers,
         )
         ids = {p["id"] for p in resp.json()["items"]}
@@ -138,7 +139,7 @@ class TestFiltroJaTratou:
 
         resp = client.get(
             "/api/v1/patients",
-            params={"has_completed_treatment": "false", "page_size": 200},
+            params={"search": marker, "has_completed_treatment": "false"},
             headers=auth_headers,
         )
         ids = {p["id"] for p in resp.json()["items"]}
