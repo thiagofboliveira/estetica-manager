@@ -12,8 +12,8 @@ Este documento detalha todos os serviços de infraestrutura e plataformas em nuv
 | **Render** | Hospedagem Backend API (FastAPI) | 750 horas/mês (1 serviço 24/7), 512 MB RAM | Hiberna após **15 min** sem requisições | Configurar monitor UptimeRobot para ping a cada 10-14 min |
 | **Supabase** | Banco PostgreSQL 16 + Auth + Storage | 500 MB disco, 50k usuários/mês | Pausa se ficar **7 dias** sem requisições | Backend no Render mantém ativo com conexões regulares |
 | **Resend** | E-mails Transacionais (Convites e Reset) | 3.000 e-mails/mês (máx. 100/dia) | Sem hibernação | Adicionar domínio próprio para enviar a qualquer e-mail |
-| **GitHub** | Repositório de Código + Webhooks | Repositórios ilimitados, 2.000 min CI/CD | Sempre ativo | Gatilho automático de deploys no Render e Vercel |
-| **UptimeRobot** *(Opcional)* | Keep-alive e Monitoramento de Uptime | 50 monitores gratuitos (checagem 5 min) | Sempre ativo | Manter o Render sempre acordado sem cold start |
+| **GitHub** | Versionamento e Automação CI/CD | Repositórios ilimitados, 2.000 min CI/CD | Sempre ativo | Gatilho automático de deploys e testes |
+| **UptimeRobot** | Keep-alive e Alerta de Quedas | 50 monitores gratuitos (checagem a cada 5 min) | Sempre ativo (em execução) | **Ativo a cada 5 min** em `/health`: zera cold start e pausa do banco |
 
 ---
 
@@ -112,25 +112,29 @@ Configurado opcionalmente para rastreamento de erros e exceções não tratadas 
 
 ---
 
-## 7. ⏱️ Serviço Recomendado de Keep-Alive: UptimeRobot (100% Free)
+## 7. ⏱️ Monitoramento de Disponibilidade & Keep-Alive: UptimeRobot (Configurado e Ativo)
 
-Para garantir alta disponibilidade no plano gratuito:
+O UptimeRobot é a peça-chave de confiabilidade operacional da arquitetura gratuita, responsável por manter a API e as conexões de banco permanentemente aquecidas.
 
-### Limites Gratuitos:
-* **Monitores:** 50 monitores HTTP(s).
-* **Frequência de Checagem:** A cada 5 minutos.
-* **Custo:** R$ 0,00.
+### Limites Gratuitos Oferecidos (Free Plan):
+* **Quantidade de Monitores:** Até 50 monitores HTTP(s), Ping ou Port.
+* **Intervalo Mínimo de Checagem:** A cada **5 minutos** (o plano gratuito não permite checagens menores que 5 min, tornando essa a frequência máxima e ótima).
+* **Canais de Alerta:** Notificações instantâneas gratuitas via **E-mail**, **Webhooks** e **Push Notification** no aplicativo mobile do UptimeRobot.
+* **Histórico de Logs / Uptime:** Retenção de **2 meses (60 dias)** de métricas e histórico de incidentes.
+* **Páginas de Status Públicas:** Até 1 página de status pública gratuita (ex: `status.lumina.com`).
+* **Custo:** **R$ 0,00/mês vitalício**.
 
-### Como configurar para otimizar o Lumina:
-1. Crie uma conta gratuita em [uptimerobot.com](https://uptimerobot.com).
-2. Adicione um novo monitor:
-   * **Type:** HTTP(s)
-   * **Friendly Name:** `Lumina Backend Health`
-   * **URL:** `https://estetica-manager.onrender.com/health`
-   * **Monitoring Interval:** 10 ou 14 minutos.
-3. **Resultado imediato:**
-   - Evita a hibernação de 15 minutos do Render (elimina os 50 segundos de espera do primeiro acesso).
-   - Realiza requisições periódicas que impedem o Supabase de considerar o banco inativo por 7 dias.
+### Configuração em Produção no Lumina:
+* **Monitor:** `Lumina Backend Health`
+* **Tipo:** HTTP(s) (Método `GET`)
+* **URL:** `https://estetica-manager.onrender.com/health` (ou domínio próprio da API)
+* **Frequência Ativa:** **A cada 5 minutos**.
+
+### Impacto e Benefícios Concretos na Arquitetura:
+1. **Fim do Cold Start no Render:** Como o limite de inatividade do Render é de 15 minutos, a checagem a cada 5 minutos impede completamente que a instância entre em modo de suspensão (*spin-down*). A Cliente 0 sempre obtém respostas imediatas (latência < 100ms), sem os 40-50 segundos de espera do primeiro acesso.
+2. **Prevenção de Pausa no Supabase:** Como o endpoint `/health` realiza um `SELECT 1` leve no PostgreSQL, o banco registra atividade constante, eliminando o risco da regra de pausa do Supabase (que congela projetos após 7 dias de inatividade).
+3. **Consumo de Horas no Render:** O Render oferece 750 horas de runtime gratuito por mês. Um mês de 31 dias possui 744 horas. O monitoramento mantém o backend ligado 24/7 consumindo exatamente a cota mensal sem exceder.
+4. **Alerta Proativo de Falhas:** Caso o banco fique inacessível ou ocorra erro fatal na API, o `/health` retorna `503 Service Unavailable`, acionando o UptimeRobot para enviar um e-mail de alerta imediatamente ao responsável técnico.
 
 ---
 
