@@ -22,6 +22,7 @@ export interface AnamnesisTemplate {
   id: string;
   title: string;
   description: string | null;
+  tcle_content?: string | null;
   is_default: boolean;
   is_active: boolean;
   auto_request_on_booking: boolean;
@@ -42,6 +43,10 @@ export interface AnamnesisSubmission {
   has_risk_alerts: boolean;
   risk_alerts_summary: string[];
   signature_name: string | null;
+  signature_image?: string | null;
+  tcle_accepted: boolean;
+  tcle_accepted_at?: string | null;
+  client_ip?: string | null;
   submitted_at: string | null;
   created_at: string;
 }
@@ -53,6 +58,7 @@ export interface PublicAnamnesisForm {
   professional_slug: string | null;
   template_title: string;
   template_description: string | null;
+  tcle_content?: string | null;
   patient_name: string | null;
   patient_phone: string | null;
   is_submitted: boolean;
@@ -86,6 +92,7 @@ export interface UpdateQuestionPayload {
 export interface UpdateTemplatePayload {
   title?: string;
   description?: string | null;
+  tcle_content?: string | null;
   auto_request_on_booking?: boolean;
 }
 
@@ -94,6 +101,8 @@ export interface PublicSubmitAnamnesisPayload {
   patient_phone?: string | null;
   answers: Record<string, any>;
   signature_name?: string | null;
+  signature_image?: string | null;
+  tcle_accepted: boolean;
 }
 
 export const anamnesisApi = {

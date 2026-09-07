@@ -11,6 +11,7 @@ import { ZERO, money, mulQty, sub, sum, type Money } from "@/lib/money/money";
 import { toast } from "@/ui/ToastContext";
 import { PatientPicker } from "./PatientPicker";
 import { useCreateSale } from "./hooks";
+import { PostSaleRebookingPrompt } from "./PostSaleRebookingPrompt";
 import type { Patient } from "@/features/patients/api";
 import type { Procedure } from "@/features/procedures/api";
 import type { Sale } from "./api";
@@ -211,6 +212,18 @@ export function PackageSaleForm() {
         <p style={{ fontSize: "16px", color: "#15803d", marginBottom: "20px" }}>
           <strong>Lucro Líquido Provisório:</strong> {formatBRL(money(confirmedSale.net_profit))}
         </p>
+
+        {selectedPatient && confirmedSale.items[0] && (
+          <PostSaleRebookingPrompt
+            patient={selectedPatient}
+            procedureName={
+              lines.find((l) => l.procedureId === confirmedSale.items[0]?.procedure_id)?.procedureName ?? "Pacote"
+            }
+            returnIntervalDays={
+              proceduresQuery.data?.find((p) => p.id === confirmedSale.items[0]?.procedure_id)?.return_interval_days
+            }
+          />
+        )}
 
         <div style={{ display: "flex", gap: "12px", flexWrap: "wrap", marginTop: "16px" }}>
           <button

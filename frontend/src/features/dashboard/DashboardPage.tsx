@@ -13,6 +13,8 @@ import { useAgenda, useUnconfirmedSessions, useOpenPackages } from "@/features/a
 import { useRetentionCards } from "@/features/retention/hooks";
 import { OnboardingChecklist } from "@/features/onboarding/OnboardingChecklist";
 import { ROICard } from "./ROICard";
+import { BotoxVialCard } from "@/features/vials/BotoxVialCard";
+import { MonthlyAchievementsCard } from "./MonthlyAchievementsCard";
 import {
   IconCalendar,
   IconPlus,
@@ -252,6 +254,9 @@ export function DashboardPage() {
         </div>
       </div>
 
+      {/* Alerta Inteligente de Insumos Críticos & Frascos de Botox Abertos */}
+      <BotoxVialCard />
+
       {/* Resumo Financeiro do Mês (Visão Executiva) */}
       <AsyncBoundary
         query={dashboardQuery}
@@ -274,6 +279,12 @@ export function DashboardPage() {
                 <IconArrowRight width="14" height="14" />
               </Link>
             </div>
+
+            {/* Card de Conquistas Mensais ("Seu Mês no Bolso") */}
+            <MonthlyAchievementsCard
+              scope={clinicScope.scope}
+              professionalId={clinicScope.professional_id}
+            />
 
             {renderMonthlyKpis(dashboard)}
 

@@ -1,7 +1,9 @@
 import { useState, useMemo, useEffect } from "react";
 import type { AgendaItem, SessionStatus } from "./api";
 import { formatLocalDate } from "@/lib/format/date";
-import { IconCalendar, IconCheck, IconPlus, IconSparkles, IconAlertTriangle } from "@/ui/icons";
+import { IconCalendar, IconCheck, IconPlus, IconSparkles, IconAlertTriangle, IconWhatsApp } from "@/ui/icons";
+import { useConfirmSession } from "./hooks";
+import { toast } from "@/ui/ToastContext";
 import styles from "./VisualTimelineAgenda.module.css";
 
 interface Props {
@@ -31,6 +33,19 @@ export function VisualTimelineAgenda({
   onBookSlot,
 }: Props) {
   const [viewType, setViewType] = useState<"timeline" | "list" | "month">(defaultViewType ?? "timeline");
+  const confirmMutation = useConfirmSession();
+
+  const handleConfirmAttendance = async (item: AgendaItem) => {
+    try {
+      await confirmMutation.mutateAsync({
+        session_id: item.id,
+        type: item.type,
+      });
+      toast.success("Presença confirmada!");
+    } catch {
+      toast.show("Não foi possível confirmar a presença.", "error");
+    }
+  };
 
   // O controle externo (abas "Mês" / "Próximos 7 dias") define qual visão
   // faz sentido para o range consultado; sincroniza sem apagar a escolha
@@ -464,6 +479,44 @@ export function VisualTimelineAgenda({
                             </div>
 
                             <div className={styles.cardActions}>
+                              {!item.confirmed_at && (item.status === "SCHEDULED" || item.type === "BOOKING") && (
+                                <>
+                                  {(() => {
+                                    const rawPhone = item.patient_phone?.replace(/\D/g, "") || "";
+                                    const phoneFormatted = rawPhone.length >= 10 && !rawPhone.startsWith("55") ? `55${rawPhone}` : rawPhone;
+                                    const msg = `Oi ${item.patient_name}! Tudo bem? Passando para confirmar seu horário de ${item.procedure_name} no dia ${new Date(item.scheduled_at).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" })} às ${timeFormatted}. Podemos confirmar? ✨`;
+                                    const waUrl = phoneFormatted ? `https://api.whatsapp.com/send?phone=${phoneFormatted}&text=${encodeURIComponent(msg)}` : null;
+
+                                    return (
+                                      <>
+                                        {waUrl && (
+                                          <a
+                                            href={waUrl}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className={styles.btnActionWhatsApp}
+                                            title="Enviar mensagem de confirmação no WhatsApp"
+                                          >
+                                            <IconWhatsApp width="12" height="12" />
+                                            <span>WhatsApp</span>
+                                          </a>
+                                        )}
+                                        <button
+                                          type="button"
+                                          className={styles.btnActionConfirm}
+                                          onClick={() => handleConfirmAttendance(item)}
+                                          disabled={confirmMutation.isPending}
+                                          title="Marcar presença confirmada"
+                                        >
+                                          <IconCheck width="12" height="12" />
+                                          <span>Confirmar</span>
+                                        </button>
+                                      </>
+                                    );
+                                  })()}
+                                </>
+                              )}
+
                               {item.type === "BOOKING" && (
                                 <button
                                   type="button"
@@ -561,7 +614,44 @@ export function VisualTimelineAgenda({
                     </div>
                   </div>
 
-                  <div style={{ padding: "14px", display: "flex", gap: "8px", alignItems: "center" }}>
+                  <div style={{ padding: "14px", display: "flex", gap: "8px", alignItems: "center", flexWrap: "wrap" }}>
+                    {!item.confirmed_at && (item.status === "SCHEDULED" || item.type === "BOOKING") && (
+                      <>
+                        {(() => {
+                          const rawPhone = item.patient_phone?.replace(/\D/g, "") || "";
+                          const phoneFormatted = rawPhone.length >= 10 && !rawPhone.startsWith("55") ? `55${rawPhone}` : rawPhone;
+                          const msg = `Oi ${item.patient_name}! Tudo bem? Passando para confirmar seu horário de ${item.procedure_name} no dia ${dt.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" })} às ${timeStr}. Podemos confirmar? ✨`;
+                          const waUrl = phoneFormatted ? `https://api.whatsapp.com/send?phone=${phoneFormatted}&text=${encodeURIComponent(msg)}` : null;
+
+                          return (
+                            <>
+                              {waUrl && (
+                                <a
+                                  href={waUrl}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className={styles.btnActionWhatsApp}
+                                  title="Enviar mensagem de confirmação no WhatsApp"
+                                >
+                                  <IconWhatsApp width="13" height="13" />
+                                  <span>WhatsApp</span>
+                                </a>
+                              )}
+                              <button
+                                type="button"
+                                className={styles.btnActionConfirm}
+                                onClick={() => handleConfirmAttendance(item)}
+                                disabled={confirmMutation.isPending}
+                                title="Marcar presença confirmada"
+                              >
+                                <IconCheck width="13" height="13" />
+                                <span>Confirmar</span>
+                              </button>
+                            </>
+                          );
+                        })()}
+                      </>
+                    )}
                     {item.type === "BOOKING" && (
                       <button
                         type="button"

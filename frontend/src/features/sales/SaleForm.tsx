@@ -12,6 +12,7 @@ import { ApiError } from "@/lib/http/client";
 import { toast } from "@/ui/ToastContext";
 import { PatientPicker } from "./PatientPicker";
 import { useCreateSale } from "./hooks";
+import { PostSaleRebookingPrompt } from "./PostSaleRebookingPrompt";
 import type { Patient } from "@/features/patients/api";
 import type { Sale } from "./api";
 
@@ -134,6 +135,22 @@ export function SaleForm() {
         <p style={{ fontSize: "16px", color: "#15803d", marginBottom: "20px" }}>
           <strong>Lucro Líquido:</strong> {formatBRL(money(confirmedSale.net_profit))}
         </p>
+
+        {selectedPatient && (
+          <PostSaleRebookingPrompt
+            patient={selectedPatient}
+            procedureName={
+              proceduresQuery.data?.find(
+                (p) => p.id === confirmedSale.items[0]?.procedure_id || p.id === procedureId
+              )?.name ?? "Procedimento"
+            }
+            returnIntervalDays={
+              proceduresQuery.data?.find(
+                (p) => p.id === confirmedSale.items[0]?.procedure_id || p.id === procedureId
+              )?.return_interval_days
+            }
+          />
+        )}
 
         <div style={{ display: "flex", gap: "12px", flexWrap: "wrap", marginTop: "16px" }}>
           <button

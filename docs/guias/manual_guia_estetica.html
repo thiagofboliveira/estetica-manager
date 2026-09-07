@@ -1,0 +1,1030 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>Guia Prático do Sistema — Clínica de Estética</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Playfair+Display:ital,wght@0,600;0,700;1,400&display=swap');
+
+  @page {
+    size: A4;
+    margin: 12mm 14mm 14mm 14mm;
+    @bottom-right {
+      content: counter(page);
+    }
+  }
+
+  * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
+
+  body {
+    font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    color: #2D2A26;
+    background: #FFFFFF;
+    line-height: 1.5;
+    font-size: 13px;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  .page {
+    page-break-after: always;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    position: relative;
+    padding-bottom: 8px;
+  }
+
+  .page:last-child {
+    page-break-after: avoid;
+  }
+
+  /* Capa */
+  .cover {
+    background: linear-gradient(145deg, #FAF7F2 0%, #F3EDE4 100%);
+    border: 1px solid #E5DCD0;
+    border-radius: 16px;
+    padding: 48px 40px;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+  }
+
+  .cover-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: #FFFFFF;
+    border: 1px solid #D8C8B5;
+    padding: 6px 14px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 700;
+    color: #936C38;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    width: fit-content;
+  }
+
+  .cover-title-group {
+    margin-top: 40px;
+  }
+
+  .cover-title {
+    font-family: 'Playfair Display', Georgia, serif;
+    font-size: 38px;
+    font-weight: 700;
+    color: #1F1C18;
+    line-height: 1.15;
+    margin-bottom: 14px;
+  }
+
+  .cover-subtitle {
+    font-size: 16px;
+    color: #6E675F;
+    font-weight: 500;
+    line-height: 1.5;
+    max-width: 520px;
+  }
+
+  .cover-features-list {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+    margin: 40px 0;
+  }
+
+  .cover-feature-item {
+    background: rgba(255, 255, 255, 0.85);
+    border: 1px solid #E8DFD3;
+    border-radius: 12px;
+    padding: 14px 16px;
+  }
+
+  .cover-feature-item strong {
+    display: block;
+    font-size: 13.5px;
+    color: #1F1C18;
+    margin-bottom: 4px;
+  }
+
+  .cover-feature-item span {
+    font-size: 12px;
+    color: #70685E;
+  }
+
+  .cover-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    padding-top: 24px;
+    border-top: 1px solid #E2D6C5;
+  }
+
+  .cover-footer-note {
+    font-size: 12.5px;
+    color: #5C554D;
+  }
+
+  .cover-footer-note strong {
+    color: #1F1C18;
+    display: block;
+  }
+
+  .cover-logo-text {
+    font-family: 'Playfair Display', Georgia, serif;
+    font-size: 20px;
+    font-weight: 700;
+    color: #936C38;
+    letter-spacing: -0.01em;
+  }
+
+  /* Cabeçalho padrão de cada página */
+  .section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 2px solid #F0EAE1;
+    padding-bottom: 10px;
+    margin-bottom: 16px;
+  }
+
+  .section-header-title {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .section-num {
+    background: #936C38;
+    color: #FFFFFF;
+    font-size: 12px;
+    font-weight: 800;
+    width: 24px;
+    height: 24px;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .section-header h2 {
+    font-family: 'Playfair Display', Georgia, serif;
+    font-size: 20px;
+    color: #1F1C18;
+    font-weight: 700;
+  }
+
+  .section-header-tag {
+    font-size: 11.5px;
+    color: #8C8479;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+
+  /* Cartão de Destaque / Resumo */
+  .intro-card {
+    background: #FAF7F2;
+    border-left: 4px solid #936C38;
+    border-radius: 0 10px 10px 0;
+    padding: 12px 16px;
+    margin-bottom: 16px;
+    font-size: 13px;
+    color: #4A443C;
+  }
+
+  .intro-card strong {
+    color: #1F1C18;
+  }
+
+  /* Mockup de Interface Visual */
+  .ui-mockup {
+    background: #FFFFFF;
+    border: 1px solid #DCD4C8;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    overflow: hidden;
+    margin-bottom: 16px;
+  }
+
+  .ui-browser-bar {
+    background: #F4EFE7;
+    border-bottom: 1px solid #E5DCD0;
+    padding: 8px 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .ui-dots {
+    display: flex;
+    gap: 5px;
+  }
+
+  .ui-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #D5C9B9;
+  }
+
+  .ui-url {
+    background: #FFFFFF;
+    border: 1px solid #E0D6C8;
+    border-radius: 6px;
+    padding: 2px 10px;
+    font-size: 11px;
+    color: #8C8275;
+    flex-grow: 1;
+    max-width: 320px;
+  }
+
+  .ui-content {
+    padding: 16px;
+    background: #FAFAFA;
+  }
+
+  /* Elementos de Mockup */
+  .mock-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 14px;
+  }
+
+  .mock-title {
+    font-size: 17px;
+    font-weight: 800;
+    color: #1F1C18;
+  }
+
+  .mock-subtitle {
+    font-size: 11px;
+    color: #7E776E;
+  }
+
+  .mock-btn-group {
+    display: flex;
+    gap: 6px;
+  }
+
+  .mock-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 5px 10px;
+    border-radius: 6px;
+    font-size: 11.5px;
+    font-weight: 600;
+    border: 1px solid #D8CFC2;
+    background: #FFFFFF;
+    color: #332E27;
+  }
+
+  .mock-btn-primary {
+    background: #936C38;
+    color: #FFFFFF;
+    border-color: #936C38;
+  }
+
+  .mock-btn-success {
+    background: #10B981;
+    color: #FFFFFF;
+    border-color: #10B981;
+  }
+
+  .mock-btn-active {
+    background: #1F1C18;
+    color: #FFFFFF;
+    border-color: #1F1C18;
+  }
+
+  .mock-kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px;
+    margin-bottom: 14px;
+  }
+
+  .mock-kpi-card {
+    background: #FFFFFF;
+    border: 1px solid #E8E2D8;
+    border-radius: 8px;
+    padding: 10px;
+  }
+
+  .mock-kpi-label {
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    color: #8C847A;
+    margin-bottom: 4px;
+  }
+
+  .mock-kpi-value {
+    font-size: 16px;
+    font-weight: 800;
+    color: #1F1C18;
+  }
+
+  .mock-kpi-value-green {
+    color: #059669;
+  }
+
+  .mock-kpi-sub {
+    font-size: 9.5px;
+    color: #7A7268;
+    margin-top: 2px;
+  }
+
+  /* Tabela de Passos */
+  .steps-container {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .step-item {
+    display: flex;
+    gap: 12px;
+    background: #FFFFFF;
+    border: 1px solid #EDE7DF;
+    border-radius: 10px;
+    padding: 10px 14px;
+    align-items: flex-start;
+  }
+
+  .step-badge {
+    background: #FAF5EE;
+    color: #936C38;
+    border: 1px solid #DFCDBD;
+    font-weight: 800;
+    font-size: 12px;
+    min-width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .step-content strong {
+    display: block;
+    font-size: 13px;
+    color: #1F1C18;
+    margin-bottom: 2px;
+  }
+
+  .step-content p {
+    font-size: 12px;
+    color: #615A51;
+    line-height: 1.4;
+  }
+
+  .tip-box {
+    background: #F0FDF4;
+    border: 1px solid #BBF7D0;
+    border-radius: 8px;
+    padding: 10px 14px;
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    font-size: 12px;
+    color: #166534;
+    margin-top: 8px;
+  }
+
+  .tip-box strong {
+    color: #14532D;
+  }
+
+  /* Badge de alerta de saúde */
+  .health-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 3px 8px;
+    border-radius: 6px;
+    font-size: 11px;
+    font-weight: 700;
+  }
+
+  .health-badge-red {
+    background: #FEE2E2;
+    color: #991B1B;
+    border: 1px solid #F87171;
+  }
+
+  .health-badge-yellow {
+    background: #FEF3C7;
+    color: #92400E;
+    border: 1px solid #FCD34D;
+  }
+
+  .health-badge-blue {
+    background: #E0E7FF;
+    color: #3730A3;
+    border: 1px solid #A5B4FC;
+  }
+
+  .health-badge-green {
+    background: #DCFCE7;
+    color: #166534;
+    border: 1px solid #86EFAC;
+  }
+
+  /* Rodapé discreto */
+  .page-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 11px;
+    color: #9C9488;
+    border-top: 1px solid #F0EAE1;
+    padding-top: 8px;
+    margin-top: auto;
+  }
+</style>
+</head>
+<body>
+
+<!-- PÁGINA 1: CAPA -->
+<div class="page">
+  <div class="cover">
+    <div>
+      <div class="cover-badge">✨ Manual de Uso Descomplicado</div>
+      <div class="cover-title-group">
+        <h1 class="cover-title">Guia Prático do Sistema<br>da Sua Clínica</h1>
+        <p class="cover-subtitle">
+          Um manual visual, passo a passo e carinhoso para organizar sua agenda, receber confirmações pelo WhatsApp, cadastrar pacientes e acompanhar o faturamento real sem dor de cabeça.
+        </p>
+      </div>
+
+      <div class="cover-features-list">
+        <div class="cover-feature-item">
+          <strong>📅 Agenda & WhatsApp</strong>
+          <span>Como ver os horários do dia e confirmar presenças em 1 clique para não ter faltas.</span>
+        </div>
+        <div class="cover-feature-item">
+          <strong>📋 Ficha de Anamnese Digital</strong>
+          <span>A paciente responde no celular antes da sessão e os alertas de saúde aparecem na hora.</span>
+        </div>
+        <div class="cover-feature-item">
+          <strong>💰 Vendas & Pacotes</strong>
+          <span>Lançamento fácil de procedimentos e pacotes com cálculo automático de lucro.</span>
+        </div>
+        <div class="cover-feature-item">
+          <strong>🏢 Visão da Dona da Clínica</strong>
+          <span>Como ver os números da clínica inteira ou alternar para o atendimento individual.</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="cover-footer">
+      <div class="cover-footer-note">
+        <strong>Feito especialmente para você</strong>
+        Sistema de Gestão Estética Inteligente • Versão Atualizada 2026
+      </div>
+      <div class="cover-logo-text">Estética Manager</div>
+    </div>
+  </div>
+</div>
+
+<!-- PÁGINA 2: PAINEL DE CONTROLE (O SEU DIA A DIA) -->
+<div class="page">
+  <div>
+    <div class="section-header">
+      <div class="section-header-title">
+        <div class="section-num">1</div>
+        <h2>O Painel de Controle (Ao Abrir o Sistema)</h2>
+      </div>
+      <div class="section-header-tag">Tela Principal</div>
+    </div>
+
+    <div class="intro-card">
+      <strong>O que é esta tela:</strong> É a primeira coisa que você vê ao entrar. Foi pensada para você bater o olho pela manhã e já saber: quanto já faturou no mês, quantos atendimentos tem hoje e quem precisa confirmar presença.
+    </div>
+
+    <!-- UI Mockup do Cockpit -->
+    <div class="ui-mockup">
+      <div class="ui-browser-bar">
+        <div class="ui-dots"><div class="ui-dot"></div><div class="ui-dot"></div><div class="ui-dot"></div></div>
+        <div class="ui-url">https://clinica.esteticamanager.com/dashboard</div>
+      </div>
+      <div class="ui-content">
+        <div class="mock-header">
+          <div>
+            <div class="mock-title">Painel de Controle</div>
+            <div class="mock-subtitle">Segunda-feira, 7 de Setembro de 2026</div>
+          </div>
+          <!-- Seletor de Escopo -->
+          <div style="background: #EFE9DF; padding: 3px; border-radius: 8px; display: inline-flex; gap: 4px;">
+            <span style="background: #FFFFFF; padding: 4px 10px; border-radius: 6px; font-weight: 700; font-size: 11px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); color: #1F1C18;">🏢 Toda a Clínica</span>
+            <span style="padding: 4px 10px; font-size: 11px; color: #756D63; font-weight: 500;">👤 Meu Atendimento</span>
+          </div>
+        </div>
+
+        <!-- Cards de KPI -->
+        <div class="mock-kpi-grid">
+          <div class="mock-kpi-card">
+            <div class="mock-kpi-label">Faturamento do Mês</div>
+            <div class="mock-kpi-value">R$ 14.850,00</div>
+            <div class="mock-kpi-sub">Total vendido em procedimentos</div>
+          </div>
+          <div class="mock-kpi-card">
+            <div class="mock-kpi-label">Lucro Líquido Real</div>
+            <div class="mock-kpi-value mock-kpi-value-green">R$ 10.420,00</div>
+            <div class="mock-kpi-sub">Descontando custos de insumos</div>
+          </div>
+          <div class="mock-kpi-card">
+            <div class="mock-kpi-label">Atendimentos Hoje</div>
+            <div class="mock-kpi-value">6 clientes</div>
+            <div class="mock-kpi-sub">Horários marcados na agenda</div>
+          </div>
+          <div class="mock-kpi-card">
+            <div class="mock-kpi-label">Confirmações Pendentes</div>
+            <div class="mock-kpi-value" style="color: #D97706;">2 pendentes</div>
+            <div class="mock-kpi-sub">Avisar pelo WhatsApp</div>
+          </div>
+        </div>
+
+        <!-- Atalhos Rápidos -->
+        <div style="background: #FFFFFF; border: 1px solid #E8E2D8; border-radius: 8px; padding: 8px 12px; display: flex; gap: 8px; align-items: center;">
+          <span style="font-size: 11px; font-weight: 700; color: #8C847A;">ATALHOS RÁPIDOS:</span>
+          <span class="mock-btn mock-btn-primary">+ Nova Venda</span>
+          <span class="mock-btn">+ Vender Pacote</span>
+          <span class="mock-btn">📅 Ver Agenda</span>
+          <span class="mock-btn" style="color: #059669;">💬 Quem Chamar Hoje</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Guia Passo a Passo -->
+    <div class="steps-container">
+      <div class="step-item">
+        <div class="step-badge">1</div>
+        <div class="step-content">
+          <strong>Como interpretar o Lucro Líquido Real:</strong>
+          <p>Diferente de anotar em caderno onde você só vê o dinheiro que entrou, o sistema já subtrai o custo dos produtos usados (ex: a toxina, as agulhas, os descartáveis). O valor verde é o que realmente sobra no seu bolso!</p>
+        </div>
+      </div>
+
+      <div class="step-item">
+        <div class="step-badge">2</div>
+        <div class="step-content">
+          <strong>O botão "+ Nova Venda":</strong>
+          <p>Sempre que atender uma cliente e receber o pagamento, basta clicar neste botão no topo para registrar o procedimento, a forma de pagamento (Pix, Cartão, Dinheiro) e deixar o caixa 100% em dia.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="tip-box">
+      <span>💡</span>
+      <div>
+        <strong>Dica da Manhã:</strong> Logo que chegar na clínica, olhe o card de <strong>"Confirmações Pendentes"</strong>. Clicando nele, você já envia uma mensagem carinhosa pelo WhatsApp para as clientes confirmarem o horário de hoje.
+      </div>
+    </div>
+  </div>
+
+  <div class="page-footer">
+    <span>Guia Prático da Clínica • Módulo 1</span>
+    <span>Página 2</span>
+  </div>
+</div>
+
+<!-- PÁGINA 3: AGENDA & CONFIRMAÇÕES PELO WHATSAPP -->
+<div class="page">
+  <div>
+    <div class="section-header">
+      <div class="section-header-title">
+        <div class="section-num">2</div>
+        <h2>Agenda & Confirmações pelo WhatsApp</h2>
+      </div>
+      <div class="section-header-tag">Operação Diária</div>
+    </div>
+
+    <div class="intro-card">
+      <strong>O segredo para a clínica não ter buracos na agenda:</strong> Aqui você acompanha o dia, a semana e, com um único toque, envia mensagem pelo WhatsApp da paciente para ela confirmar presença.
+    </div>
+
+    <!-- UI Mockup da Agenda -->
+    <div class="ui-mockup">
+      <div class="ui-browser-bar">
+        <div class="ui-dots"><div class="ui-dot"></div><div class="ui-dot"></div><div class="ui-dot"></div></div>
+        <div class="ui-url">https://clinica.esteticamanager.com/agenda</div>
+      </div>
+      <div class="ui-content">
+        <div class="mock-header">
+          <div style="display: flex; gap: 6px;">
+            <span class="mock-btn mock-btn-active">Hoje</span>
+            <span class="mock-btn">Próximos 7 dias</span>
+            <span class="mock-btn">Mês Completo</span>
+          </div>
+          <span class="mock-btn mock-btn-primary">+ Reservar Horário</span>
+        </div>
+
+        <!-- Lista de Sessões Agendadas -->
+        <div style="display: flex; flex-direction: column; gap: 8px;">
+          <!-- Item 1: Confirmado -->
+          <div style="background: #FFFFFF; border: 1px solid #E2D9CD; border-left: 4px solid #10B981; border-radius: 8px; padding: 10px 14px; display: flex; justify-content: space-between; align-items: center;">
+            <div>
+              <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 2px;">
+                <span style="font-size: 14px; font-weight: 800; color: #1F1C18;">09:00</span>
+                <span style="font-size: 13.5px; font-weight: 700; color: #1F1C18;">Mariana Silveira</span>
+                <span class="health-badge health-badge-green">✓ Confirmado</span>
+              </div>
+              <span style="font-size: 12px; color: #70685E;">Botox Facial Completo (Terço Superior) • Dra. Camila</span>
+            </div>
+            <div style="display: flex; gap: 6px;">
+              <span class="mock-btn" style="font-size: 11px;">Concluir Atendimento</span>
+            </div>
+          </div>
+
+          <!-- Item 2: Pendente Confirmação -->
+          <div style="background: #FFFFFF; border: 1px solid #E2D9CD; border-left: 4px solid #F59E0B; border-radius: 8px; padding: 10px 14px; display: flex; justify-content: space-between; align-items: center;">
+            <div>
+              <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 2px;">
+                <span style="font-size: 14px; font-weight: 800; color: #1F1C18;">10:30</span>
+                <span style="font-size: 13.5px; font-weight: 700; color: #1F1C18;">Patrícia Gomes</span>
+                <span class="health-badge health-badge-yellow">Aguardando Confirmação</span>
+              </div>
+              <span style="font-size: 12px; color: #70685E;">Harmonização Labial • Dra. Camila</span>
+            </div>
+            <div style="display: flex; gap: 6px;">
+              <span class="mock-btn mock-btn-success" style="font-size: 11px;">💬 Chamar no WhatsApp</span>
+            </div>
+          </div>
+
+          <!-- Item 3: Reserva Provisória -->
+          <div style="background: #FFFFFF; border: 1px solid #E2D9CD; border-left: 4px solid #6366F1; border-radius: 8px; padding: 10px 14px; display: flex; justify-content: space-between; align-items: center;">
+            <div>
+              <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 2px;">
+                <span style="font-size: 14px; font-weight: 800; color: #1F1C18;">14:00</span>
+                <span style="font-size: 13.5px; font-weight: 700; color: #1F1C18;">Fernanda Costa</span>
+                <span class="health-badge health-badge-blue">Reserva Provisória</span>
+              </div>
+              <span style="font-size: 12px; color: #70685E;">Bioestimulador de Colágeno • Agendamento pelo site</span>
+            </div>
+            <div style="display: flex; gap: 6px;">
+              <span class="mock-btn mock-btn-primary" style="font-size: 11px;">💳 Converter em Venda</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Passos -->
+    <div class="steps-container">
+      <div class="step-item">
+        <div class="step-badge">1</div>
+        <div class="step-content">
+          <strong>Como disparar a confirmação pelo WhatsApp:</strong>
+          <p>Quando a paciente ainda não confirmou, o botão verde <strong>"Chamar no WhatsApp"</strong> abre o aplicativo de conversa já com o texto pronto (com data, hora e nome dela). Você só precisa apertar "Enviar" no WhatsApp!</p>
+        </div>
+      </div>
+
+      <div class="step-item">
+        <div class="step-badge">2</div>
+        <div class="step-content">
+          <strong>O que faz o botão "Converter em Venda":</strong>
+          <p>Se a paciente reservou pelo site ou telefone mas ainda não pagou, ao terminar o procedimento você clica em <strong>"Converter em Venda"</strong>. A tela de venda já abre com o nome dela e o procedimento selecionados automaticamente!</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="tip-box">
+      <span>✨</span>
+      <div>
+        <strong>Anti-Falta:</strong> Pacientes que recebem confirmação de horário na véspera e no dia têm <strong>75% menos faltas</strong>. Usar o botão do WhatsApp economiza tempo e garante a clínica cheia!
+      </div>
+    </div>
+  </div>
+
+  <div class="page-footer">
+    <span>Guia Prático da Clínica • Módulo 2</span>
+    <span>Página 3</span>
+  </div>
+</div>
+
+<!-- PÁGINA 4: FICHA DE ANAMNESE DIGITAL (NOVIDADE!) -->
+<div class="page">
+  <div>
+    <div class="section-header">
+      <div class="section-header-title">
+        <div class="section-num">3</div>
+        <h2>Anamnese Digital: A Paciente Responde no Celular</h2>
+      </div>
+      <div class="section-header-tag">Segurança Clínica</div>
+    </div>
+
+    <div class="intro-card">
+      <strong>Adeus às pranchetas e papéis espalhados!</strong> Agora você pode mandar um link seguro pelo WhatsApp e a própria paciente preenche a ficha de saúde no celular dela antes de deitar na maca.
+    </div>
+
+    <!-- UI Mockup Comparativo: Celular da Paciente + Prontuário -->
+    <div style="display: grid; grid-template-columns: 1fr 1.3fr; gap: 14px; margin-bottom: 16px;">
+      <!-- Celular da Paciente -->
+      <div class="ui-mockup" style="margin-bottom: 0;">
+        <div class="ui-browser-bar">
+          <div class="ui-dots"><div class="ui-dot"></div><div class="ui-dot"></div><div class="ui-dot"></div></div>
+          <div class="ui-url">📱 No celular da paciente</div>
+        </div>
+        <div class="ui-content" style="padding: 12px; background: #FFF9F2;">
+          <div style="text-align: center; margin-bottom: 10px;">
+            <div style="font-size: 13px; font-weight: 800; color: #1F1C18;">Ficha de Saúde da Paciente</div>
+            <div style="font-size: 10.5px; color: #7A7268;">Preenchimento rápido • 2 minutos</div>
+          </div>
+
+          <div style="background: #FFFFFF; border: 1px solid #EBDCCF; border-radius: 8px; padding: 10px; margin-bottom: 8px;">
+            <div style="font-size: 11.5px; font-weight: 700; color: #1F1C18; margin-bottom: 4px;">1. Está grávida ou amamentando?</div>
+            <div style="display: flex; gap: 6px;">
+              <span style="background: #936C38; color: #FFF; font-size: 11px; padding: 3px 10px; border-radius: 4px; font-weight: 700;">Sim (Gestante)</span>
+              <span style="background: #F3ECE2; color: #5C554D; font-size: 11px; padding: 3px 10px; border-radius: 4px;">Não</span>
+            </div>
+          </div>
+
+          <div style="background: #FFFFFF; border: 1px solid #EBDCCF; border-radius: 8px; padding: 10px; margin-bottom: 8px;">
+            <div style="font-size: 11.5px; font-weight: 700; color: #1F1C18; margin-bottom: 4px;">2. Possui alguma alergia?</div>
+            <span style="background: #FAF7F2; border: 1px solid #DFD5C7; font-size: 11px; padding: 4px 8px; border-radius: 4px; display: block; color: #332E27;">
+              Alergia a frutos do mar e dipirona
+            </span>
+          </div>
+
+          <div style="background: #10B981; color: #FFFFFF; text-align: center; padding: 7px; border-radius: 6px; font-size: 11.5px; font-weight: 700;">
+            ✓ Confirmar e Assinar Digitalmente
+          </div>
+        </div>
+      </div>
+
+      <!-- Prontuário no Computador -->
+      <div class="ui-mockup" style="margin-bottom: 0;">
+        <div class="ui-browser-bar">
+          <div class="ui-dots"><div class="ui-dot"></div><div class="ui-dot"></div><div class="ui-dot"></div></div>
+          <div class="ui-url">💻 No seu computador / tablet</div>
+        </div>
+        <div class="ui-content" style="padding: 12px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+            <div>
+              <div style="font-size: 13.5px; font-weight: 800; color: #1F1C18;">Prontuário: Mariana Silveira</div>
+              <div style="font-size: 10.5px; color: #7A7268;">Ficha respondida em 07/09 às 08:35</div>
+            </div>
+            <span class="mock-btn" style="font-size: 10.5px; padding: 3px 8px;">📋 Ver Ficha Completa</span>
+          </div>
+
+          <!-- Alertas Vermelhos e Amarelos em Destaque -->
+          <div style="background: #FEF2F2; border: 1px solid #FCA5A5; border-radius: 8px; padding: 8px 12px; margin-bottom: 8px;">
+            <div style="font-size: 10px; font-weight: 800; color: #991B1B; text-transform: uppercase; margin-bottom: 3px;">
+              ⚠️ ALERTAS DE CONTRAINDICAÇÃO CLÍNICA
+            </div>
+            <div style="display: flex; flex-wrap: wrap; gap: 5px;">
+              <span class="health-badge health-badge-red">⚠️ GESTANTE</span>
+              <span class="health-badge health-badge-yellow">⚠️ ALERGIA: FRUTOS DO MAR / DIPIRONA</span>
+              <span class="health-badge health-badge-red">⚠️ NÃO PODE PROCEDIMENTO INVASIVO</span>
+            </div>
+          </div>
+
+          <div style="font-size: 11px; color: #5C554D; line-height: 1.4;">
+            As respostas ficam guardadas para sempre no histórico da paciente com valor jurídico e segurança total.
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Passos -->
+    <div class="steps-container">
+      <div class="step-item">
+        <div class="step-badge">1</div>
+        <div class="step-content">
+          <strong>Como enviar a anamnese para a paciente:</strong>
+          <p>No menu lateral, clique em <strong>"Anamnese"</strong> ou abra a ficha da cliente em <strong>"Pacientes"</strong>. Você terá um botão direto: <em>"Copiar Link da Anamnese"</em> ou <em>"Enviar por WhatsApp"</em>.</p>
+        </div>
+      </div>
+
+      <div class="step-item">
+        <div class="step-badge">2</div>
+        <div class="step-content">
+          <strong>Segurança contra processos e complicações:</strong>
+          <p>Se uma paciente estiver grávida ou usar remédios que proíbem aplicação de ácidos ou agulhas, o sistema <strong>destaca o aviso em vermelho</strong> antes de você encostar nela. Isso traz paz de espírito absoluta!</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="tip-box">
+      <span>🛡️</span>
+      <div>
+        <strong>Respaldo Jurídico:</strong> A paciente aceita o termo de veracidade das informações e assina na tela do celular. Você fica 100% protegida contra omissões de doenças ou alergias.
+      </div>
+    </div>
+  </div>
+
+  <div class="page-footer">
+    <span>Guia Prático da Clínica • Módulo 3</span>
+    <span>Página 4</span>
+  </div>
+</div>
+
+<!-- PÁGINA 5: RETENÇÃO DE CLIENTES (QUEM CHAMAR HOJE) -->
+<div class="page">
+  <div>
+    <div class="section-header">
+      <div class="section-header-title">
+        <div class="section-num">4</div>
+        <h2>Retenção de Pacientes (Quem Chamar Hoje)</h2>
+      </div>
+      <div class="section-header-tag">Fidelização & Faturamento</div>
+    </div>
+
+    <div class="intro-card">
+      <strong>O maior dinheiro invisível da estética:</strong> É muito mais fácil e barato fazer uma cliente antiga voltar para retocar do que gastar com anúncio para achar cliente nova. O sistema avisa sozinho quando a hora de retocar chegou!
+    </div>
+
+    <!-- UI Mockup de Retenção -->
+    <div class="ui-mockup">
+      <div class="ui-browser-bar">
+        <div class="ui-dots"><div class="ui-dot"></div><div class="ui-dot"></div><div class="ui-dot"></div></div>
+        <div class="ui-url">https://clinica.esteticamanager.com/retornos</div>
+      </div>
+      <div class="ui-content">
+        <div class="mock-header">
+          <div>
+            <div class="mock-title">Quem Chamar Hoje (Retornos Previstos)</div>
+            <div class="mock-subtitle">Clientes que fizeram procedimentos e estão na hora do retorno</div>
+          </div>
+          <span style="background: #DCFCE7; border: 1px solid #86EFAC; color: #166534; font-size: 11px; font-weight: 700; padding: 4px 10px; border-radius: 20px;">
+            💰 Potencial estimado: R$ 4.300,00
+          </span>
+        </div>
+
+        <!-- Lista de Cards de Retorno -->
+        <div style="display: flex; flex-direction: column; gap: 8px;">
+          <!-- Paciente 1 -->
+          <div style="background: #FFFFFF; border: 1px solid #E4DBD0; border-radius: 8px; padding: 10px 14px; display: flex; justify-content: space-between; align-items: center;">
+            <div>
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <span style="font-size: 13.5px; font-weight: 700; color: #1F1C18;">Beatriz Medeiros</span>
+                <span class="health-badge health-badge-red">Venceu há 5 dias</span>
+              </div>
+              <div style="font-size: 12px; color: #696257; margin-top: 2px;">
+                Último atendimento: <strong>Toxina Botulínica Facial</strong> (Feito há 125 dias)
+              </div>
+            </div>
+            <div style="text-align: right;">
+              <span class="mock-btn mock-btn-success" style="font-size: 11.5px; padding: 6px 12px;">
+                💬 Chamar Beatriz no WhatsApp
+              </span>
+            </div>
+          </div>
+
+          <!-- Paciente 2 -->
+          <div style="background: #FFFFFF; border: 1px solid #E4DBD0; border-radius: 8px; padding: 10px 14px; display: flex; justify-content: space-between; align-items: center;">
+            <div>
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <span style="font-size: 13.5px; font-weight: 700; color: #1F1C18;">Camila Rocha</span>
+                <span class="health-badge health-badge-yellow">Vence esta semana</span>
+              </div>
+              <div style="font-size: 12px; color: #696257; margin-top: 2px;">
+                Último atendimento: <strong>Limpeza de Pele Profunda</strong> (Feito há 28 dias)
+              </div>
+            </div>
+            <div style="text-align: right;">
+              <span class="mock-btn mock-btn-success" style="font-size: 11.5px; padding: 6px 12px;">
+                💬 Chamar Camila no WhatsApp
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Passos -->
+    <div class="steps-container">
+      <div class="step-item">
+        <div class="step-badge">1</div>
+        <div class="step-content">
+          <strong>Como o sistema sabe a hora de chamar:</strong>
+          <p>Cada procedimento cadastrado no sistema possui seu "tempo de retorno" (ex: Botox dura cerca de 120 dias, limpeza de pele 30 dias). O sistema conta os dias sozinho para você não esquecer de ninguém.</p>
+        </div>
+      </div>
+
+      <div class="step-item">
+        <div class="step-badge">2</div>
+        <div class="step-content">
+          <strong>A mensagem pronta de reativação:</strong>
+          <p>Ao clicar em <em>"Chamar no WhatsApp"</em>, a mensagem já convida a cliente dizendo que o efeito do procedimento anterior está terminando e oferece os horários disponíveis da semana de forma elegante.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="tip-box">
+      <span>💰</span>
+      <div>
+        <strong>Resultado Financeiro:</strong> Chamar apenas <strong>3 pacientes dessa lista por dia</strong> costuma gerar de R$ 1.000 a R$ 3.000 a mais no faturamento toda semana, sem nenhum esforço a mais!
+      </div>
+    </div>
+  </div>
+
+  <div class="page-footer">
+    <span>Guia Prático da Clínica • Módulo 4</span>
+    <span>Página 5</span>
+  </div>
+</div>
+
+<!-- PÁGINA 6: VISÃO DA DONA DA CLÍNICA & EQUIPE -->
+<div class="page">
+  <div>
+    <div class="section-header">
+      <div class="section-header-title">
+        <div class="section-num">5</div>
+        <h2>Visão da Dona da Clínica & Equipe</h2>
+      </div>
+      <div class="section-header-tag">Gestão Integrada</div>
+    </div>
+
+    <div class="intro-card">
+      <strong>Controle absoluto na ponta dos seus dedos:</strong> Se você atende e também tem profissionais parceiras ou funcionárias na clínica, você pode escolher se quer ver só os seus atendimentos ou o faturamento de todo mundo reunido!
+    </div>
+
+    <!-- UI Mockup da Visão da Clínica -->
+    <div class="ui-mockup">
+      <div class="ui-browser-bar">
+        <div class="ui-dots"><div class="ui-dot"></div><div class="ui-dot"></div><div class="ui-dot"></div></div>
+        <div class="ui-url">https://clinica.esteticamanager.com (Seletor no topo)</div>
+      </div>
+      <div class="ui-content">
+        <!-- O Seletor da Clínica -->
+        <div style="background: #FAF6F0; border: 1px solid #DFCDBD; border-radius: 10px; padding: 12px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center;">
+          <div>
+            <span style="font-size: 11px; font-weight: 700; color: #8C8275; text-transform: uppercase; display: block; margin-bottom: 2px;">SELETOR DE ESCOPO:</span>
+            <div style="display: inline-flex; gap: 4px; background: #EFE8DE; padding: 3px; border-radius: 8px;">
+              <span style="background: #936C38; color: #FFFFFF; padding: 5px 12px; border-radius: 6px; font-weight: 700; font-size: 11.5px;">🏢 Toda a Clínica</span>
+              <span style="background: #FFFFFF; color: #403A32; padding: 5px 12px; border-radius: 6px; font-weight: 600; font-size: 11.5px;">👤 Meu Atendimento</span>
+            </div>
+          </div>
+
+          <div style="background: rgba(147, 108, 56, 0.1); border: 1px solid rgba(147, 108, 56, 0.3); padding: 5px 12px; border-radius: 20px; font-size: 11.5px; font-weight: 700; color: #936C38;">
+            🏢 Visão Consolidada da Clínica
+          </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+          <div style="background: #FFFFFF; border: 1px solid #EAE3D9; border-radius: 8px; padding: 10px;">
+            <div style="font-size: 11px; font-weight: 700; color: #70685E;">1. Na opção "Toda a Clínica":</div>
+            <p style="font-size: 11.5px; color: #403A32; margin-top: 4px; line-height: 1.4;">
+              Você vê todo o faturamento da clínica somado, o total de clientes atendidas por todas as salas e o lucro geral.
+            </p>
+          </div>
+          <div style="background: #FFFFFF; border: 1px solid #EAE3D9; border-radius: 8px; padding: 10px;">
+            <div style="font-size: 11px; font-weight: 700; color: #70685E;">2. Na opção "Meu Atendimento":</div>
+            <p style="font-size: 11.5px; color: #403A32; margin-top: 4px; line-height: 1.4;">
+              O sistema filtra apenas as suas pacientes e as suas vendas, perfeito para conferir sua comissão e rendimento próprio.
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Rotina Sugerida para a Dona -->
+    <div style="background: #FAF8F5; border: 1px solid #EAE2D5; border-radius: 10px; padding: 14px; margin-top: 10px;">
+      <div style="font-size: 13.5px; font-weight: 800; color: #1F1C18; margin-bottom: 8px;">
+        🌟 Rotina Diária Recomendada (5 Minutinhos por Dia):
+      </div>
+      <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px;">
+        <div style="background: #FFFFFF; border: 1px solid #EAE4DA; border-radius: 8px; padding: 10px;">
+          <strong style="color: #936C38; font-size: 12px; display: block; margin-bottom: 4px;">🌅 PELA MANHÃ</strong>
+          <p style="font-size: 11px; color: #615B52;">Abra a <strong>Agenda</strong> e envie as confirmações de horário pelo WhatsApp para as pacientes de hoje.</p>
+        </div>
+        <div style="background: #FFFFFF; border: 1px solid #EAE4DA; border-radius: 8px; padding: 10px;">
+          <strong style="color: #936C38; font-size: 12px; display: block; margin-bottom: 4px;">☀️ À TARDE</strong>
+          <p style="font-size: 11px; color: #615B52;">Olhe a aba <strong>Quem Chamar Hoje</strong> e mande mensagem para 3 clientes antigas para preencher os próximos dias.</p>
+        </div>
+        <div style="background: #FFFFFF; border: 1px solid #EAE4DA; border-radius: 8px; padding: 10px;">
+          <strong style="color: #936C38; font-size: 12px; display: block; margin-bottom: 4px;">🌙 NO FECHAMENTO</strong>
+          <p style="font-size: 11px; color: #615B52;">Confira o <strong>Painel de Controle</strong> para ver o lucro real do dia comemorar os resultados alcançados!</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="tip-box" style="margin-top: 12px;">
+      <span>❤️</span>
+      <div>
+        <strong>Tudo Pronto!</strong> O sistema cuida dos cálculos, da segurança dos dados e das contas para você poder focar no que faz de melhor: <strong>cuidar das suas pacientes e transformar vidas!</strong>
+      </div>
+    </div>
+  </div>
+
+  <div class="page-footer">
+    <span>Guia Prático da Clínica • Módulo 5</span>
+    <span>Página 6 (Fim do Guia)</span>
+  </div>
+</div>
+
+</body>
+</html>

@@ -31,6 +31,22 @@ class AnamnesisQuestionNotFoundError(Exception):
     pass
 
 
+DEFAULT_TCLE_CONTENT = """TERMO DE CONSENTIMENTO LIVRE E ESCLARECIDO (TCLE) E ORIENTAÇÕES PÓS-PROCEDIMENTO
+
+1. CIÊNCIA E OBJETIVOS:
+Declaro que recebi explicações detalhadas e claras sobre os procedimentos estéticos aos quais serei submetida(o), seus objetivos, benefícios esperados e eventuais limitações técnicas individuais de resposta biológica.
+
+2. CUIDADOS OBRIGATÓRIOS PÓS-PROCEDIMENTO:
+- Proteção Solar Rigorosa: Aplicar protetor solar com FPS 30 ou superior a cada 3 horas e evitar exposição solar direta nas primeiras 48 a 72 horas.
+- Não Manipular a Área: Não coçar, esfoliar, esfregar ou puxar casquinhas/películas da pele tratada.
+- Procedimentos Injetáveis (ex: Botox): Não deitar ou abaixar a cabeça nas primeiras 4 horas após a aplicação e não realizar atividade física intensa nas 24 horas seguintes.
+- Ácidos e Peelings: Suspender o uso de ácidos domiciliares pelo período expressamente orientado pela profissional.
+- Higiene e Hidratação: Manter a região tratada limpa e utilizar apenas os produtos recomendados pela profissional responsável.
+
+3. DECLARAÇÃO DE VERACIDADE:
+Afirmo sob minha responsabilidade que todas as informações de saúde prestadas neste formulário de anamnese são verdadeiras e completas, não tendo omitido alergias, uso de medicamentos, gestação ou condições clínicas preexistentes."""
+
+
 class AnamnesisService:
     def __init__(
         self,
@@ -45,12 +61,16 @@ class AnamnesisService:
     def get_or_create_default_template(self) -> AnamnesisTemplate:
         template = self.template_repo.get_default_with_questions()
         if template is not None:
+            if not template.tcle_content:
+                template.tcle_content = DEFAULT_TCLE_CONTENT
+                self.template_repo._session.flush()
             return template
 
         # Cria template padrão caso não exista
         template = AnamnesisTemplate(
             title="Ficha de Anamnese Facial e Corporal",
             description="Questionário prévio de saúde e histórico estético para segurança do procedimento.",
+            tcle_content=DEFAULT_TCLE_CONTENT,
             is_default=True,
             is_active=True,
             auto_request_on_booking=True,
@@ -169,6 +189,8 @@ class AnamnesisService:
             template.title = payload.title
         if payload.description is not None:
             template.description = payload.description
+        if payload.tcle_content is not None:
+            template.tcle_content = payload.tcle_content
         if payload.auto_request_on_booking is not None:
             template.auto_request_on_booking = payload.auto_request_on_booking
 
@@ -302,12 +324,19 @@ class AnamnesisService:
         submission: AnamnesisSubmission,
         payload: PublicAnamnesisSubmitInput,
         questions: list[AnamnesisQuestion],
+        client_ip: str | None = None,
     ) -> AnamnesisSubmission:
         submission.patient_name = payload.patient_name
         if payload.patient_phone:
             submission.patient_phone = payload.patient_phone
         submission.answers = payload.answers
         submission.signature_name = payload.signature_name
+        submission.signature_image = payload.signature_image
+        submission.tcle_accepted = payload.tcle_accepted
+        if payload.tcle_accepted:
+            submission.tcle_accepted_at = datetime.now(UTC)
+        if client_ip:
+            submission.client_ip = client_ip
         submission.submitted_at = datetime.now(UTC)
 
         # Cálculo automático de alertas de risco

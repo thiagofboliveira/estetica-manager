@@ -52,6 +52,7 @@ class AnamnesisTemplate(TenantModel):
         default="Ficha de Anamnese Facial e Corporal",
     )
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
+    tcle_content: Mapped[str | None] = mapped_column(Text, nullable=True)
     is_default: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
     is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
     auto_request_on_booking: Mapped[bool] = mapped_column(
@@ -129,6 +130,14 @@ class AnamnesisSubmission(TenantModel):
         JSONB, nullable=False, default=list
     )
     signature_name: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    signature_image: Mapped[str | None] = mapped_column(Text, nullable=True)
+    tcle_accepted: Mapped[bool] = mapped_column(
+        Boolean, default=False, nullable=False
+    )
+    tcle_accepted_at: Mapped[datetime | None] = mapped_column(
+        TIMESTAMP(timezone=True), nullable=True
+    )
+    client_ip: Mapped[str | None] = mapped_column(String(45), nullable=True)
     submitted_at: Mapped[datetime | None] = mapped_column(
         TIMESTAMP(timezone=True), nullable=True
     )

@@ -145,12 +145,17 @@ class TestPublicAnamnesisSubmission:
                 "patient_phone": "11999998888",
                 "answers": answers,
                 "signature_name": "Maria Teste Silva",
+                "signature_image": "data:image/png;base64,assinado",
+                "tcle_accepted": True,
             },
         )
         assert resp_submit.status_code == 200, resp_submit.text
         sub_result = resp_submit.json()
         assert sub_result["submitted_at"] is not None
         assert sub_result["signature_name"] == "Maria Teste Silva"
+        assert sub_result["signature_image"] == "data:image/png;base64,assinado"
+        assert sub_result["tcle_accepted"] is True
+        assert sub_result["tcle_accepted_at"] is not None
         assert sub_result["has_risk_alerts"] is True
         assert len(sub_result["risk_alerts_summary"]) > 0
 
@@ -183,3 +188,32 @@ class TestPublicAnamnesisSubmission:
         # Deve falhar com 422 apontando campo obrigatório
         assert resp_submit.status_code == 422
         assert "obrigatória" in resp_submit.json()["detail"].lower()
+
+    def test_validacao_tcle_obrigatorio(
+        self, client: TestClient, auth_headers: dict[str, str]
+    ) -> None:
+        resp_token = client.post(
+            "/api/v1/anamnesis/submissions/token",
+            params={"patient_name": "Maria Sem TCLE"},
+            headers=auth_headers,
+        )
+        token = resp_token.json()["public_token"]
+
+        resp_form = client.get(f"/api/v1/public/anamnesis/{token}")
+        questions = resp_form.json()["questions"]
+        answers = {q["id"]: "não" for q in questions}
+        for q in questions:
+            if q["field_type"] in ("text", "long_text"):
+                answers[q["id"]] = "Avaliação"
+
+        # Tenta submeter com tcle_accepted: False
+        resp_submit = client.post(
+            f"/api/v1/public/anamnesis/{token}",
+            json={
+                "patient_name": "Maria Sem TCLE",
+                "answers": answers,
+                "tcle_accepted": False,
+            },
+        )
+        assert resp_submit.status_code == 422
+        assert "termo de consentimento" in resp_submit.json()["detail"].lower()

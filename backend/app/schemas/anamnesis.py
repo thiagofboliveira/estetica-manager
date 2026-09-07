@@ -78,6 +78,7 @@ class AnamnesisQuestionOut(OutputSchema):
 class AnamnesisTemplateUpdate(InputSchema):
     title: str | None = Field(None, min_length=2, max_length=255)
     description: str | None = Field(None, max_length=1000)
+    tcle_content: str | None = Field(None, max_length=10000)
     auto_request_on_booking: bool | None = None
 
 
@@ -85,6 +86,7 @@ class AnamnesisTemplateOut(OutputSchema):
     id: UUID
     title: str
     description: str | None
+    tcle_content: str | None = None
     is_default: bool
     is_active: bool
     auto_request_on_booking: bool
@@ -98,6 +100,8 @@ class PublicAnamnesisSubmitInput(InputSchema):
     patient_phone: str | None = Field(None, max_length=30)
     answers: dict[str, str | bool | list[str] | None] = Field(default_factory=dict)
     signature_name: str | None = Field(None, max_length=255)
+    signature_image: str | None = Field(None, description="Assinatura desenhada no canvas em base64")
+    tcle_accepted: bool = Field(default=False, description="Ciência e aceite das orientações pós-procedimento")
 
 
 class AnamnesisSubmissionOut(OutputSchema):
@@ -112,6 +116,10 @@ class AnamnesisSubmissionOut(OutputSchema):
     has_risk_alerts: bool
     risk_alerts_summary: list
     signature_name: str | None
+    signature_image: str | None = None
+    tcle_accepted: bool = False
+    tcle_accepted_at: datetime | None = None
+    client_ip: str | None = None
     submitted_at: datetime | None
     created_at: datetime
 
@@ -123,6 +131,7 @@ class PublicAnamnesisFormOut(OutputSchema):
     professional_slug: str | None = None
     template_title: str
     template_description: str | None = None
+    tcle_content: str | None = None
     patient_name: str | None = None
     patient_phone: str | None = None
     is_submitted: bool = False

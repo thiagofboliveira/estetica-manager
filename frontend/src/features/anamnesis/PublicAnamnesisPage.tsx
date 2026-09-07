@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
 import { usePublicAnamnesisForm, useSubmitPublicAnamnesis } from "./hooks";
 import { IconCheck } from "@/ui/icons";
+import { SignatureCanvas } from "./SignatureCanvas";
 import styles from "./PublicAnamnesisPage.module.css";
 
 export function PublicAnamnesisPage() {
@@ -14,6 +15,7 @@ export function PublicAnamnesisPage() {
   const [answers, setAnswers] = useState<Record<string, any>>({});
   const [agree, setAgree] = useState(false);
   const [signatureName, setSignatureName] = useState("");
+  const [signatureImage, setSignatureImage] = useState<string | null>(null);
   const [formError, setFormError] = useState<string | null>(null);
   const [submittedSuccess, setSubmittedSuccess] = useState(false);
 
@@ -105,7 +107,19 @@ export function PublicAnamnesisPage() {
     }
 
     if (!agree) {
-      setFormError("Você precisa confirmar a veracidade das informações antes de enviar.");
+      setFormError(
+        "É obrigatório confirmar a leitura e aceite do Termo de Consentimento e Cuidados Pós-Procedimento para prosseguir."
+      );
+      return;
+    }
+
+    if (!signatureName.trim()) {
+      setFormError("Por favor, digite seu nome completo no campo da assinatura.");
+      return;
+    }
+
+    if (!signatureImage) {
+      setFormError("Por favor, desenhe sua assinatura digital no campo indicado.");
       return;
     }
 
@@ -118,6 +132,8 @@ export function PublicAnamnesisPage() {
           patient_phone: patientPhone.trim() || null,
           answers,
           signature_name: signatureName.trim() || patientName.trim(),
+          signature_image: signatureImage,
+          tcle_accepted: agree,
         },
       });
       setSubmittedSuccess(true);
@@ -263,23 +279,45 @@ export function PublicAnamnesisPage() {
             </div>
           </div>
 
-          <div className={styles.agreementBlock}>
-            <label className={styles.checkboxLabel}>
+          {/* Termo de Consentimento Livre e Esclarecido (TCLE) & Cuidados Pós */}
+          <div className={styles.tcleCard}>
+            <h4 className={styles.tcleTitle}>
+              📜 Termo de Consentimento Livre e Esclarecido (TCLE) & Cuidados Pós
+            </h4>
+            <div className={styles.tcleTextBox}>
+              {form.tcle_content ||
+                `1. CIÊNCIA E OBJETIVOS:
+Declaro que recebi explicações detalhadas e claras sobre os procedimentos estéticos aos quais serei submetida(o), seus objetivos, benefícios esperados e eventuais limitações técnicas individuais de resposta biológica.
+
+2. CUIDADOS OBRIGATÓRIOS PÓS-PROCEDIMENTO:
+- Proteção Solar Rigorosa: Aplicar protetor solar com FPS 30 ou superior a cada 3 horas e evitar exposição solar direta nas primeiras 48 a 72 horas.
+- Não Manipular a Área: Não coçar, esfoliar, esfregar ou puxar casquinhas/películas da pele tratada.
+- Procedimentos Injetáveis (ex: Botox): Não deitar ou abaixar a cabeça nas primeiras 4 horas após a aplicação e não realizar atividade física intensa nas 24 horas seguintes.
+- Ácidos e Peelings: Suspender o uso de ácidos domiciliares pelo período expressamente orientado pela profissional.
+- Higiene e Hidratação: Manter a região tratada limpa e utilizar apenas os produtos recomendados pela profissional responsável.
+
+3. DECLARAÇÃO DE VERACIDADE:
+Afirmo sob minha responsabilidade que todas as informações de saúde prestadas neste formulário de anamnese são verdadeiras e completas, não tendo omitido alergias, uso de medicamentos, gestação ou condições clínicas preexistentes.`}
+            </div>
+
+            <label className={styles.checkboxLabel} style={{ marginTop: "4px" }}>
               <input
                 type="checkbox"
                 checked={agree}
                 onChange={(e) => setAgree(e.target.checked)}
                 style={{ marginTop: "2px" }}
+                required
               />
-              <span>
-                Declaro que todas as informações prestadas são verdadeiras e completas, estando ciente
-                da importância delas para a segurança dos procedimentos.
+              <span style={{ fontSize: "0.85rem", fontWeight: 600, color: "#1e293b" }}>
+                Declaro que li, compreendi e aceito integralmente o Termo de Consentimento e todas as orientações pós-procedimento acima, atestando a veracidade das minhas respostas. <span className={styles.requiredAsterisk}>*</span>
               </span>
             </label>
+          </div>
 
+          <div className={styles.agreementBlock}>
             <div>
-              <label style={{ fontSize: "0.8rem", fontWeight: 600, color: "#475569" }}>
-                Assinatura / Nome do declarante (opcional):
+              <label style={{ fontSize: "0.85rem", fontWeight: 600, color: "#1e293b" }}>
+                Nome Completo do Declarante (Assinatura do Titular) <span className={styles.requiredAsterisk}>*</span>
               </label>
               <input
                 type="text"
@@ -288,7 +326,15 @@ export function PublicAnamnesisPage() {
                 placeholder={patientName || "Seu nome completo"}
                 value={signatureName}
                 onChange={(e) => setSignatureName(e.target.value)}
+                required
               />
+            </div>
+
+            <div style={{ marginTop: "10px" }}>
+              <label style={{ fontSize: "0.85rem", fontWeight: 600, color: "#1e293b", marginBottom: "6px", display: "block" }}>
+                Assinatura Digital (Desenhe com o dedo na tela ou mouse) <span className={styles.requiredAsterisk}>*</span>
+              </label>
+              <SignatureCanvas onSignatureChange={setSignatureImage} />
             </div>
           </div>
 

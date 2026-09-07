@@ -27,6 +27,7 @@ from app.repositories.event import EventRepository
 from app.repositories.financial_settings import FinancialSettingsRepository
 from app.repositories.fixed_expense import FixedExpenseRepository
 from app.repositories.patient import PatientRepository
+from app.repositories.patient_photo_repository import PatientPhotoRepository
 from app.repositories.payment_fee_rule import PaymentFeeRuleRepository
 from app.repositories.procedure import ProcedureRepository
 from app.repositories.professional import ProfessionalRepository
@@ -47,6 +48,7 @@ from app.services.expenses_by_category_service import ExpensesByCategoryService
 from app.services.export_service import ExportService
 from app.services.financial_settings_service import FinancialSettingsService
 from app.services.fixed_expense_service import FixedExpenseService
+from app.services.patient_photo_service import PatientPhotoService
 from app.services.patient_service import PatientService
 from app.services.payment_fee_rule_service import PaymentFeeRuleService
 from app.services.procedure_ranking_service import ProcedureRankingService
@@ -56,7 +58,9 @@ from app.services.sale_service import SaleService
 from app.services.session_service import SessionService
 from app.services.system_service import SystemService
 from app.services.user_service import UserService
+from app.services.vial_service import VialService
 from app.services.weekly_summary_service import WeeklySummaryService
+from app.repositories.vial_repository import OpenVialRepository
 
 CurrentProfessional = Annotated[UUID, Depends(get_current_professional_id)]
 
@@ -454,3 +458,28 @@ def get_anamnesis_service(
 
 AnamnesisSvc = Annotated[AnamnesisService, Depends(get_anamnesis_service)]
 WeeklySummarySvc = Annotated[WeeklySummaryService, Depends(get_weekly_summary_service)]
+
+
+def get_patient_photo_service(
+    session: DbSession, professional_id: CurrentProfessional
+) -> PatientPhotoService:
+    return PatientPhotoService(
+        repo=PatientPhotoRepository(session, professional_id),
+        patient_repo=PatientRepository(session, professional_id),
+        procedure_repo=ProcedureRepository(session, professional_id),
+    )
+
+
+PatientPhotoSvc = Annotated[PatientPhotoService, Depends(get_patient_photo_service)]
+
+
+def get_vial_service(
+    session: DbSession, professional_id: CurrentProfessional
+) -> VialService:
+    return VialService(
+        repo=OpenVialRepository(session, professional_id),
+        procedure_repo=ProcedureRepository(session, professional_id),
+    )
+
+
+VialSvc = Annotated[VialService, Depends(get_vial_service)]

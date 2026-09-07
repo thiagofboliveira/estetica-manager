@@ -13,6 +13,7 @@ from app.api.v1 import (
     export,
     financial_settings,
     fixed_expenses,
+    patient_photos,
     patients,
     payment_fee_rules,
     procedures,
@@ -25,6 +26,7 @@ from app.api.v1 import (
     super_admin,
     system,
     users,
+    vials,
     weekly_summary,
 )
 from app.core.config import settings
@@ -213,3 +215,5 @@ app.include_router(public_agenda.router, prefix="/api/v1")
 app.include_router(weekly_summary.router, prefix="/api/v1")
 app.include_router(anamnesis.router, prefix="/api/v1")
 app.include_router(public_anamnesis.router, prefix="/api/v1")
+app.include_router(patient_photos.router, prefix="/api/v1")
+app.include_router(vials.router, prefix="/api/v1")

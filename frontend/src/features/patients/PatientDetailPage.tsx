@@ -6,8 +6,10 @@ import { useAnonymizePatient, useOptOutPatient, usePatient, useUpdatePatient } f
 import { usePatientAnamnesis, useGenerateSubmissionToken } from "@/features/anamnesis/hooks";
 import { IconAlertTriangle, IconCheck, IconCopy } from "@/ui/icons";
 import { patientsApi } from "./api";
+import { PatientPhotosGallery } from "./PatientPhotosGallery";
+import { usePatientPhotos } from "./usePatientPhotos";
 
-type Tab = "data" | "history" | "anamnesis";
+type Tab = "data" | "history" | "anamnesis" | "photos";
 
 export function PatientDetailPage() {
   const { id = "" } = useParams();
@@ -18,6 +20,7 @@ export function PatientDetailPage() {
   const optOut = useOptOutPatient(id);
   const anamnesisQuery = usePatientAnamnesis(id);
   const generateTokenMut = useGenerateSubmissionToken();
+  const photosQuery = usePatientPhotos(id);
 
   const [tab, setTab] = useState<Tab>("data");
   const [exporting, setExporting] = useState(false);
@@ -213,6 +216,15 @@ export function PatientDetailPage() {
                   Ficha de Anamnese {anamnesisList.length > 0 ? `(${anamnesisList.length})` : ""}
                   {allRiskAlerts.length > 0 && " ⚠️"}
                 </button>
+                <button
+                  type="button"
+                  role="tab"
+                  aria-selected={tab === "photos"}
+                  className="tab-button tap-target"
+                  onClick={() => setTab("photos")}
+                >
+                  📷 Fotos & Evolução {photosQuery.data && photosQuery.data.length > 0 ? `(${photosQuery.data.length})` : ""}
+                </button>
               </div>
 
               <div className="tab-content">
@@ -407,16 +419,93 @@ export function PatientDetailPage() {
                               ))}
                             </div>
 
-                            {sub.signature_name && (
-                              <div style={{ marginTop: "12px", fontSize: "0.8rem", color: "var(--text-muted)" }}>
-                                Declaração assinada por: <strong>{sub.signature_name}</strong>
+                            {/* Termo TCLE e Assinatura Digital */}
+                            <div
+                              style={{
+                                marginTop: "14px",
+                                paddingTop: "12px",
+                                borderTop: "1px dashed var(--border)",
+                                display: "flex",
+                                flexDirection: "column",
+                                gap: "6px",
+                              }}
+                            >
+                              <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
+                                {sub.tcle_accepted ? (
+                                  <span
+                                    style={{
+                                      background: "#ecfdf5",
+                                      color: "#059669",
+                                      border: "1px solid #a7f3d0",
+                                      padding: "3px 8px",
+                                      borderRadius: "6px",
+                                      fontSize: "0.78rem",
+                                      fontWeight: 600,
+                                    }}
+                                  >
+                                    🛡️ TCLE Aceito e Assinado
+                                  </span>
+                                ) : (
+                                  <span
+                                    style={{
+                                      background: "#f1f5f9",
+                                      color: "#64748b",
+                                      border: "1px solid #e2e8f0",
+                                      padding: "3px 8px",
+                                      borderRadius: "6px",
+                                      fontSize: "0.78rem",
+                                    }}
+                                  >
+                                    Sem termo formal
+                                  </span>
+                                )}
+
+                                {sub.signature_name && (
+                                  <span style={{ fontSize: "0.82rem", color: "var(--text-muted)" }}>
+                                    Declarante: <strong>{sub.signature_name}</strong>
+                                  </span>
+                                )}
                               </div>
-                            )}
+
+                              {sub.signature_image && (
+                                <div style={{ marginTop: "6px" }}>
+                                  <span style={{ fontSize: "0.75rem", color: "var(--text-muted)", display: "block", marginBottom: "4px" }}>
+                                    Assinatura Digital (manuscrita na tela):
+                                  </span>
+                                  <div
+                                    style={{
+                                      background: "#ffffff",
+                                      border: "1px solid var(--border)",
+                                      borderRadius: "8px",
+                                      padding: "6px 12px",
+                                      display: "inline-block",
+                                      boxShadow: "0 1px 2px rgba(0,0,0,0.04)",
+                                    }}
+                                  >
+                                    <img
+                                      src={sub.signature_image}
+                                      alt="Assinatura manuscrita da paciente"
+                                      style={{ maxHeight: "55px", maxWidth: "220px", display: "block", objectFit: "contain" }}
+                                    />
+                                  </div>
+                                </div>
+                              )}
+
+                              {sub.client_ip && (
+                                <div style={{ fontSize: "0.72rem", color: "var(--text-muted)", marginTop: "2px" }}>
+                                  Carimbo de Auditoria: IP {sub.client_ip} • {sub.tcle_accepted_at ? new Date(sub.tcle_accepted_at).toLocaleString("pt-BR") : ""}
+                                </div>
+                              )}
+                            </div>
                           </div>
                         ))}
                       </div>
                     )}
                   </div>
+                )}
+
+                {tab === "photos" && (
+                  <PatientPhotosGallery patientId={patient.id} patientName={patient.name} />
                 )}
               </div>
             </>

@@ -15,6 +15,7 @@ import {
   IconX,
 } from "@/ui/icons";
 import { ThemeToggle } from "@/ui/ThemeToggle";
+import { PWAInstallBanner } from "@/ui/PWAInstallBanner";
 import styles from "./AppLayout.module.css";
 
 export function AppLayout() {
@@ -144,6 +145,7 @@ export function AppLayout() {
             <Outlet />
           </div>
         </main>
+        <PWAInstallBanner />
       </div>
     </div>
   );

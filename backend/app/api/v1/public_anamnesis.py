@@ -2,7 +2,7 @@
 
 from uuid import UUID
 
-from fastapi import APIRouter, HTTPException, Query, status
+from fastapi import APIRouter, HTTPException, Query, Request, status
 from sqlalchemy import select
 
 from app.api.v1.public_agenda import (
@@ -132,6 +132,7 @@ def get_public_anamnesis_form(
             professional_slug=prof.slug if prof else None,
             template_title=template.title,
             template_description=template.description,
+            tcle_content=template.tcle_content,
             patient_name=sub.patient_name,
             patient_phone=sub.patient_phone,
             is_submitted=sub.submitted_at is not None,
@@ -144,9 +145,10 @@ def get_public_anamnesis_form(
 def submit_public_anamnesis(
     token: str,
     payload: PublicAnamnesisSubmitInput,
+    request: Request,
     _rate_limit: PublicBookingRateLimit = None,
 ) -> AnamnesisSubmissionOut:
-    """Recebe e processa as respostas da anamnese preenchidas pelo paciente."""
+    """Recebe e processa as respostas da anamnese preenchidas pelo paciente com TCLE e assinatura."""
     sub_id, prof_id = _resolve_submission_tenant(token)
 
     with tenant_session(prof_id) as session:
@@ -174,5 +176,18 @@ def submit_public_anamnesis(
                         detail=f"A pergunta '{q.title}' é obrigatória.",
                     )
 
-        updated_sub = svc.submit_answers(sub, payload, questions)
+        # Validação do TCLE (Termo de Consentimento Livre e Esclarecido)
+        if not payload.tcle_accepted:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail="É obrigatório aceitar o Termo de Consentimento e Cuidados Pós-Procedimento para prosseguir.",
+            )
+
+        client_ip = request.client.host if request.client else None
+        updated_sub = svc.submit_answers(
+            submission=sub,
+            payload=payload,
+            questions=questions,
+            client_ip=client_ip,
+        )
         return AnamnesisSubmissionOut.model_validate(updated_sub)

@@ -29,6 +29,7 @@ export const qk = {
   patients: () => [...qk.all, "patients"] as const,
   patientsSearch: (q: string) => [...qk.patients(), "search", q] as const,
   patientDetail: (id: string) => [...qk.patients(), "detail", id] as const,
+  patientPhotos: (patientId: string) => [...qk.patientDetail(patientId), "photos"] as const,
 
   procedures: () => [...qk.all, "procedures"] as const,
   settings: () => [...qk.all, "settings"] as const,
@@ -48,4 +49,6 @@ export const qk = {
     [...qk.financial(), "expenses-by-category", params ?? {}] as const,
   roi: (params: { period: string; date_from?: string; date_to?: string }) =>
     [...qk.financial(), "roi", params] as const,
+  vials: () => [...qk.all, "vials"] as const,
+  vialsActive: () => [...qk.vials(), "active"] as const,
 } as const;

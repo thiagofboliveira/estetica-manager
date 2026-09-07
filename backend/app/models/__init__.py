@@ -21,6 +21,7 @@ from app.models.financial_settings import (
 )
 from app.models.fixed_expense import ExpensePeriodicity, FixedExpense
 from app.models.patient import Patient
+from app.models.patient_photo import PatientPhoto, PhotoType
 from app.models.payment_fee_rule import PaymentFeeRule
 from app.models.procedure import Modality, Procedure, ProcedureType
 from app.models.professional import Professional
@@ -34,6 +35,7 @@ from app.models.sale_item import SaleItem
 from app.models.session import Session, SessionStatus
 from app.models.terms_acceptance import TermsAcceptance
 from app.models.user import User
+from app.models.vial import OpenVial, VialStatus
 
 __all__ = [
     "Base",
@@ -43,6 +45,10 @@ __all__ = [
     "User",
     "Professional",
     "Patient",
+    "PatientPhoto",
+    "PhotoType",
+    "OpenVial",
+    "VialStatus",
     "Procedure",
     "ProcedureType",
     "Modality",

@@ -20,9 +20,11 @@ type FormValues = z.infer<typeof schema>;
 type Props = {
   onClose: () => void;
   initialDateTime?: string;
+  patientNameHint?: string;
+  noteHint?: string;
 };
 
-export function NewBookingModal({ onClose, initialDateTime }: Props) {
+export function NewBookingModal({ onClose, initialDateTime, patientNameHint, noteHint }: Props) {
   const createBooking = useCreateBooking();
   const [serverError, setServerError] = useState<string | null>(null);
 
@@ -39,10 +41,10 @@ export function NewBookingModal({ onClose, initialDateTime }: Props) {
   } = useForm<FormValues>({
     resolver: zodResolver(schema),
     defaultValues: {
-      patient_name_hint: "",
+      patient_name_hint: patientNameHint || "",
       scheduled_at: localISOTime,
       modality: "IN_PERSON",
-      note: "",
+      note: noteHint || "",
     },
   });
 
