@@ -1,6 +1,7 @@
 import { NavLink } from "react-router-dom";
 import {
   IconDashboard,
+  IconBarChart,
   IconTarget,
   IconCalendar,
   IconUsers,
@@ -13,6 +14,7 @@ import styles from "./Sidebar.module.css";
 
 const NAV_ITEMS = [
   { to: "/dashboard", label: "Dashboard", Icon: IconDashboard, end: true },
+  { to: "/relatorios", label: "Relatórios", Icon: IconBarChart, end: false },
   { to: "/retornos", label: "Quem chamar hoje?", Icon: IconTarget, end: false },
   { to: "/agenda", label: "Agenda", Icon: IconCalendar, end: false },
   { to: "/pacientes", label: "Pacientes", Icon: IconUsers, end: false },

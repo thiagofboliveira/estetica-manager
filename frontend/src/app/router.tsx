@@ -23,6 +23,7 @@ import { ModoOcupadoPage } from "@/features/agenda/ModoOcupadoPage";
 import { FinancialSettingsPage } from "@/features/settings/FinancialSettingsPage";
 import { FixedExpensesPage } from "@/features/fixed-expenses/FixedExpensesPage";
 import { PriceSimulatorPage } from "@/features/simulator/PriceSimulatorPage";
+import { ReportsPage } from "@/features/reports/ReportsPage";
 import { SetupWizardPage } from "@/features/admin/SetupWizardPage";
 
 import { AdminLayout } from "@/features/admin/AdminLayout";
@@ -87,6 +88,7 @@ export const router = createBrowserRouter([
               { path: "/financeiro", element: <FinancialSettingsPage /> },
               { path: "/despesas-fixas", element: <FixedExpensesPage /> },
               { path: "/simulador", element: <PriceSimulatorPage /> },
+              { path: "/relatorios", element: <ReportsPage /> },
               { path: "*", element: <Navigate to="/dashboard" replace /> },
 
             ],
