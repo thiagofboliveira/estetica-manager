@@ -63,7 +63,7 @@ export function CreateSupplyModal({ onClose }: { onClose: () => void }) {
 
   return (
     <div className={styles.modalOverlay} role="dialog" aria-modal="true">
-      <div className={styles.modalContent} style={{ maxWidth: "520px" }}>
+      <div className={styles.modalContent} style={{ maxWidth: "500px" }}>
         <div className={styles.modalHeader}>
           <h3 className={styles.modalTitle}>Cadastrar Novo Insumo no Estoque</h3>
           <button type="button" className={styles.closeBtn} onClick={onClose} aria-label="Fechar">
@@ -71,7 +71,7 @@ export function CreateSupplyModal({ onClose }: { onClose: () => void }) {
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+        <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: "12px", width: "100%" }}>
           {error && <div style={{ color: "var(--danger, #dc2626)", fontSize: "13px" }}>{error}</div>}
 
           <div className={styles.formGroup}>
@@ -87,23 +87,23 @@ export function CreateSupplyModal({ onClose }: { onClose: () => void }) {
             />
           </div>
 
-          <div className={styles.formRow}>
-            <div className={styles.formGroup}>
-              <label className={styles.formLabel}>Categoria</label>
-              <select
-                className={styles.formInput}
-                value={category}
-                onChange={(e) => setCategory(e.target.value as SupplyCategory)}
-              >
-                <option value="FILLER">Preenchedores (Ácido Hialurônico)</option>
-                <option value="INJECTABLE">Injetáveis / Fracionados (Toxina, Bioestimuladores)</option>
-                <option value="THREAD">Fios de Sustentação (PDO)</option>
-                <option value="ANESTHETIC">Anestésicos</option>
-                <option value="CONSUMABLE">Descartáveis & Consumíveis</option>
-                <option value="OTHER">Outros Insumos</option>
-              </select>
-            </div>
+          <div className={styles.formGroup}>
+            <label className={styles.formLabel}>Categoria</label>
+            <select
+              className={styles.formInput}
+              value={category}
+              onChange={(e) => setCategory(e.target.value as SupplyCategory)}
+            >
+              <option value="FILLER">Preenchedores (Ácido Hialurônico)</option>
+              <option value="INJECTABLE">Injetáveis / Fracionados (Toxina, Bioestimuladores)</option>
+              <option value="THREAD">Fios de Sustentação (PDO)</option>
+              <option value="ANESTHETIC">Anestésicos (Tópicos / Injetáveis)</option>
+              <option value="CONSUMABLE">Descartáveis & Consumíveis (Agulhas, luvas)</option>
+              <option value="OTHER">Outros Insumos Clínicos</option>
+            </select>
+          </div>
 
+          <div className={styles.formRow}>
             <div className={styles.formGroup}>
               <label className={styles.formLabel}>Marca / Fabricante (Opcional)</label>
               <input
@@ -111,12 +111,10 @@ export function CreateSupplyModal({ onClose }: { onClose: () => void }) {
                 className={styles.formInput}
                 value={brand}
                 onChange={(e) => setBrand(e.target.value)}
-                placeholder="Ex: Galderma, Allergan, Rennova"
+                placeholder="Ex: Galderma, Allergan"
               />
             </div>
-          </div>
 
-          <div className={styles.formRow}>
             <div className={styles.formGroup}>
               <label className={styles.formLabel}>Unidade de Medida</label>
               <select
@@ -132,18 +130,6 @@ export function CreateSupplyModal({ onClose }: { onClose: () => void }) {
                 <option value="ML">Mililitro (ml)</option>
                 <option value="PACOTE">Pacote</option>
               </select>
-            </div>
-
-            <div className={styles.formGroup}>
-              <label className={styles.formLabel}>Custo Unitário Médio (R$)</label>
-              <input
-                type="number"
-                step="0.01"
-                className={styles.formInput}
-                value={costPrice}
-                onChange={(e) => setCostPrice(e.target.value)}
-                placeholder="Ex: 450.00"
-              />
             </div>
           </div>
 
@@ -169,9 +155,21 @@ export function CreateSupplyModal({ onClose }: { onClose: () => void }) {
                 value={minStockAlert}
                 onChange={(e) => setMinStockAlert(e.target.value)}
                 min="0"
-                placeholder="Avisar quando atingir..."
+                placeholder="Aviso de compra"
               />
             </div>
+          </div>
+
+          <div className={styles.formGroup}>
+            <label className={styles.formLabel}>Custo Unitário Médio (R$)</label>
+            <input
+              type="number"
+              step="0.01"
+              className={styles.formInput}
+              value={costPrice}
+              onChange={(e) => setCostPrice(e.target.value)}
+              placeholder="Ex: 450.00"
+            />
           </div>
 
           <div className={styles.formGroup}>
@@ -263,14 +261,14 @@ export function RecordMovementModal({
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+        <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: "12px", width: "100%" }}>
           {error && <div style={{ color: "var(--danger, #dc2626)", fontSize: "13px" }}>{error}</div>}
 
-          <div style={{ background: "var(--surface-hover, #f8fafc)", padding: "10px 12px", borderRadius: "8px" }}>
-            <p style={{ margin: 0, fontSize: "14px", fontWeight: 600, color: "var(--text)" }}>
+          <div style={{ background: "var(--surface-hover, #f8fafc)", padding: "10px 14px", borderRadius: "8px", width: "100%", boxSizing: "border-box", wordBreak: "break-word" }}>
+            <p style={{ margin: 0, fontSize: "14px", fontWeight: 600, color: "var(--text)", wordBreak: "break-word" }}>
               {supply.name}
             </p>
-            <span style={{ fontSize: "12.5px", color: "var(--text-muted)" }}>
+            <span style={{ fontSize: "12.5px", color: "var(--text-muted)", wordBreak: "break-word" }}>
               Saldo atual: <strong>{supply.current_stock} {supply.unit_measure}</strong>
               {supply.brand ? ` • Marca: ${supply.brand}` : ""}
             </span>
@@ -285,15 +283,45 @@ export function RecordMovementModal({
             >
               <option value="ENTRY">➕ Entrada / Compra (Aumenta estoque)</option>
               <option value="EXIT">➖ Saída / Uso em Atendimento (Reduz estoque)</option>
-              <option value="LOSS">⚠️ Perda / Quebra / Descarte (Reduz estoque)</option>
-              <option value="ADJUSTMENT">🔄 Ajuste Manual de Balanço (Define saldo exato)</option>
+              <option value="LOSS">⚠️ Perda / Descarte (Reduz estoque)</option>
+              <option value="ADJUSTMENT">🔄 Ajuste de Balanço (Define saldo exato)</option>
             </select>
           </div>
 
-          <div className={styles.formRow}>
+          {type === "ENTRY" ? (
+            <div className={styles.formRow}>
+              <div className={styles.formGroup}>
+                <label className={styles.formLabel}>
+                  Quantidade ({supply.unit_measure})
+                </label>
+                <input
+                  type="number"
+                  step="0.01"
+                  className={styles.formInput}
+                  value={quantity}
+                  onChange={(e) => setQuantity(e.target.value)}
+                  min="0.01"
+                  required
+                  autoFocus
+                />
+              </div>
+
+              <div className={styles.formGroup}>
+                <label className={styles.formLabel}>Preço Unitário (R$)</label>
+                <input
+                  type="number"
+                  step="0.01"
+                  className={styles.formInput}
+                  value={unitPrice}
+                  onChange={(e) => setUnitPrice(e.target.value)}
+                  placeholder="Ex: 450.00"
+                />
+              </div>
+            </div>
+          ) : (
             <div className={styles.formGroup}>
               <label className={styles.formLabel}>
-                {type === "ADJUSTMENT" ? "Novo Saldo Total" : "Quantidade"} ({supply.unit_measure})
+                {type === "ADJUSTMENT" ? "Novo Saldo Total" : "Quantidade a Abater"} ({supply.unit_measure})
               </label>
               <input
                 type="number"
@@ -306,21 +334,7 @@ export function RecordMovementModal({
                 autoFocus
               />
             </div>
-
-            {type === "ENTRY" && (
-              <div className={styles.formGroup}>
-                <label className={styles.formLabel}>Preço Unitário da Compra (R$)</label>
-                <input
-                  type="number"
-                  step="0.01"
-                  className={styles.formInput}
-                  value={unitPrice}
-                  onChange={(e) => setUnitPrice(e.target.value)}
-                  placeholder="Ex: 450.00"
-                />
-              </div>
-            )}
-          </div>
+          )}
 
           <div className={styles.formGroup}>
             <label className={styles.formLabel}>Observações / Motivo (Opcional)</label>
@@ -329,7 +343,7 @@ export function RecordMovementModal({
               className={styles.formInput}
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
-              placeholder="Ex: Nota Fiscal 1234, Aplicação em paciente, etc."
+              placeholder="Ex: Nota Fiscal, Uso em paciente, etc."
             />
           </div>
 

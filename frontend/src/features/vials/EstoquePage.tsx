@@ -403,21 +403,21 @@ function SupplyCardItem({
   return (
     <div className={styles.vialCard}>
       <div className={styles.vialCardHeader}>
-        <div>
+        <div style={{ minWidth: 0, flex: 1, overflow: "hidden" }}>
           <span className={`${styles.categoryPill} ${catClass}`}>
             {CATEGORY_SHORT_LABELS[supply.category] || supply.category}
           </span>
-          <h3 className={styles.vialName} style={{ marginTop: "6px" }}>
+          <h3 className={styles.vialName} style={{ marginTop: "6px", wordBreak: "break-word" }}>
             {supply.name}
           </h3>
-          <div className={styles.vialMeta}>
+          <div className={styles.vialMeta} style={{ wordBreak: "break-word" }}>
             {supply.brand ? `${supply.brand} • ` : ""}
             {supply.cost_price ? `Custo: ${formatBRL(money(supply.cost_price))}` : "Sem custo informado"}
           </div>
         </div>
 
         {supply.is_low_stock && (
-          <span className={styles.stockLowAlert}>
+          <span className={styles.stockLowAlert} style={{ flexShrink: 0 }}>
             <IconAlertTriangle width="12" height="12" />
             <span>Estoque Baixo</span>
           </span>

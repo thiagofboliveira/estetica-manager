@@ -256,6 +256,7 @@
   justify-content: center;
   padding: 16px;
   z-index: 1000;
+  box-sizing: border-box;
 }
 
 .modalContent {
@@ -263,18 +264,26 @@
   border-radius: var(--radius-lg, 12px);
   border: 1px solid var(--border);
   width: 100%;
-  max-width: 460px;
+  max-width: 500px;
+  max-height: 90vh;
+  overflow-y: auto;
+  overflow-x: hidden;
   padding: 24px;
   display: flex;
   flex-direction: column;
   gap: 16px;
   box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+  box-sizing: border-box;
+  word-break: break-word;
 }
 
 .modalHeader {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: 12px;
+  min-width: 0;
+  width: 100%;
 }
 
 .modalTitle {
@@ -282,6 +291,8 @@
   font-weight: 700;
   margin: 0;
   color: var(--text);
+  word-break: break-word;
+  min-width: 0;
 }
 
 .closeBtn {
@@ -294,6 +305,7 @@
   justify-content: center;
   padding: 4px;
   border-radius: 4px;
+  flex-shrink: 0;
 }
 
 .closeBtn:hover {
@@ -304,12 +316,17 @@
   display: flex;
   flex-direction: column;
   gap: 6px;
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
 }
 
 .formLabel {
   font-size: 13px;
   font-weight: 500;
   color: var(--text);
+  word-break: break-word;
+  line-height: 1.3;
 }
 
 .formInput {
@@ -320,6 +337,11 @@
   font-size: 14px;
   color: var(--text);
   outline: none;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  text-overflow: ellipsis;
 }
 
 .formInput:focus {
@@ -328,8 +350,11 @@
 
 .formRow {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
   gap: 12px;
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
 }
 
 .modalFooter {
@@ -337,4 +362,5 @@
   justify-content: flex-end;
   gap: 10px;
   margin-top: 8px;
+  flex-wrap: wrap;
 }
