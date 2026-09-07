@@ -1,13 +1,15 @@
+import { useState } from "react";
 import { Outlet, NavLink, useNavigate } from "react-router-dom";
 import { useAuth } from "@/lib/auth/AuthContext";
 import { ImpersonationBanner } from "@/app/layout/ImpersonationBanner";
-import { IconSparkles, IconBuilding, IconUsers, IconLogout } from "@/ui/icons";
+import { IconSparkles, IconBuilding, IconUsers, IconLogout, IconMenu, IconX } from "@/ui/icons";
 import { ThemeToggle } from "@/ui/ThemeToggle";
 import styles from "./SuperAdminLayout.module.css";
 
 export function SuperAdminLayout() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+  const [drawerOpen, setDrawerOpen] = useState(false);
 
   // Guard clause para Super Admin Global
   if (user && user.role !== "superadmin") {
@@ -18,7 +20,41 @@ export function SuperAdminLayout() {
   return (
     <div className={styles.layout}>
       <ImpersonationBanner />
-      <aside className={styles.sidebar}>
+
+      {/* Header Mobile com botão de menu e identidade */}
+      <header className={styles.mobileHeader}>
+        <button
+          type="button"
+          className={styles.mobileMenuBtn}
+          onClick={() => setDrawerOpen(true)}
+          aria-label="Abrir menu de navegação"
+        >
+          <IconMenu width="22" height="22" />
+        </button>
+
+        <div className={styles.mobileBrand}>
+          <div className={styles.logoBadgeSmall}>
+            <IconSparkles width="15" height="15" />
+          </div>
+          <span className={styles.mobileBrandTitle}>Lumina SaaS</span>
+        </div>
+
+        <div className={styles.mobileUserAvatar}>
+          {user?.name?.[0]?.toUpperCase() ?? "S"}
+        </div>
+      </header>
+
+      {/* Backdrop para fechar drawer no mobile */}
+      {drawerOpen && (
+        <div
+          className={styles.backdrop}
+          onClick={() => setDrawerOpen(false)}
+          aria-hidden="true"
+        />
+      )}
+
+      {/* Sidebar: fixa em desktop, drawer deslizante no mobile */}
+      <aside className={`${styles.sidebar} ${drawerOpen ? styles.sidebarOpen : ""}`}>
         <div className={styles.brand}>
           <div className={styles.logoBadge}>
             <IconSparkles width="18" height="18" />
@@ -27,11 +63,20 @@ export function SuperAdminLayout() {
             <span className={styles.brandName}>Lumina</span>
             <span className={styles.brandSub}>SaaS Platform</span>
           </div>
+          <button
+            type="button"
+            className={styles.closeBtn}
+            onClick={() => setDrawerOpen(false)}
+            aria-label="Fechar menu"
+          >
+            <IconX width="20" height="20" />
+          </button>
         </div>
         
         <nav className={styles.nav}>
           <NavLink
             to="/super-admin/clinicas"
+            onClick={() => setDrawerOpen(false)}
             className={({ isActive }) =>
               isActive ? `${styles.navLink} ${styles.navLinkActive}` : styles.navLink
             }
@@ -41,6 +86,7 @@ export function SuperAdminLayout() {
           </NavLink>
           <NavLink
             to="/super-admin/usuarios"
+            onClick={() => setDrawerOpen(false)}
             className={({ isActive }) =>
               isActive ? `${styles.navLink} ${styles.navLinkActive}` : styles.navLink
             }
@@ -50,6 +96,7 @@ export function SuperAdminLayout() {
           </NavLink>
           <NavLink
             to="/dashboard"
+            onClick={() => setDrawerOpen(false)}
             className={styles.navLink}
             title="Acessar painel de atendimento da clínica"
           >

@@ -1,4 +1,4 @@
-﻿/* ==========================================================================
+/* ==========================================================================
    ROICard Styles — Dual-Theme Support
    ========================================================================== */
 
@@ -201,4 +201,35 @@
 .link:hover {
   color: var(--accent-hover);
   text-decoration: underline;
+}
+
+@media (max-width: 640px) {
+  .card {
+    padding: 15px 14px;
+    margin-bottom: 16px;
+    border-radius: 12px;
+  }
+
+  .amount {
+    font-size: 22px;
+  }
+
+  .topRow {
+    gap: 10px;
+    margin-bottom: 12px;
+  }
+
+  .iconBadge {
+    width: 30px;
+    height: 30px;
+  }
+
+  .title {
+    font-size: 13.5px;
+  }
+
+  .badges {
+    width: 100%;
+    justify-content: flex-start;
+  }
 }

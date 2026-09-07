@@ -1,4 +1,4 @@
-﻿/* ==========================================================================
+/* ==========================================================================
    SuperAdminClinicsPage Styles — Dual-Theme Support
    ========================================================================== */
 
@@ -131,4 +131,283 @@
   background: var(--bg-subtle);
   border-color: var(--border-focus);
   color: var(--text-h);
+}
+
+.btnActionImpersonate {
+  background: #7c3aed !important;
+  color: #ffffff !important;
+  border-color: #7c3aed !important;
+}
+
+.btnActionImpersonate:hover {
+  background: #6d28d9 !important;
+  border-color: #6d28d9 !important;
+}
+
+.tableWrap {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Mobile Card List (oculto em desktop) */
+.mobileCardList {
+  display: none;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.clinicCard {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 16px;
+  box-shadow: var(--shadow-sm);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.clinicCardHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.clinicCardDetails {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 10px 12px;
+  background: var(--bg-subtle);
+  border-radius: 8px;
+}
+
+.detailItem {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12.5px;
+}
+
+.detailLabel {
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+.detailValue {
+  color: var(--text-h);
+  font-weight: 600;
+}
+
+.planBadge {
+  background: var(--accent-bg);
+  color: var(--accent);
+  padding: 2px 8px;
+  border-radius: 6px;
+  font-size: 11.5px;
+  font-weight: 600;
+  text-transform: capitalize;
+}
+
+.clinicCardActions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding-top: 4px;
+}
+
+.clinicCardActions .btnAction {
+  flex: 1;
+  min-width: 80px;
+  text-align: center;
+  padding: 8px 12px;
+  font-size: 13px;
+  min-height: 38px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Modal Responsivo com Dual-Theme */
+.modalOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.65);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 16px;
+}
+
+.modalCard {
+  background: var(--bg-card);
+  border-radius: 14px;
+  width: 100%;
+  max-width: 480px;
+  max-height: 90dvh;
+  overflow-y: auto;
+  box-shadow: var(--shadow-lg);
+  border: 1px solid var(--border);
+  padding: 22px;
+}
+
+.modalTitle {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text-h);
+  margin: 0 0 16px;
+  letter-spacing: -0.02em;
+}
+
+.modalError {
+  background: var(--danger-bg);
+  color: var(--danger);
+  padding: 10px 14px;
+  border-radius: 8px;
+  margin-bottom: 16px;
+  font-size: 13px;
+  border: 1px solid var(--danger-border);
+}
+
+.modalForm {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.formGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.formLabel {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.input,
+.select {
+  padding: 10px 14px;
+  border-radius: 8px;
+  border: 1.5px solid var(--border-input);
+  font-size: 14px;
+  font-family: inherit;
+  color: var(--text);
+  background-color: var(--bg-input, var(--bg-card));
+  outline: none;
+  transition: all 0.15s ease;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.input:focus,
+.select:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-bg);
+}
+
+.modalFooter {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 8px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+}
+
+.btnCancel {
+  background: var(--bg-card);
+  border: 1.5px solid var(--border-input);
+  padding: 9px 16px;
+  border-radius: 8px;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--text);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.btnCancel:hover {
+  background: var(--bg-subtle);
+}
+
+.btnSubmit {
+  background: var(--accent);
+  color: #ffffff;
+  border: none;
+  padding: 9px 18px;
+  border-radius: 8px;
+  font-size: 13.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  box-shadow: var(--shadow-sm);
+}
+
+.btnSubmit:hover:not(:disabled) {
+  background: var(--accent-hover);
+}
+
+.btnSubmit:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* ==========================================================================
+   Responsividade Mobile (<= 768px)
+   ========================================================================== */
+
+@media (max-width: 768px) {
+  .header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+    margin-bottom: 18px;
+  }
+
+  .title {
+    font-size: 19px;
+  }
+
+  .subtitle {
+    font-size: 12.5px;
+  }
+
+  .btnNew {
+    justify-content: center;
+    padding: 10px 16px;
+    font-size: 14px;
+  }
+
+  /* Troca a tabela desktop pelo card list mobile */
+  .tableWrap {
+    display: none;
+  }
+
+  .mobileCardList {
+    display: flex;
+  }
+
+  .modalCard {
+    padding: 18px 16px;
+    max-height: 94dvh;
+  }
+
+  .modalFooter {
+    flex-direction: column-reverse;
+  }
+
+  .modalFooter button {
+    width: 100%;
+    justify-content: center;
+    text-align: center;
+    padding: 11px;
+  }
 }

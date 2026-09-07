@@ -329,3 +329,18 @@
     padding: 20px 16px;
   }
 }
+
+@media (max-width: 640px) {
+  .topHeader {
+    padding: 10px 12px;
+  }
+
+  .mainContent {
+    padding: 14px 12px;
+  }
+
+  .sidebarRail {
+    width: 280px;
+    max-width: 85vw;
+  }
+}

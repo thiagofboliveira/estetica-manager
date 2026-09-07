@@ -419,3 +419,154 @@
   font-size: 11.5px;
   color: var(--text-muted);
 }
+
+@media (max-width: 640px) {
+  .page {
+    gap: 16px;
+  }
+
+  .greeting {
+    font-size: 20px;
+  }
+
+  .dateSubtitle {
+    font-size: 12.5px;
+  }
+
+  /* Barra de Ações Rápidas: grid 2 colunas simétrico e touch-friendly */
+  .quickActions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    padding: 10px;
+    border-radius: 12px;
+  }
+
+  .quickActionBtnPrimary {
+    grid-column: span 2;
+    justify-content: center;
+    padding: 10px 14px;
+    font-size: 13.5px;
+  }
+
+  .quickActionBtn {
+    justify-content: center;
+    font-size: 12px;
+    padding: 8px 10px;
+    gap: 6px;
+    text-align: center;
+  }
+
+  /* Cards de Hoje */
+  .todayGrid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .todayCard {
+    padding: 15px 14px;
+    border-radius: 12px;
+    gap: 12px;
+  }
+
+  .cardTitle {
+    font-size: 14.5px;
+  }
+
+  .cardIcon {
+    width: 28px;
+    height: 28px;
+  }
+
+  .appointmentItem {
+    padding: 8px 10px;
+    font-size: 12px;
+  }
+
+  .appointmentPatient {
+    font-size: 12.5px;
+  }
+
+  .appointmentTime {
+    font-size: 12.5px;
+  }
+
+  /* Seção de Métricas do Mês: 2x2 grid compacto */
+  .section {
+    gap: 10px;
+  }
+
+  .sectionTitle {
+    font-size: 16px;
+  }
+
+  .sectionLink {
+    font-size: 12.5px;
+  }
+
+  .metricGrid {
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+
+  .kpiCard {
+    padding: 12px 10px;
+    border-radius: 10px;
+    gap: 4px;
+  }
+
+  .kpiLabel {
+    font-size: 11px;
+  }
+
+  .kpiValue {
+    font-size: 17px;
+  }
+
+  .kpiNote {
+    font-size: 10.5px;
+    line-height: 1.25;
+  }
+
+  /* Oportunidades */
+  .opportunitiesGrid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .opportunityCard {
+    padding: 15px 14px;
+    border-radius: 12px;
+    gap: 12px;
+  }
+
+  .opportunityHighlight {
+    font-size: 18px;
+  }
+
+  /* Central de Relatórios: 2x2 grid */
+  .reportsHub {
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+
+  .reportShortcut {
+    padding: 10px 8px;
+    gap: 8px;
+    border-radius: 8px;
+  }
+
+  .reportShortcutIcon {
+    width: 28px;
+    height: 28px;
+  }
+
+  .reportShortcutTitle {
+    font-size: 12px;
+  }
+
+  .reportShortcutDesc {
+    font-size: 10px;
+  }
+}
+

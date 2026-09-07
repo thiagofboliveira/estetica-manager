@@ -173,102 +173,143 @@ export function SuperAdminClinicsPage() {
         ) : clinics.length === 0 ? (
           <div style={{ padding: "24px", textAlign: "center", color: "#64748b" }}>Nenhuma clínica cadastrada.</div>
         ) : (
-          <table className={styles.table}>
-            <thead>
-              <tr>
-                <th>Clínica</th>
-                <th>Plano</th>
-                <th>Status</th>
-                <th>Usuários</th>
-                <th>Cadastro</th>
-                <th>Ações</th>
-              </tr>
-            </thead>
-            <tbody>
+          <>
+            {/* Tabela para Desktop */}
+            <div className={styles.tableWrap}>
+              <table className={styles.table}>
+                <thead>
+                  <tr>
+                    <th>Clínica</th>
+                    <th>Plano</th>
+                    <th>Status</th>
+                    <th>Usuários</th>
+                    <th>Cadastro</th>
+                    <th>Ações</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {clinics.map((c) => (
+                    <tr key={c.id}>
+                      <td>
+                        <div className={styles.clinicName}>{c.name}</div>
+                        {c.document && <div className={styles.clinicDoc}>{c.document}</div>}
+                      </td>
+                      <td>
+                        <span style={{ textTransform: "capitalize", fontWeight: 600, fontSize: "13px" }}>
+                          {c.plan}
+                        </span>
+                      </td>
+                      <td>
+                        <span className={c.is_active ? styles.statusActive : styles.statusInactive}>
+                          {c.is_active ? "● Ativa" : "○ Inativa"}
+                        </span>
+                      </td>
+                      <td>{c.users_count}</td>
+                      <td>{new Date(c.created_at).toLocaleDateString("pt-BR")}</td>
+                      <td>
+                        <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
+                          <button className={styles.btnAction} onClick={() => handleOpenEdit(c)}>
+                            Editar
+                          </button>
+                          <button
+                            className={styles.btnAction}
+                            onClick={() => handleToggle(c.id, c.is_active)}
+                          >
+                            {c.is_active ? "Desativar" : "Ativar"}
+                          </button>
+                          {c.is_active && c.users_count > 0 && (
+                            <button
+                              className={`${styles.btnAction} ${styles.btnActionImpersonate}`}
+                              disabled={impersonatingId === c.id}
+                              onClick={() => handleImpersonateClinic(c)}
+                              title={`Visualizar sistema como gerente de ${c.name}`}
+                            >
+                              {impersonatingId === c.id ? "Entrando…" : "👁 Entrar como"}
+                            </button>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Lista em Cards para Mobile */}
+            <div className={styles.mobileCardList}>
               {clinics.map((c) => (
-                <tr key={c.id}>
-                  <td>
-                    <div className={styles.clinicName}>{c.name}</div>
-                    {c.document && <div className={styles.clinicDoc}>{c.document}</div>}
-                  </td>
-                  <td>
-                    <span style={{ textTransform: "capitalize", fontWeight: 600, fontSize: "13px" }}>
-                      {c.plan}
-                    </span>
-                  </td>
-                  <td>
+                <div className={styles.clinicCard} key={c.id}>
+                  <div className={styles.clinicCardHeader}>
+                    <div>
+                      <div className={styles.clinicName}>{c.name}</div>
+                      {c.document && <div className={styles.clinicDoc}>{c.document}</div>}
+                    </div>
                     <span className={c.is_active ? styles.statusActive : styles.statusInactive}>
                       {c.is_active ? "● Ativa" : "○ Inativa"}
                     </span>
-                  </td>
-                  <td>{c.users_count}</td>
-                  <td>{new Date(c.created_at).toLocaleDateString("pt-BR")}</td>
-                  <td>
-                    <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
-                      <button className={styles.btnAction} onClick={() => handleOpenEdit(c)}>
-                        Editar
-                      </button>
-                      <button
-                        className={styles.btnAction}
-                        onClick={() => handleToggle(c.id, c.is_active)}
-                      >
-                        {c.is_active ? "Desativar" : "Ativar"}
-                      </button>
-                      {c.is_active && c.users_count > 0 && (
-                        <button
-                          className={styles.btnAction}
-                          style={{ background: "#7c3aed", color: "#fff", borderColor: "#7c3aed" }}
-                          disabled={impersonatingId === c.id}
-                          onClick={() => handleImpersonateClinic(c)}
-                          title={`Visualizar sistema como gerente de ${c.name}`}
-                        >
-                          {impersonatingId === c.id ? "Entrando…" : "👁 Entrar como"}
-                        </button>
-                      )}
+                  </div>
+
+                  <div className={styles.clinicCardDetails}>
+                    <div className={styles.detailItem}>
+                      <span className={styles.detailLabel}>Plano:</span>
+                      <span className={styles.planBadge}>{c.plan}</span>
                     </div>
-                  </td>
-                </tr>
+                    <div className={styles.detailItem}>
+                      <span className={styles.detailLabel}>Usuários:</span>
+                      <span className={styles.detailValue}>{c.users_count}</span>
+                    </div>
+                    <div className={styles.detailItem}>
+                      <span className={styles.detailLabel}>Cadastro:</span>
+                      <span className={styles.detailValue}>
+                        {new Date(c.created_at).toLocaleDateString("pt-BR")}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className={styles.clinicCardActions}>
+                    <button className={styles.btnAction} onClick={() => handleOpenEdit(c)}>
+                      Editar
+                    </button>
+                    <button
+                      className={styles.btnAction}
+                      onClick={() => handleToggle(c.id, c.is_active)}
+                    >
+                      {c.is_active ? "Desativar" : "Ativar"}
+                    </button>
+                    {c.is_active && c.users_count > 0 && (
+                      <button
+                        className={`${styles.btnAction} ${styles.btnActionImpersonate}`}
+                        disabled={impersonatingId === c.id}
+                        onClick={() => handleImpersonateClinic(c)}
+                        title={`Visualizar sistema como gerente de ${c.name}`}
+                      >
+                        {impersonatingId === c.id ? "Entrando…" : "👁 Entrar como"}
+                      </button>
+                    )}
+                  </div>
+                </div>
               ))}
-            </tbody>
-          </table>
+            </div>
+          </>
         )}
       </div>
 
       {isModalOpen && (
-        <div
-          style={{
-            position: "fixed",
-            inset: 0,
-            backgroundColor: "rgba(0,0,0,0.5)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            zIndex: 50,
-          }}
-        >
-          <div
-            style={{
-              background: "#ffffff",
-              borderRadius: "12px",
-              padding: "24px",
-              width: "100%",
-              maxWidth: "480px",
-              boxShadow: "0 20px 25px -5px rgba(0,0,0,0.1)",
-            }}
-          >
-            <h2 style={{ fontSize: "18px", fontWeight: 700, marginBottom: "16px", color: "#0f172a" }}>
+        <div className={styles.modalOverlay}>
+          <div className={styles.modalCard}>
+            <h2 className={styles.modalTitle}>
               {editingClinic ? "Editar Clínica" : "Nova Clínica"}
             </h2>
 
             {modalError && (
-              <div style={{ background: "#fee2e2", color: "#b91c1c", padding: "8px 12px", borderRadius: "6px", marginBottom: "16px", fontSize: "13px" }}>
+              <div className={styles.modalError}>
                 {modalError}
               </div>
             )}
 
-            <form onSubmit={handleSaveClinic} style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-              <div>
-                <label style={{ display: "block", fontSize: "13px", fontWeight: 600, color: "#334155", marginBottom: "4px" }}>
+            <form onSubmit={handleSaveClinic} className={styles.modalForm}>
+              <div className={styles.formGroup}>
+                <label className={styles.formLabel}>
                   Nome da Clínica *
                 </label>
                 <input
@@ -276,77 +317,77 @@ export function SuperAdminClinicsPage() {
                   required
                   value={formName}
                   onChange={(e) => setFormName(e.target.value)}
-                  style={{ width: "100%", padding: "8px 12px", border: "1px solid #cbd5e1", borderRadius: "6px", color: "#0f172a", backgroundColor: "#ffffff", fontSize: "14px" }}
+                  className={styles.input}
                   placeholder="Ex: Lumière Estética"
                 />
               </div>
 
-              <div>
-                <label style={{ display: "block", fontSize: "13px", fontWeight: 600, color: "#334155", marginBottom: "4px" }}>
+              <div className={styles.formGroup}>
+                <label className={styles.formLabel}>
                   CNPJ / CPF
                 </label>
                 <input
                   type="text"
                   value={formDoc}
                   onChange={(e) => setFormDoc(e.target.value)}
-                  style={{ width: "100%", padding: "8px 12px", border: "1px solid #cbd5e1", borderRadius: "6px", color: "#0f172a", backgroundColor: "#ffffff", fontSize: "14px" }}
+                  className={styles.input}
                   placeholder="00.000.000/0001-00"
                 />
               </div>
 
-              <div>
-                <label style={{ display: "block", fontSize: "13px", fontWeight: 600, color: "#334155", marginBottom: "4px" }}>
+              <div className={styles.formGroup}>
+                <label className={styles.formLabel}>
                   Telefone / WhatsApp
                 </label>
                 <input
                   type="text"
                   value={formPhone}
                   onChange={(e) => setFormPhone(e.target.value)}
-                  style={{ width: "100%", padding: "8px 12px", border: "1px solid #cbd5e1", borderRadius: "6px", color: "#0f172a", backgroundColor: "#ffffff", fontSize: "14px" }}
+                  className={styles.input}
                   placeholder="(11) 99999-9999"
                 />
               </div>
 
-              <div>
-                <label style={{ display: "block", fontSize: "13px", fontWeight: 600, color: "#334155", marginBottom: "4px" }}>
+              <div className={styles.formGroup}>
+                <label className={styles.formLabel}>
                   E-mail de Contato
                 </label>
                 <input
                   type="email"
                   value={formEmail}
                   onChange={(e) => setFormEmail(e.target.value)}
-                  style={{ width: "100%", padding: "8px 12px", border: "1px solid #cbd5e1", borderRadius: "6px", color: "#0f172a", backgroundColor: "#ffffff", fontSize: "14px" }}
+                  className={styles.input}
                   placeholder="contato@clinica.com"
                 />
               </div>
 
-              <div>
-                <label style={{ display: "block", fontSize: "13px", fontWeight: 600, color: "#334155", marginBottom: "4px" }}>
+              <div className={styles.formGroup}>
+                <label className={styles.formLabel}>
                   Plano SaaS
                 </label>
                 <select
                   value={formPlan}
                   onChange={(e) => setFormPlan(e.target.value)}
-                  style={{ width: "100%", padding: "8px 12px", border: "1px solid #cbd5e1", borderRadius: "6px", color: "#0f172a", backgroundColor: "#ffffff", fontSize: "14px" }}
+                  className={styles.select}
                 >
-                  <option value="standard" style={{ color: "#0f172a", backgroundColor: "#ffffff" }}>Standard</option>
-                  <option value="pro" style={{ color: "#0f172a", backgroundColor: "#ffffff" }}>Pro</option>
-                  <option value="enterprise" style={{ color: "#0f172a", backgroundColor: "#ffffff" }}>Enterprise</option>
+                  <option value="standard">Standard</option>
+                  <option value="pro">Pro</option>
+                  <option value="enterprise">Enterprise</option>
                 </select>
               </div>
 
-              <div style={{ display: "flex", justifyContent: "flex-end", gap: "10px", marginTop: "16px" }}>
+              <div className={styles.modalFooter}>
                 <button
                   type="button"
                   onClick={() => setIsModalOpen(false)}
-                  style={{ padding: "8px 16px", borderRadius: "6px", border: "1px solid #cbd5e1", background: "#fff", cursor: "pointer", fontWeight: 600 }}
+                  className={styles.btnCancel}
                 >
                   Cancelar
                 </button>
                 <button
                   type="submit"
                   disabled={formSubmitting}
-                  style={{ padding: "8px 16px", borderRadius: "6px", border: "none", background: "#4f46e5", color: "#fff", cursor: "pointer", fontWeight: 600 }}
+                  className={styles.btnSubmit}
                 >
                   {formSubmitting ? "Salvando..." : "Salvar"}
                 </button>

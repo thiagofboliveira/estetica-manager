@@ -175,20 +175,78 @@ export function SuperAdminUsersPage() {
         ) : users.length === 0 ? (
           <div className={styles.emptyState}>Nenhum usuário cadastrado.</div>
         ) : (
-          <table className={styles.table}>
-            <thead>
-              <tr>
-                <th>Usuário</th>
-                <th>Clínica Vinculada</th>
-                <th>Perfil de Acesso</th>
-                <th>Status</th>
-                <th>Ações</th>
-              </tr>
-            </thead>
-            <tbody>
+          <>
+            {/* Tabela para Desktop */}
+            <div className={styles.tableWrap}>
+              <table className={styles.table}>
+                <thead>
+                  <tr>
+                    <th>Usuário</th>
+                    <th>Clínica Vinculada</th>
+                    <th>Perfil de Acesso</th>
+                    <th>Status</th>
+                    <th>Ações</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {users.map((u) => (
+                    <tr key={u.id}>
+                      <td>
+                        <div className={styles.userCell}>
+                          <div className={styles.avatar}>{u.name.charAt(0).toUpperCase()}</div>
+                          <div className={styles.userInfo}>
+                            <span className={styles.userName}>{u.name}</span>
+                            <span className={styles.userEmail}>{u.email}</span>
+                          </div>
+                        </div>
+                      </td>
+                      <td>
+                        <span style={{ fontWeight: 500, color: "#334155", fontSize: "13px" }}>
+                          {u.clinic_name || (u.is_superuser ? "Plataforma Global" : "-")}
+                        </span>
+                      </td>
+                      <td>
+                        <RoleBadge role={u.role} />
+                      </td>
+                      <td>
+                        <span className={u.is_active ? styles.statusActive : styles.statusInactive}>
+                          {u.is_active ? "● Ativo" : "○ Inativo"}
+                        </span>
+                      </td>
+                      <td>
+                        <div className={styles.actions}>
+                          <button className={styles.btnAction} onClick={() => handleOpenEdit(u)}>
+                            Editar
+                          </button>
+                          <button
+                            className={styles.btnAction}
+                            onClick={() => handleToggleStatus(u)}
+                          >
+                            {u.is_active ? "Desativar" : "Ativar"}
+                          </button>
+                          {!u.is_superuser && u.is_active && (
+                            <button
+                              className={`${styles.btnAction} ${styles.btnActionImpersonate}`}
+                              disabled={impersonatingId === u.id}
+                              onClick={() => handleImpersonate(u)}
+                              title={`Visualizar sistema como ${u.name}`}
+                            >
+                              {impersonatingId === u.id ? "Entrando…" : "👁 Entrar como"}
+                            </button>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Lista em Cards para Mobile */}
+            <div className={styles.mobileCardList}>
               {users.map((u) => (
-                <tr key={u.id}>
-                  <td>
+                <div className={styles.userCard} key={u.id}>
+                  <div className={styles.userCardHeader}>
                     <div className={styles.userCell}>
                       <div className={styles.avatar}>{u.name.charAt(0).toUpperCase()}</div>
                       <div className={styles.userInfo}>
@@ -196,160 +254,154 @@ export function SuperAdminUsersPage() {
                         <span className={styles.userEmail}>{u.email}</span>
                       </div>
                     </div>
-                  </td>
-                  <td>
-                    <span style={{ fontWeight: 500, color: "#334155", fontSize: "13px" }}>
-                      {u.clinic_name || (u.is_superuser ? "Plataforma Global" : "-")}
-                    </span>
-                  </td>
-                  <td>
-                    <RoleBadge role={u.role} />
-                  </td>
-                  <td>
                     <span className={u.is_active ? styles.statusActive : styles.statusInactive}>
                       {u.is_active ? "● Ativo" : "○ Inativo"}
                     </span>
-                  </td>
-                  <td>
-                    <div className={styles.actions}>
-                      <button className={styles.btnAction} onClick={() => handleOpenEdit(u)}>
-                        Editar
-                      </button>
-                      <button
-                        className={styles.btnAction}
-                        onClick={() => handleToggleStatus(u)}
-                      >
-                        {u.is_active ? "Desativar" : "Ativar"}
-                      </button>
-                      {!u.is_superuser && u.is_active && (
-                        <button
-                          className={styles.btnAction}
-                          style={{ background: "#7c3aed", color: "#fff", borderColor: "#7c3aed" }}
-                          disabled={impersonatingId === u.id}
-                          onClick={() => handleImpersonate(u)}
-                          title={`Visualizar sistema como ${u.name}`}
-                        >
-                          {impersonatingId === u.id ? "Entrando…" : "👁 Entrar como"}
-                        </button>
-                      )}
+                  </div>
+
+                  <div className={styles.userCardDetails}>
+                    <div className={styles.detailItem}>
+                      <span className={styles.detailLabel}>Perfil:</span>
+                      <RoleBadge role={u.role} />
                     </div>
-                  </td>
-                </tr>
+                    <div className={styles.detailItem}>
+                      <span className={styles.detailLabel}>Clínica:</span>
+                      <span className={styles.detailValue}>
+                        {u.clinic_name || (u.is_superuser ? "Plataforma Global" : "-")}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className={styles.userCardActions}>
+                    <button className={styles.btnAction} onClick={() => handleOpenEdit(u)}>
+                      Editar
+                    </button>
+                    <button
+                      className={styles.btnAction}
+                      onClick={() => handleToggleStatus(u)}
+                    >
+                      {u.is_active ? "Desativar" : "Ativar"}
+                    </button>
+                    {!u.is_superuser && u.is_active && (
+                      <button
+                        className={`${styles.btnAction} ${styles.btnActionImpersonate}`}
+                        disabled={impersonatingId === u.id}
+                        onClick={() => handleImpersonate(u)}
+                        title={`Visualizar sistema como ${u.name}`}
+                      >
+                        {impersonatingId === u.id ? "Entrando…" : "👁 Entrar como"}
+                      </button>
+                    )}
+                  </div>
+                </div>
               ))}
-            </tbody>
-          </table>
+            </div>
+          </>
         )}
       </div>
 
       {isModalOpen && (
-        <div
-          style={{
-            position: "fixed",
-            inset: 0,
-            backgroundColor: "rgba(0,0,0,0.5)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            zIndex: 50,
-          }}
-        >
-          <div
-            style={{
-              background: "#ffffff",
-              borderRadius: "12px",
-              padding: "24px",
-              width: "100%",
-              maxWidth: "480px",
-              boxShadow: "0 20px 25px -5px rgba(0,0,0,0.1)",
-            }}
-          >
-            <h2 style={{ fontSize: "18px", fontWeight: 700, marginBottom: "16px", color: "#0f172a" }}>
-              {editingUser ? "Editar Usuário Global" : "Novo Usuário na Plataforma"}
-            </h2>
+        <div className={styles.modalOverlay}>
+          <div className={styles.modalCard}>
+            <div className={styles.modalHeader}>
+              <h2 className={styles.modalTitle}>
+                {editingUser ? "Editar Usuário Global" : "Novo Usuário na Plataforma"}
+              </h2>
+              <button
+                type="button"
+                className={styles.modalCloseBtn}
+                onClick={() => setIsModalOpen(false)}
+                aria-label="Fechar modal"
+              >
+                ✕
+              </button>
+            </div>
 
             {modalError && (
-              <div style={{ background: "#fee2e2", color: "#b91c1c", padding: "8px 12px", borderRadius: "6px", marginBottom: "16px", fontSize: "13px" }}>
+              <div style={{ margin: "16px 20px 0" }} className={styles.errorMessage}>
                 {modalError}
               </div>
             )}
 
-            <form onSubmit={handleSaveUser} style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-              <div>
-                <label style={{ display: "block", fontSize: "13px", fontWeight: 600, color: "#334155", marginBottom: "4px" }}>
-                  Nome Completo *
-                </label>
-                <input
-                  type="text"
-                  required
-                  value={formName}
-                  onChange={(e) => setFormName(e.target.value)}
-                  style={{ width: "100%", padding: "8px 12px", border: "1px solid #cbd5e1", borderRadius: "6px", color: "#0f172a", backgroundColor: "#ffffff", fontSize: "14px" }}
-                  placeholder="Ex: Dra. Mariana Silva"
-                />
+            <form onSubmit={handleSaveUser}>
+              <div className={styles.modalBody}>
+                <div className={styles.formGroup}>
+                  <label className={styles.formLabel}>
+                    Nome Completo *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={formName}
+                    onChange={(e) => setFormName(e.target.value)}
+                    className={styles.input}
+                    placeholder="Ex: Dra. Mariana Silva"
+                  />
+                </div>
+
+                <div className={styles.formGroup}>
+                  <label className={styles.formLabel}>
+                    E-mail de Login *
+                  </label>
+                  <input
+                    type="email"
+                    required
+                    disabled={!!editingUser}
+                    value={formEmail}
+                    onChange={(e) => setFormEmail(e.target.value)}
+                    className={styles.input}
+                    placeholder="mariana@clinica.com"
+                  />
+                </div>
+
+                <div className={styles.formGroup}>
+                  <label className={styles.formLabel}>
+                    Perfil de Acesso
+                  </label>
+                  <select
+                    value={formRole}
+                    onChange={(e) => setFormRole(e.target.value)}
+                    className={styles.select}
+                  >
+                    <option value="admin">Administrador de Clínica</option>
+                    <option value="professional">Profissional / Esteticista</option>
+                    <option value="receptionist">Recepcionista</option>
+                    <option value="user">Usuário Básico</option>
+                    <option value="superadmin">Super Admin Global</option>
+                  </select>
+                </div>
+
+                <div className={styles.formGroup}>
+                  <label className={styles.formLabel}>
+                    Clínica Alvo
+                  </label>
+                  <select
+                    value={formClinicId}
+                    onChange={(e) => setFormClinicId(e.target.value)}
+                    className={styles.select}
+                  >
+                    <option value="">Nenhuma / Plataforma Global</option>
+                    {clinics.map((c) => (
+                      <option key={c.id} value={c.id}>
+                        {c.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
               </div>
 
-              <div>
-                <label style={{ display: "block", fontSize: "13px", fontWeight: 600, color: "#334155", marginBottom: "4px" }}>
-                  E-mail de Login *
-                </label>
-                <input
-                  type="email"
-                  required
-                  disabled={!!editingUser}
-                  value={formEmail}
-                  onChange={(e) => setFormEmail(e.target.value)}
-                  style={{ width: "100%", padding: "8px 12px", border: "1px solid #cbd5e1", borderRadius: "6px", color: editingUser ? "#64748b" : "#0f172a", backgroundColor: editingUser ? "#f1f5f9" : "#ffffff", fontSize: "14px" }}
-                  placeholder="mariana@clinica.com"
-                />
-              </div>
-
-              <div>
-                <label style={{ display: "block", fontSize: "13px", fontWeight: 600, color: "#334155", marginBottom: "4px" }}>
-                  Perfil de Acesso
-                </label>
-                <select
-                  value={formRole}
-                  onChange={(e) => setFormRole(e.target.value)}
-                  style={{ width: "100%", padding: "8px 12px", border: "1px solid #cbd5e1", borderRadius: "6px", color: "#0f172a", backgroundColor: "#ffffff", fontSize: "14px" }}
-                >
-                  <option value="admin" style={{ color: "#0f172a", backgroundColor: "#ffffff" }}>Administrador de Clínica</option>
-                  <option value="professional" style={{ color: "#0f172a", backgroundColor: "#ffffff" }}>Profissional / Esteticista</option>
-                  <option value="receptionist" style={{ color: "#0f172a", backgroundColor: "#ffffff" }}>Recepcionista</option>
-                  <option value="user" style={{ color: "#0f172a", backgroundColor: "#ffffff" }}>Usuário Básico</option>
-                  <option value="superadmin" style={{ color: "#0f172a", backgroundColor: "#ffffff" }}>Super Admin Global</option>
-                </select>
-              </div>
-
-              <div>
-                <label style={{ display: "block", fontSize: "13px", fontWeight: 600, color: "#334155", marginBottom: "4px" }}>
-                  Clínica Alvo
-                </label>
-                <select
-                  value={formClinicId}
-                  onChange={(e) => setFormClinicId(e.target.value)}
-                  style={{ width: "100%", padding: "8px 12px", border: "1px solid #cbd5e1", borderRadius: "6px", color: "#0f172a", backgroundColor: "#ffffff", fontSize: "14px" }}
-                >
-                  <option value="" style={{ color: "#0f172a", backgroundColor: "#ffffff" }}>Nenhuma / Plataforma Global</option>
-                  {clinics.map((c) => (
-                    <option key={c.id} value={c.id} style={{ color: "#0f172a", backgroundColor: "#ffffff" }}>
-                      {c.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div style={{ display: "flex", justifyContent: "flex-end", gap: "10px", marginTop: "16px" }}>
+              <div className={styles.modalFooter}>
                 <button
                   type="button"
                   onClick={() => setIsModalOpen(false)}
-                  style={{ padding: "8px 16px", borderRadius: "6px", border: "1px solid #cbd5e1", background: "#fff", cursor: "pointer", fontWeight: 600 }}
+                  className={styles.btnCancel}
                 >
                   Cancelar
                 </button>
                 <button
                   type="submit"
                   disabled={formSubmitting}
-                  style={{ padding: "8px 16px", borderRadius: "6px", border: "none", background: "#4f46e5", color: "#fff", cursor: "pointer", fontWeight: 600 }}
+                  className={styles.btnSave}
                 >
                   {formSubmitting ? "Salvando..." : "Salvar"}
                 </button>

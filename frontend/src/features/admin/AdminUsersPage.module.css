@@ -1,4 +1,4 @@
-﻿/* ==========================================================================
+/* ==========================================================================
    AdminUsersPage Styles — Dual-Theme Support
    ========================================================================== */
 
@@ -356,4 +356,152 @@
 .btnSave:disabled {
   opacity: 0.6;
   cursor: not-allowed;
+}
+
+.btnActionImpersonate {
+  background: #7c3aed !important;
+  color: #ffffff !important;
+  border-color: #7c3aed !important;
+}
+
+.btnActionImpersonate:hover {
+  background: #6d28d9 !important;
+  border-color: #6d28d9 !important;
+}
+
+.tableWrap {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Mobile Card List */
+.mobileCardList {
+  display: none;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.userCard {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 16px;
+  box-shadow: var(--shadow-sm);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.userCardHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.userCardDetails {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px 12px;
+  background: var(--bg-subtle);
+  border-radius: 8px;
+}
+
+.detailItem {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  font-size: 12.5px;
+}
+
+.detailLabel {
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+.detailValue {
+  color: var(--text-h);
+  font-weight: 600;
+  text-align: right;
+}
+
+.userCardActions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding-top: 4px;
+}
+
+.userCardActions .btnAction {
+  flex: 1;
+  min-width: 80px;
+  text-align: center;
+  padding: 8px 12px;
+  font-size: 13px;
+  min-height: 38px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+@media (max-width: 768px) {
+  .header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+    margin-bottom: 18px;
+  }
+
+  .title {
+    font-size: 19px;
+  }
+
+  .subtitle {
+    font-size: 12.5px;
+  }
+
+  .btnNew {
+    justify-content: center;
+    padding: 10px 16px;
+    font-size: 14px;
+  }
+
+  .tableWrap {
+    display: none;
+  }
+
+  .mobileCardList {
+    display: flex;
+  }
+
+  .modalCard {
+    max-height: 94dvh;
+    overflow-y: auto;
+    margin: 12px;
+  }
+
+  .modalHeader {
+    padding: 16px 18px;
+  }
+
+  .modalBody {
+    padding: 18px 16px;
+    gap: 14px;
+  }
+
+  .modalFooter {
+    padding: 14px 16px;
+    flex-direction: column-reverse;
+  }
+
+  .modalFooter button {
+    width: 100%;
+    justify-content: center;
+    text-align: center;
+    padding: 11px;
+  }
 }
