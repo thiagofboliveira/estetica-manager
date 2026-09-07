@@ -24,6 +24,7 @@ import { FinancialSettingsPage } from "@/features/settings/FinancialSettingsPage
 import { FixedExpensesPage } from "@/features/fixed-expenses/FixedExpensesPage";
 import { PriceSimulatorPage } from "@/features/simulator/PriceSimulatorPage";
 import { ReportsPage } from "@/features/reports/ReportsPage";
+import { EstoquePage } from "@/features/vials/EstoquePage";
 import { SetupWizardPage } from "@/features/admin/SetupWizardPage";
 
 import { AdminLayout } from "@/features/admin/AdminLayout";
@@ -85,6 +86,7 @@ export const router = createBrowserRouter([
               { path: "/procedimentos", element: <ProceduresPage /> },
               { path: "/procedimentos/novo", element: <NewProcedurePage /> },
               { path: "/procedimentos/:id", element: <ProcedureDetailPage /> },
+              { path: "/estoque", element: <EstoquePage /> },
               { path: "/vendas/nova", element: <NewSalePage /> },
               { path: "/vendas/nova-pacote", element: <NewPackageSalePage /> },
               { path: "/agenda", element: <AgendaPage /> },
