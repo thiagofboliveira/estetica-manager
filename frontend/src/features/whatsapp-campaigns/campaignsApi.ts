@@ -15,5 +15,5 @@ export interface PatientBirthday {
 
 export async function getBirthdays(month?: number): Promise<PatientBirthday[]> {
   const query = month ? `?month=${month}` : "";
-  return api.get<PatientBirthday[]>(`/v1/patients/birthdays${query}`);
+  return api.get<PatientBirthday[]>(`/patients/birthdays${query}`);
 }

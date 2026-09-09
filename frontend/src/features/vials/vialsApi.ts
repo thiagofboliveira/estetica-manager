@@ -40,25 +40,25 @@ export interface OpenVialConsumePayload {
 }
 
 export async function getActiveVials(): Promise<OpenVial[]> {
-  return api.get<OpenVial[]>("/v1/vials");
+  return api.get<OpenVial[]>("/vials");
 }
 
 export async function getAllVials(): Promise<OpenVial[]> {
-  return api.get<OpenVial[]>("/v1/vials?include_all=true");
+  return api.get<OpenVial[]>("/vials?include_all=true");
 }
 
 export async function createVial(payload: OpenVialCreatePayload): Promise<OpenVial> {
-  return api.post<OpenVial>("/v1/vials", payload);
+  return api.post<OpenVial>("/vials", payload);
 }
 
 export async function consumeVialUnits(vialId: string, payload: OpenVialConsumePayload): Promise<OpenVial> {
-  return api.post<OpenVial>(`/v1/vials/${vialId}/consume`, payload);
+  return api.post<OpenVial>(`/vials/${vialId}/consume`, payload);
 }
 
 export async function finishVial(vialId: string): Promise<OpenVial> {
-  return api.post<OpenVial>(`/v1/vials/${vialId}/finish`, {});
+  return api.post<OpenVial>(`/vials/${vialId}/finish`, {});
 }
 
 export async function deleteVial(vialId: string): Promise<void> {
-  return api.del<void>(`/v1/vials/${vialId}`);
+  return api.del<void>(`/vials/${vialId}`);
 }

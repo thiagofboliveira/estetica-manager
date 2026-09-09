@@ -12,6 +12,7 @@ import type { Dashboard } from "./api";
 import { useAgenda, useUnconfirmedSessions, useOpenPackages } from "@/features/agenda/hooks";
 import { useRetentionCards } from "@/features/retention/hooks";
 import { OnboardingChecklist } from "@/features/onboarding/OnboardingChecklist";
+import { DashboardSkeleton } from "./DashboardSkeleton";
 import { ROICard } from "./ROICard";
 import { BotoxVialCard } from "@/features/vials/BotoxVialCard";
 import { MonthlyAchievementsCard } from "./MonthlyAchievementsCard";
@@ -80,6 +81,12 @@ export function DashboardPage() {
     }
     return { totalPotential, dueCount, totalCards: retentionCards.length };
   }, [retentionCards]);
+
+  // Aguarda o dado principal antes de decidir entre onboarding e dashboard,
+  // evitando o flash de onboarding quando dashboardQuery.data ainda é undefined.
+  if (dashboardQuery.isLoading) {
+    return <DashboardSkeleton />;
+  }
 
   return (
     <div className={styles.page}>

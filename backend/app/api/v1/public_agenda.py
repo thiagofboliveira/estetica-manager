@@ -97,33 +97,6 @@ def _resolve_slug(slug: str) -> tuple[UUID, str, str | None, str, str | None, st
             Professional.is_active.is_(True),
         )
         row = sys_sess.execute(stmt).first()
-        if not row and clean_slug in ("minha-agenda", "agenda", "default"):
-            from sqlalchemy import text
-
-            from app.core.slug import generate_slug
-
-            fallback_stmt = select(
-                Professional.id,
-                Professional.name,
-                Professional.bio,
-                Professional.slug,
-                Professional.avatar_url,
-                Professional.specialty,
-            ).where(
-                Professional.is_active.is_(True),
-            ).order_by(Professional.id.asc())
-            fallback_row = sys_sess.execute(fallback_stmt).first()
-            if fallback_row:
-                current_slug = fallback_row[3]
-                if not current_slug:
-                    current_slug = generate_slug(fallback_row[1], fallback_row[0])
-                    sys_sess.execute(
-                        text("UPDATE professionals SET slug = :s WHERE id = :id"),
-                        {"s": current_slug, "id": fallback_row[0]},
-                    )
-                    sys_sess.commit()
-                row = (fallback_row[0], fallback_row[1], fallback_row[2], current_slug, fallback_row[4], fallback_row[5])
-
         if not row:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,

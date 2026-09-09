@@ -1,0 +1,173 @@
+/* ==========================================================================
+   Dashboard Skeleton — Shimmer Loader (Dual-Theme)
+   ========================================================================== */
+
+@keyframes shimmer {
+  0%   { background-position: -600px 0; }
+  100% { background-position: 600px 0; }
+}
+
+/* Bloco base: qualquer elemento com .bone recebe o shimmer */
+.bone {
+  border-radius: 6px;
+  background: linear-gradient(
+    90deg,
+    var(--bg-subtle) 25%,
+    var(--bg-muted) 50%,
+    var(--bg-subtle) 75%
+  );
+  background-size: 600px 100%;
+  animation: shimmer 1.4s infinite linear;
+}
+
+/* ── Layout geral ── */
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+  width: 100%;
+}
+
+/* ── Header ── */
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+}
+
+.headerTitle { width: 180px; height: 28px; }
+.headerSub   { width: 220px; height: 16px; margin-top: 6px; border-radius: 4px; }
+.headerChip  { width: 120px; height: 36px; border-radius: 20px; }
+
+/* ── Quick Actions ── */
+.quickActions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 18px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  flex-wrap: wrap;
+}
+
+.quickBtn { height: 36px; border-radius: 8px; }
+
+/* ── Today Cards Grid ── */
+.todayGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+@media (max-width: 840px) {
+  .todayGrid { grid-template-columns: 1fr; }
+}
+
+.todayCard {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 20px;
+  box-shadow: var(--shadow-card);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.cardTopRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.cardIcon { width: 32px; height: 32px; border-radius: 8px; }
+.cardTitle { width: 140px; height: 16px; }
+.cardBadge { width: 64px; height: 24px; border-radius: 20px; }
+
+.appointmentRow {
+  height: 48px;
+  border-radius: 8px;
+}
+
+.cardLink { width: 110px; height: 14px; margin-top: auto; border-radius: 4px; }
+
+/* ── KPI Section ── */
+.sectionHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.sectionTitle { width: 220px; height: 22px; }
+.sectionLink  { width: 100px; height: 14px; border-radius: 4px; }
+
+.metricGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 14px;
+}
+
+.kpiCard {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 16px 18px;
+  box-shadow: var(--shadow-card);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.kpiLabel { width: 90px; height: 12px; border-radius: 4px; }
+.kpiValue { width: 130px; height: 28px; border-radius: 6px; }
+.kpiNote  { width: 160px; height: 11px; border-radius: 4px; }
+
+/* ── Opportunities Grid ── */
+.opportunitiesGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+@media (max-width: 840px) {
+  .opportunitiesGrid { grid-template-columns: 1fr; }
+}
+
+.opportunityCard {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 20px;
+  box-shadow: var(--shadow-card);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.oppTitle    { width: 170px; height: 17px; }
+.oppDesc     { width: 100%; height: 13px; border-radius: 4px; }
+.oppDescSm   { width: 75%; height: 13px; border-radius: 4px; }
+.oppHighlight{ width: 100px; height: 26px; margin-top: 4px; }
+.oppSub      { width: 140px; height: 12px; border-radius: 4px; }
+.oppLink     { width: 120px; height: 14px; border-radius: 4px; }
+
+/* ── Mobile ── */
+@media (max-width: 640px) {
+  .page { gap: 16px; }
+
+  .quickActions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    padding: 10px;
+  }
+
+  .metricGrid {
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+
+  .opportunitiesGrid { grid-template-columns: 1fr; }
+}

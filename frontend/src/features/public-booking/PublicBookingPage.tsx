@@ -6,6 +6,8 @@ import {
   type PublicProcedure,
 } from "./api";
 import { getProcedurePhoto } from "./procedureImages";
+import { formatBRL } from "@/lib/money/format";
+import { money } from "@/lib/money/money";
 import styles from "./PublicBookingPage.module.css";
 
 type Step = 1 | 2 | 3;
@@ -289,7 +291,7 @@ export function PublicBookingPage() {
                 <span className={styles.summaryLabel}>Investimento</span>
                 <span className={styles.summaryPrice}>
                   {selectedProcedure
-                    ? `R$ ${parseFloat(selectedProcedure.price).toFixed(2).replace(".", ",")}`
+                    ? formatBRL(money(selectedProcedure.price))
                     : "R$ --"}
                 </span>
               </div>
@@ -388,7 +390,7 @@ export function PublicBookingPage() {
                     <option value="">-- Ou escolha na lista suspensa --</option>
                     {profile.procedures.map((p) => (
                       <option key={p.id} value={p.id}>
-                        {p.name} (R$ {parseFloat(p.price).toFixed(2).replace(".", ",")})
+                        {p.name} ({formatBRL(money(p.price))})
                       </option>
                     ))}
                   </select>
@@ -425,7 +427,7 @@ export function PublicBookingPage() {
                             <h3 className={styles.procName}>{proc.name}</h3>
                             <div className={styles.procFooter}>
                               <span className={styles.procPrice}>
-                                R$ {parseFloat(proc.price).toFixed(2).replace(".", ",")}
+                                {formatBRL(money(proc.price))}
                               </span>
                               <span className={styles.selectIndicator}>
                                 {isSelected ? "● Selecionado" : "Selecionar"}

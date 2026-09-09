@@ -77,35 +77,35 @@ export async function getSupplies(params?: {
   if (params?.low_stock_only) query.set("low_stock_only", "true");
 
   const qs = query.toString();
-  return api.get<Supply[]>(`/v1/supplies${qs ? `?${qs}` : ""}`);
+  return api.get<Supply[]>(`/supplies${qs ? `?${qs}` : ""}`);
 }
 
 export async function createSupply(payload: SupplyCreatePayload): Promise<Supply> {
-  return api.post<Supply>("/v1/supplies", payload);
+  return api.post<Supply>("/supplies", payload);
 }
 
 export async function updateSupply(
   supplyId: string,
   payload: SupplyUpdatePayload
 ): Promise<Supply> {
-  return api.patch<Supply>(`/v1/supplies/${supplyId}`, payload);
+  return api.patch<Supply>(`/supplies/${supplyId}`, payload);
 }
 
 export async function deleteSupply(supplyId: string): Promise<void> {
-  return api.del<void>(`/v1/supplies/${supplyId}`);
+  return api.del<void>(`/supplies/${supplyId}`);
 }
 
 export async function recordSupplyMovement(
   supplyId: string,
   payload: SupplyMovementPayload
 ): Promise<SupplyMovement> {
-  return api.post<SupplyMovement>(`/v1/supplies/${supplyId}/movements`, payload);
+  return api.post<SupplyMovement>(`/supplies/${supplyId}/movements`, payload);
 }
 
 export async function getSupplyMovements(supplyId: string): Promise<SupplyMovement[]> {
-  return api.get<SupplyMovement[]>(`/v1/supplies/${supplyId}/movements`);
+  return api.get<SupplyMovement[]>(`/supplies/${supplyId}/movements`);
 }
 
 export async function getRecentMovements(): Promise<SupplyMovement[]> {
-  return api.get<SupplyMovement[]>("/v1/supplies/movements/recent");
+  return api.get<SupplyMovement[]>("/supplies/movements/recent");
 }

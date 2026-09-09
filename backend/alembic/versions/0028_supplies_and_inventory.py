@@ -139,10 +139,10 @@ def upgrade() -> None:
             CREATE POLICY tenant_isolation ON supplies
                 FOR ALL
                 USING (
-                    professional_id = NULLIF(current_setting('app.current_professional_id', true), '')::uuid
+                    professional_id = NULLIF(current_setting('app.professional_id', true), '')::uuid
                 )
                 WITH CHECK (
-                    professional_id = NULLIF(current_setting('app.current_professional_id', true), '')::uuid
+                    professional_id = NULLIF(current_setting('app.professional_id', true), '')::uuid
                 )
             """
         )
@@ -154,10 +154,10 @@ def upgrade() -> None:
             CREATE POLICY tenant_isolation ON supply_movements
                 FOR ALL
                 USING (
-                    professional_id = NULLIF(current_setting('app.current_professional_id', true), '')::uuid
+                    professional_id = NULLIF(current_setting('app.professional_id', true), '')::uuid
                 )
                 WITH CHECK (
-                    professional_id = NULLIF(current_setting('app.current_professional_id', true), '')::uuid
+                    professional_id = NULLIF(current_setting('app.professional_id', true), '')::uuid
                 )
             """
         )

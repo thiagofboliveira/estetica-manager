@@ -18,7 +18,7 @@ from app.services.supply_service import (
 def mock_session():
     session = MagicMock()
     session.add = MagicMock()
-    session.commit = MagicMock()
+    session.flush = MagicMock()
     session.refresh = MagicMock()
     return session
 
@@ -51,7 +51,8 @@ def test_create_supply_with_initial_stock(mock_session, mock_repo):
     assert supply.unit_measure == "SERINGA"
     mock_repo.add.assert_called_once()
     mock_repo.add_movement.assert_called_once()
-    mock_session.commit.assert_called_once()
+    mock_session.flush.assert_called_once()
+    mock_session.commit.assert_not_called()
 
 
 def test_supply_movement_entry_and_exit(mock_session, mock_repo):

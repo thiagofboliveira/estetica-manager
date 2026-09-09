@@ -5,6 +5,8 @@ import {
   type PublicBooking,
 } from "./api";
 import { anamnesisApi } from "@/features/anamnesis/api";
+import { formatBRL } from "@/lib/money/format";
+import { money } from "@/lib/money/money";
 import styles from "./BookingManagementPage.module.css";
 
 export function BookingManagementPage() {
@@ -234,7 +236,7 @@ export function BookingManagementPage() {
                 <div className={styles.detailItem}>
                   <span className={styles.detailLabel}>Valor Previsto</span>
                   <span className={styles.detailValue} style={{ color: "var(--accent)" }}>
-                    R$ {parseFloat(booking.procedure_price).toFixed(2).replace(".", ",")}
+                    {formatBRL(money(booking.procedure_price))}
                   </span>
                 </div>
               )}

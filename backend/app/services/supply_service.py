@@ -71,7 +71,7 @@ class SupplyService:
             )
             self._repo.add_movement(initial_movement)
 
-        self._session.commit()
+        self._session.flush()
         self._session.refresh(supply)
         return supply
 
@@ -98,14 +98,14 @@ class SupplyService:
         if "is_active" in data and data["is_active"] is not None:
             supply.is_active = data["is_active"]
 
-        self._session.commit()
+        self._session.flush()
         self._session.refresh(supply)
         return supply
 
     def delete(self, supply_id: UUID) -> None:
         supply = self.get(supply_id)
         supply.is_active = False
-        self._session.commit()
+        self._session.flush()
 
     def record_movement(
         self,
@@ -138,7 +138,7 @@ class SupplyService:
             notes=payload.notes.strip() if payload.notes else None,
         )
         self._repo.add_movement(movement)
-        self._session.commit()
+        self._session.flush()
         self._session.refresh(supply)
         self._session.refresh(movement)
         return supply, movement
