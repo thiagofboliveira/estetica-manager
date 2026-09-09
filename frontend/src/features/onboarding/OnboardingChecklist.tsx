@@ -21,6 +21,16 @@ export function OnboardingChecklist({ hasAnySale }: Props) {
     return null;
   }
 
+  // Enquanto qualquer query interna ainda carrega, o estado dos steps é
+  // desconhecido (data = undefined → todos avaliados como false).
+  // Retornar null evita o flash de checklist que desaparece 1s depois.
+  const isLoadingAny =
+    proceduresQuery.isLoading || patientsQuery.isLoading || settingsQuery.isLoading;
+
+  if (isLoadingAny) {
+    return null;
+  }
+
   const hasProcedures = Boolean(proceduresQuery.data && proceduresQuery.data.length > 0);
   const hasPatients = Boolean(patientsQuery.data && patientsQuery.data.length > 0);
   const hasConfiguredSettings = Boolean(settingsQuery.data);
