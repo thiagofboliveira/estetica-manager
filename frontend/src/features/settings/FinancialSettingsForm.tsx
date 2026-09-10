@@ -5,7 +5,6 @@ import { z } from "zod";
 import { ApiError } from "@/lib/http/client";
 import type { FeePayer, FinancialSettings, PaymentMethod, SplitBase } from "./api";
 import { useUpdateFinancialSettings } from "./hooks";
-import { PaymentFeeRulesManager } from "./PaymentFeeRulesManager";
 import { toast } from "@/ui/ToastContext";
 
 const schema = z.object({
@@ -270,10 +269,6 @@ export function FinancialSettingsForm({ initial }: Props) {
           {isSubmitting ? "Salvando…" : "Salvar configurações financeiras"}
         </button>
       </form>
-
-      <hr className="settings-divider" />
-
-      <PaymentFeeRulesManager />
     </div>
   );
 }

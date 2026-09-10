@@ -58,8 +58,7 @@ export function WeeklySummarySection() {
   }
 
   return (
-    <section className="settings-section" style={{ marginTop: "24px" }}>
-      <hr className="settings-divider" />
+    <section className="settings-section">
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "12px", marginBottom: "12px" }}>
         <div>
           <h2 style={{ fontSize: "1.1rem", margin: 0, display: "flex", alignItems: "center", gap: "8px" }}>
