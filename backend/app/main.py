@@ -8,6 +8,7 @@ from sqlalchemy import text
 
 from app.api.v1 import (
     anamnesis,
+    billing,
     bookings,
     dashboard,
     export,
@@ -219,4 +220,5 @@ app.include_router(public_anamnesis.router, prefix="/api/v1")
 app.include_router(patient_photos.router, prefix="/api/v1")
 app.include_router(vials.router, prefix="/api/v1")
 app.include_router(supplies.router, prefix="/api/v1")
+app.include_router(billing.router, prefix="/api/v1")
 

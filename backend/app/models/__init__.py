@@ -40,6 +40,8 @@ from app.models.supply import (
     SupplyCategory,
     SupplyMovement,
 )
+from app.models.coupon import Coupon
+from app.models.subscription import Subscription, SubscriptionStatus
 from app.models.terms_acceptance import TermsAcceptance
 from app.models.user import User
 from app.models.vial import OpenVial, VialStatus
@@ -49,6 +51,9 @@ __all__ = [
     "TenantModel",
     "TimestampMixin",
     "Clinic",
+    "Subscription",
+    "SubscriptionStatus",
+    "Coupon",
     "User",
     "Supply",
     "SupplyCategory",

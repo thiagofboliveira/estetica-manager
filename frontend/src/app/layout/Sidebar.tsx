@@ -12,6 +12,7 @@ import {
   IconClipboard,
   IconDroplet,
   IconWhatsApp,
+  IconCrown,
 } from "@/ui/icons";
 import styles from "./Sidebar.module.css";
 
@@ -28,6 +29,7 @@ const NAV_ITEMS = [
   { to: "/simulador", label: "Simulador de Preço", Icon: IconTrendingUp, end: false },
   { to: "/financeiro", label: "Financeiro", Icon: IconWallet, end: false },
   { to: "/despesas-fixas", label: "Despesas Fixas", Icon: IconReceipt, end: false },
+  { to: "/assinatura", label: "Planos & Assinatura", Icon: IconCrown, end: false },
 ];
 
 

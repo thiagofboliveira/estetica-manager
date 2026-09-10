@@ -305,5 +305,23 @@ export function IconCreditCard(props: SVGProps<SVGSVGElement>) {
   );
 }
 
+export function IconTag(props: SVGProps<SVGSVGElement>) {
+  return (
+    <svg {...defaultProps} {...props}>
+      <path d="M12 2H2v10l9.29 9.29c.94.94 2.48.94 3.42 0l6.58-6.58c.94-.94.94-2.48 0-3.42L12 2Z" />
+      <path d="M7 7h.01" />
+    </svg>
+  );
+}
+
+export function IconClock(props: SVGProps<SVGSVGElement>) {
+  return (
+    <svg {...defaultProps} {...props}>
+      <circle cx="12" cy="12" r="10" />
+      <polyline points="12 6 12 12 16 14" />
+    </svg>
+  );
+}
+
 
 

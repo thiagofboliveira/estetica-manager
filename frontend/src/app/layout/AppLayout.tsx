@@ -3,6 +3,7 @@ import { Link, Outlet, useNavigate } from "react-router-dom";
 import { useAuth } from "@/lib/auth/AuthContext";
 import { getImpersonationState, stopImpersonation } from "@/lib/auth/impersonation";
 import { ImpersonationBanner } from "./ImpersonationBanner";
+import { TrialCountdownBanner } from "@/features/billing/TrialCountdownBanner";
 import { Sidebar } from "./Sidebar";
 import {
   IconSparkles,
@@ -91,6 +92,7 @@ export function AppLayout() {
       )}
 
       <div className={styles.contentColumn}>
+        <TrialCountdownBanner />
         {/* Top bar fina — ações rápidas, tema, atalhos admin (F6-02) */}
         <header className={styles.topHeader}>
           <button

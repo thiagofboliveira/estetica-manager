@@ -23,6 +23,7 @@ Documentos **atemporais** (não têm estado de execução) ficam na raiz de `doc
 
 | Arquivo | Conteúdo | Estado |
 |---|---|---|
+| [`BACKLOG_BILLING_ASAAS.md`](finished/BACKLOG_BILLING_ASAAS.md) | Assinaturas, Gateway Asaas v3, Trial de 14 dias, Promoção de Inauguração (80/65/50) e Cupons de Desconto | 24/24 ✅ |
 | [`BACKLOG_AUDITORIA_2026-09-05.md`](finished/BACKLOG_AUDITORIA_2026-09-05.md) | Auditoria pós-Fase 2: agenda pública incorporada, LGPD, concorrência, telemetria de valor, simulador de preço, onboarding tolerante (I7) e resumo semanal | 17/17 ✅ |
 | [`BACKLOG_SPRINT3_backend.md`](finished/BACKLOG_SPRINT3_backend.md) | Split por procedimento (E6), Exportação CSV, Projeção de recebíveis, Antecipação (E7) | 16/16 ✅ |
 | [`BACKLOG_SPRINT2_backend.md`](finished/BACKLOG_SPRINT2_backend.md) | ROI, Anti-No-Show, Importação em lote, Templates + 3 ações corretivas (AC-01, AC-02, AC-07) | 23/23 ✅ |
@@ -66,7 +67,7 @@ Documentos **atemporais** (não têm estado de execução) ficam na raiz de `doc
 
 | # | Lacuna | Estado real (auditado no código) |
 |---|---|---|
-| L-1 | Não sabe cobrar | ✅ **Confirmada.** Zero `subscription`/`billing`; `clinics.plan` é string livre e nunca verificado em request |
+| L-1 | Não sabe cobrar | ✅ **Resolvida.** Módulo completo com Asaas v3, Trial 14d, Planos 80/65/50, RLS, Cupons e Webhooks |
 | L-2 | Não tem cadastro público | ✅ **Confirmada.** Os 3 caminhos exigem privilégio preexistente |
 | L-3 | Não tem produção | ⚠️ **Parcialmente desatualizada.** `backend/Dockerfile` e `railway.json` **existem**. Falta CI e infra do frontend |
 | L-4 | Não se mede | ✅ **Confirmada, e pior:** o produto não mede o no-show evitado, que é seu maior alvo econômico |

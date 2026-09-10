@@ -499,3 +499,18 @@ def get_supply_service(
 
 SupplySvc = Annotated[SupplyService, Depends(get_supply_service)]
 
+
+def get_billing_service(session: DbSession) -> "BillingService":
+    from app.repositories.coupon_repository import CouponRepository
+    from app.repositories.subscription_repository import SubscriptionRepository
+    from app.services.billing_service import BillingService
+
+    return BillingService(
+        subscription_repo=SubscriptionRepository(session),
+        coupon_repo=CouponRepository(session),
+        clinic_repo=ClinicRepository(session),
+    )
+
+
+BillingSvc = Annotated["BillingService", Depends(get_billing_service)]
+

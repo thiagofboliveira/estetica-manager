@@ -1,0 +1,619 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>Lumina — Apresentação Completa da Plataforma na Visão do Profissional</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+
+    @page {
+      size: A4;
+      margin: 18mm 15mm 18mm 15mm;
+      @bottom-right {
+        content: counter(page);
+        font-family: 'Inter', sans-serif;
+        font-size: 9pt;
+        color: #888;
+      }
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      color: #1e293b;
+      background-color: #ffffff;
+      line-height: 1.55;
+      font-size: 10pt;
+    }
+
+    /* Utilitários de Impressão */
+    .page-break {
+      page-break-before: always;
+    }
+
+    .no-break {
+      page-break-inside: avoid;
+    }
+
+    /* Capa */
+    .cover {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      min-height: 90vh;
+      padding: 40px 20px;
+      border-bottom: 2px solid #e2e8f0;
+    }
+
+    .badge-tag {
+      display: inline-block;
+      align-self: flex-start;
+      background: #f1f5f9;
+      color: #475569;
+      font-size: 9pt;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      padding: 6px 14px;
+      border-radius: 9999px;
+      margin-bottom: 24px;
+      border: 1px solid #cbd5e1;
+    }
+
+    .cover h1 {
+      font-size: 32pt;
+      font-weight: 800;
+      color: #0f172a;
+      line-height: 1.15;
+      margin-bottom: 12px;
+      letter-spacing: -0.5px;
+    }
+
+    .cover h2 {
+      font-size: 16pt;
+      font-weight: 500;
+      color: #0284c7;
+      margin-bottom: 24px;
+    }
+
+    .cover-desc {
+      font-size: 12pt;
+      color: #475569;
+      max-width: 650px;
+      margin-bottom: 40px;
+      line-height: 1.6;
+    }
+
+    .cover-meta {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 20px;
+      padding-top: 24px;
+      border-top: 1px solid #e2e8f0;
+    }
+
+    .meta-item h4 {
+      font-size: 8pt;
+      text-transform: uppercase;
+      color: #64748b;
+      letter-spacing: 0.5px;
+      margin-bottom: 4px;
+    }
+
+    .meta-item p {
+      font-size: 10pt;
+      font-weight: 600;
+      color: #0f172a;
+    }
+
+    /* Cabeçalhos de Seções */
+    h2.section-title {
+      font-size: 16pt;
+      font-weight: 700;
+      color: #0f172a;
+      border-bottom: 2px solid #0284c7;
+      padding-bottom: 8px;
+      margin-top: 32px;
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    h3.sub-title {
+      font-size: 12pt;
+      font-weight: 600;
+      color: #1e293b;
+      margin-top: 20px;
+      margin-bottom: 8px;
+    }
+
+    p {
+      margin-bottom: 12px;
+      color: #334155;
+    }
+
+    /* Destaques e Callouts */
+    .callout {
+      background: #f8fafc;
+      border-left: 4px solid #0284c7;
+      padding: 14px 18px;
+      border-radius: 0 8px 8px 0;
+      margin: 16px 0;
+      font-size: 9.5pt;
+    }
+
+    .callout strong {
+      color: #0f172a;
+    }
+
+    .callout-success {
+      background: #f0fdf4;
+      border-left-color: #16a34a;
+    }
+
+    .callout-warning {
+      background: #fffbeb;
+      border-left-color: #d97706;
+    }
+
+    /* Cards e Grids */
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin: 16px 0;
+    }
+
+    .grid-3 {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 12px;
+      margin: 16px 0;
+    }
+
+    .feature-card {
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      padding: 14px 16px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.03);
+    }
+
+    .feature-card h4 {
+      font-size: 10.5pt;
+      font-weight: 600;
+      color: #0f172a;
+      margin-bottom: 6px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .feature-card p {
+      font-size: 9pt;
+      color: #475569;
+      margin-bottom: 0;
+    }
+
+    /* Tabelas */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 16px 0;
+      font-size: 9pt;
+    }
+
+    th, td {
+      padding: 10px 12px;
+      text-align: left;
+      border-bottom: 1px solid #e2e8f0;
+    }
+
+    th {
+      background: #f8fafc;
+      color: #475569;
+      font-weight: 600;
+      text-transform: uppercase;
+      font-size: 8pt;
+      letter-spacing: 0.5px;
+    }
+
+    tr:nth-child(even) td {
+      background: #fafafa;
+    }
+
+    /* Fluxos e Steps */
+    .step-list {
+      margin: 16px 0;
+      padding-left: 0;
+      list-style: none;
+    }
+
+    .step-item {
+      display: flex;
+      gap: 14px;
+      margin-bottom: 14px;
+    }
+
+    .step-num {
+      width: 26px;
+      height: 26px;
+      border-radius: 50%;
+      background: #0284c7;
+      color: #fff;
+      font-weight: 700;
+      font-size: 9pt;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .step-content h4 {
+      font-size: 10pt;
+      font-weight: 600;
+      color: #0f172a;
+      margin-bottom: 2px;
+    }
+
+    .step-content p {
+      font-size: 9pt;
+      color: #475569;
+      margin-bottom: 0;
+    }
+
+    /* Badges de Status */
+    .badge {
+      display: inline-block;
+      padding: 3px 8px;
+      font-size: 7.5pt;
+      font-weight: 700;
+      border-radius: 4px;
+      text-transform: uppercase;
+    }
+    .badge-green { background: #dcfce7; color: #15803d; }
+    .badge-amber { background: #fef3c7; color: #b45309; }
+    .badge-red { background: #fee2e2; color: #b91c1c; }
+    .badge-blue { background: #e0f2fe; color: #0369a1; }
+  </style>
+</head>
+<body>
+
+  <!-- CAPA -->
+  <div class="cover">
+    <span class="badge-tag">Documento Geral de Apresentação e Arquitetura</span>
+    <h1>Lumina — Plataforma de Gestão, Retenção e Lucro Real em Estética</h1>
+    <h2>O Sistema Operacional Completo da Profissional Autônoma e da Clínica de Estética/Dermatologia</h2>
+    <p class="cover-desc">
+      Um guia aprofundado de todas as páginas, funcionalidades, motores matemáticos e fluxos operacionais, 
+      estruturado na perspectiva da profissional de estética e dermatologia que atua na recepção, na sala de aplicação e na gestão do seu próprio negócio.
+    </p>
+
+    <div class="cover-meta">
+      <div class="meta-item">
+        <h4>Segmento Alvo</h4>
+        <p>Estética Avançada, Dermatologia e Biomedicina</p>
+      </div>
+      <div class="meta-item">
+        <h4>Proposta Central</h4>
+        <p>Lucro Real no Bolso + Retenção Ativa em &lt; 30s</p>
+      </div>
+      <div class="meta-item">
+        <h4>Versão do Sistema</h4>
+        <p>Lumina v2.0 (Full SaaS Multi-Tenant)</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- SEÇÃO 1: VISÃO GERAL E FILOSOFIA -->
+  <div class="page-break"></div>
+  <h2 class="section-title">1. Visão Geral da Plataforma: O que é o Lumina?</h2>
+  <p>
+    O <strong>Lumina</strong> não é apenas uma agenda online ou um cadastro simplificado de clientes. Ele foi concebido para resolver os dois maiores gargalos que drenam o lucro e o tempo da profissional de estética:
+  </p>
+
+  <div class="grid-2">
+    <div class="feature-card">
+      <h4>📉 O Falso Faturamento vs. Lucro no Bolso</h4>
+      <p>
+        Muitas profissionais faturam R$ 15.000 ou R$ 25.000 no mês, mas não sabem quanto realmente sobrou. Maquininhas de cartão com taxas abusivas por parcela, comissões variáveis com clínicas parceiras, insumos caros (toxina botulínica, ácido hialurônico) e custos fixos (aluguel, taxa de vigilância sanitária) consomem o lucro silenciosamente. O Lumina calcula o <strong>Lucro Real Líquido</strong> de cada venda.
+      </p>
+    </div>
+    <div class="feature-card">
+      <h4>⏳ O "Sumiço" Silencioso das Clientes</h4>
+      <p>
+        Procedimentos de alta margem dependem de retoque ou nova aplicação cíclica (Botox a cada 4 a 6 meses; limpeza de pele a cada 30 a 45 dias). Se a profissional não avisa a cliente no momento exato, ela esquece ou faz com outra pessoa. O Lumina cria uma fila ativa de reativação diária por WhatsApp com um clique.
+      </p>
+    </div>
+  </div>
+
+  <div class="callout callout-success">
+    <strong>Princípio dos 30 Segundos:</strong> A profissional trabalha em pé, com luvas ou entre atendimentos corridos. Nenhuma tarefa diária (registrar uma venda, marcar um retorno ou conferir o faturamento) pode exigir mais de 30 segundos no celular.
+  </div>
+
+  <!-- SEÇÃO 2: MAPEAMENTO DE TODAS AS PÁGINAS -->
+  <h2 class="section-title">2. Mapeamento das Telas e Módulos do Sistema</h2>
+  <p>
+    Abaixo está o mapa de navegação completo disponível na experiência da profissional:
+  </p>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Módulo / Tela</th>
+        <th>Rota</th>
+        <th>Principal Objetivo Operacional</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>Dashboard Inicial</strong></td>
+        <td><code>/dashboard</code></td>
+        <td>Visão do dia: faturamento bruto, lucro real líquido, ponto de equilíbrio e alertas de insumos.</td>
+      </tr>
+      <tr>
+        <td><strong>Agenda Completa</strong></td>
+        <td><code>/agenda</code></td>
+        <td>Timeline horária (8h às 20h), confirmação de sessões anti-no-show e pacotes com saldo em aberto.</td>
+      </tr>
+      <tr>
+        <td><strong>Modo Ocupado (WhatsApp Rápido)</strong></td>
+        <td><code>/agenda/rapido</code></td>
+        <td>Descobre horários livres de hoje/amanhã e gera mensagem formatada pronta para colar no WhatsApp.</td>
+      </tr>
+      <tr>
+        <td><strong>Quem Devo Chamar Hoje?</strong></td>
+        <td><code>/retornos</code></td>
+        <td>Lista de pacientes no momento ideal de retorno, ordenadas estritamente pelo maior valor em risco.</td>
+      </tr>
+      <tr>
+        <td><strong>Central de Disparos WhatsApp</strong></td>
+        <td><code>/disparos-whatsapp</code></td>
+        <td>Aniversariantes do mês, clientes inativas e modelos de copywriting para campanhas (Botox Day, VIP).</td>
+      </tr>
+      <tr>
+        <td><strong>Nova Venda Avulsa</strong></td>
+        <td><code>/vendas/nova</code></td>
+        <td>Registro em &lt; 30s com cálculo imediato de taxas de maquininha, insumos e lucro real no ato.</td>
+      </tr>
+      <tr>
+        <td><strong>Venda de Pacote</strong></td>
+        <td><code>/vendas/nova-pacote</code></td>
+        <td>Venda de tratamento com múltiplas sessões, rateio contábil proporcional e agendamento de sessões.</td>
+      </tr>
+      <tr>
+        <td><strong>Simulador de Precificação</strong></td>
+        <td><code>/simulador</code></td>
+        <td>Simula margem líquida real de um procedimento descontando taxas de maquininha em até 12x e insumos.</td>
+      </tr>
+      <tr>
+        <td><strong>Prontuário &amp; Pacientes</strong></td>
+        <td><code>/pacientes</code></td>
+        <td>Histórico financeiro, galeria Antes/Depois, importação em lote e conformidade LGPD (Art. 18).</td>
+      </tr>
+      <tr>
+        <td><strong>Anamnese &amp; TCLE</strong></td>
+        <td><code>/anamnese</code></td>
+        <td>Construtor de perguntas médicas, alertas de contraindicação e assinatura eletrônica no celular.</td>
+      </tr>
+      <tr>
+        <td><strong>Estoque &amp; Botox Tracker</strong></td>
+        <td><code>/estoque</code></td>
+        <td>Controle de insumos clínicos, baixa automática e rastreamento de frascos abertos de toxina (30 dias).</td>
+      </tr>
+      <tr>
+        <td><strong>Catálogo &amp; Ficha Técnica</strong></td>
+        <td><code>/procedimentos</code></td>
+        <td>Cadastro de serviços com preço, custo, tempo de retorno e insumos vinculados por procedimento.</td>
+      </tr>
+      <tr>
+        <td><strong>Despesas Fixas</strong></td>
+        <td><code>/despesas-fixas</code></td>
+        <td>Lançamento de custos recorrentes da clínica (aluguel, água, descarte de lixo biológico, vigilância).</td>
+      </tr>
+      <tr>
+        <td><strong>Configurações Financeiras</strong></td>
+        <td><code>/financeiro</code></td>
+        <td>Configuração das regras de split com clínica parceira, taxas de cartão por parcelas e resumo semanal.</td>
+      </tr>
+      <tr>
+        <td><strong>Relatórios &amp; Análises</strong></td>
+        <td><code>/relatorios</code></td>
+        <td>DRE simplificado, ranking de lucratividade de procedimentos e exportação em CSV para contabilidade.</td>
+      </tr>
+      <tr>
+        <td><strong>Agendamento Público (Bio)</strong></td>
+        <td><code>/agendar/:slug</code></td>
+        <td>Página pública da profissional para a cliente marcar horário sozinha pelo link do Instagram.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <!-- SEÇÃO 3: DASHBOARD E FINANCEIRO -->
+  <div class="page-break"></div>
+  <h2 class="section-title">3. O Coração Financeiro: Dashboard e Lucro no Bolso</h2>
+  <p>
+    Diferente de sistemas tradicionais que exibem apenas o faturamento bruto, o Dashboard do Lumina responde às perguntas mais angustiantes da profissional autônoma: <em>"Quanto eu realmente ganhei?"</em> e <em>"O dinheiro já pagou as contas do mês?"</em>.
+  </p>
+
+  <div class="grid-3">
+    <div class="feature-card">
+      <h4>💰 Faturamento Bruto</h4>
+      <p>Total transacionado em vendas avulsas e pacotes fechados no período selecionado.</p>
+    </div>
+    <div class="feature-card">
+      <h4>💵 Lucro no Bolso (Real)</h4>
+      <p>Faturamento deduzido de: comissão da clínica, taxas reais de cartão, insumos consumidos e despesas fixas.</p>
+    </div>
+    <div class="feature-card">
+      <h4>🎯 Ponto de Equilíbrio (Breakeven)</h4>
+      <p>Mostra exatamente quantos atendimentos faltam para pagar as despesas fixas da sala naquele mês.</p>
+    </div>
+  </div>
+
+  <h3 class="sub-title">O Motor dos 5 Cenários Contábeis</h3>
+  <p>
+    Cada clínica e profissional tem um acordo diferente de comissão e pagamento de maquininha. O motor de cálculo do Lumina suporta nativamente todas as variações sem distorcer o histórico:
+  </p>
+  <ul>
+    <li><strong>Cenário A (Padrão):</strong> Split da clínica calculado sobre o valor bruto; taxa da maquininha paga 100% pela profissional.</li>
+    <li><strong>Cenário B (Líquido):</strong> Split da clínica incide apenas sobre o valor que sobra após o desconto da maquininha.</li>
+    <li><strong>Cenário C (Pro-Rata):</strong> A taxa da maquininha é rateada proporcionalmente entre a profissional e a clínica.</li>
+    <li><strong>Cenário D (Clínica Cobre Taxa):</strong> A clínica absorve a taxa de cartão e repassa a comissão limpa.</li>
+    <li><strong>Cenário E (Autônoma Pura):</strong> Sem comissão para clínica parceira (0% de split), deduzindo apenas maquininha e insumos.</li>
+  </ul>
+
+  <div class="callout callout-warning">
+    <strong>Snapshot Imutável:</strong> Ao registrar uma venda, o cálculo congela a taxa e a fórmula exata daquele momento. Se no mês seguinte a profissional mudar de maquininha ou de porcentagem, o histórico financeiro dos meses anteriores permanece 100% exato e reproduzível.
+  </div>
+
+  <!-- SEÇÃO 4: MOTOR DE RETENÇÃO -->
+  <h2 class="section-title">4. Motor de Retenção Inteligente: "Quem Devo Chamar Hoje?"</h2>
+  <p>
+    Este é o módulo responsável pelo <strong>Retorno sobre o Investimento (ROI)</strong> do software. Em vez de uma lista estática de contatos, a tela organiza os pacientes de acordo com a janela biológica de cada procedimento:
+  </p>
+
+  <div class="grid-3">
+    <div class="feature-card">
+      <h4><span class="badge badge-green">UPCOMING</span> A Vencer</h4>
+      <p>Pacientes cujo retorno está previsto para as próximas semanas. Bom momento para planejar agenda.</p>
+    </div>
+    <div class="feature-card">
+      <h4><span class="badge badge-amber">DUE</span> Momento Ideal</h4>
+      <p>Janela exata de retorno (7 dias antes a 7 dias depois da data prevista). Maior taxa de conversão.</p>
+    </div>
+    <div class="feature-card">
+      <h4><span class="badge badge-red">OVERDUE</span> Em Atraso</h4>
+      <p>Passou da janela ideal. Cliente corre risco de desistir do tratamento ou migrar para concorrente.</p>
+    </div>
+  </div>
+
+  <h3 class="sub-title">Diferenciais da Régua de Contato</h3>
+  <ul class="step-list">
+    <li class="step-item">
+      <div class="step-num">1</div>
+      <div class="step-content">
+        <h4>Ordenação por Valor Potencial (R$)</h4>
+        <p>A lista prioriza primeiro as clientes de maior ticket (ex: Botox de R$ 1.200 antes de uma limpeza de R$ 180), otimizando o tempo escasso da profissional.</p>
+      </div>
+    </li>
+    <li class="step-item">
+      <div class="step-num">2</div>
+      <div class="step-content">
+        <h4>Supressão Automática Anti-Spam (14 dias)</h4>
+        <p>Se a paciente já foi contatada nos últimos 14 dias, ela é ocultada da lista diária para evitar mensagens repetitivas constrangedoras no WhatsApp.</p>
+      </div>
+    </li>
+    <li class="step-item">
+      <div class="step-num">3</div>
+      <div class="step-content">
+        <h4>Disparo Direto no WhatsApp em 1 Clique</h4>
+        <p>Gera o link <code>wa.me</code> com mensagem personalizada pré-formatada, citando o nome da cliente e o procedimento exato que ela realizou.</p>
+      </div>
+    </li>
+  </ul>
+
+  <!-- SEÇÃO 5: OPERAÇÃO CLÍNICA DIÁRIA -->
+  <div class="page-break"></div>
+  <h2 class="section-title">5. Operação Clínica: Agenda, Modo Ocupado e Link da Bio</h2>
+
+  <h3 class="sub-title">Timeline Visual e Confirmação Anti-No-Show</h3>
+  <p>
+    A agenda foi desenhada para visualização rápida no smartphone. Cada atendimento exibe o procedimento, a modalidade (Presencial 🏠 ou Remoto 💻) e status de confirmação.
+    Um painel especial destaca pacientes do dia seguinte que ainda não confirmaram presença, permitindo disparar um lembrete com um toque e reduzir em até 80% o no-show (faltas sem aviso).
+  </p>
+
+  <h3 class="sub-title">A Ferramenta "Modo Ocupado" (WhatsApp Express)</h3>
+  <p>
+    Quando uma paciente manda mensagem no WhatsApp perguntando <em>"Tem horário pra hoje ou amanhã?"</em>, a profissional não precisa abrir o caderno e digitar linha por linha.
+    O <strong>Modo Ocupado</strong> analisa a agenda em tempo real e gera automaticamente um texto formatado:
+  </p>
+  <div class="callout">
+    <em>"Olá! Meus horários disponíveis para hoje são: <strong>14:00, 15:30 e 17:00</strong>. Qual fica melhor para você?"</em>
+    <br><br>
+    Um botão <strong>"Copiar para WhatsApp"</strong> permite colar na conversa em 3 segundos.
+  </div>
+
+  <h3 class="sub-title">Agendamento Público e Link da Bio</h3>
+  <p>
+    A profissional dispõe de uma página pública exclusiva (ex: <code>lumina.app/agendar/dra-camila</code>) para colocar no Instagram e enviar a novos contatos.
+    A própria paciente escolhe o procedimento, visualiza os horários livres e faz a pré-reserva.
+    O sistema emite um link com token de auto-gestão, permitindo que a cliente remarque ou cancele sem incomodar a profissional fora do horário de trabalho.
+  </p>
+
+  <!-- SEÇÃO 6: PRONTUÁRIO, ANAMNESE E ESTOQUE -->
+  <h2 class="section-title">6. Segurança Clínica: Anamnese Digital, Fotos e Botox Tracker</h2>
+
+  <div class="grid-2">
+    <div class="feature-card">
+      <h4>📋 Anamnese com Assinatura na Tela</h4>
+      <p>
+        Formulário digital enviado por link ou preenchido no tablet da clínica. Avalia alergias, uso de ácidos, gravidez e histórico de saúde.
+        Detecta <strong>alertas médicos de risco</strong> (contraindicações) automaticamente e coleta a <strong>assinatura desenhada na tela</strong> junto com o Termo de Consentimento Livre e Esclarecido (TCLE).
+      </p>
+    </div>
+    <div class="feature-card">
+      <h4>📸 Galeria Antes &amp; Depois</h4>
+      <p>
+        Registro fotográfico seguro com comparação visual lado a lado.
+        Inclui marcação explícita de autorização da paciente para divulgação em redes sociais (conforme exigências da LGPD).
+      </p>
+    </div>
+  </div>
+
+  <h3 class="sub-title">Botox Tracker: Rastreamento de Frascos Abertos</h3>
+  <p>
+    A toxina botulínica perde eficácia e estabilidade cerca de 30 dias após a reconstituição. Descartar frascos com unidades restantes é uma das maiores fontes de prejuízo em clínicas estéticas.
+  </p>
+  <ul>
+    <li><strong>Controle de Lote e Abertura:</strong> Registra a data de abertura, unidades totais (ex: 100U) e data fatal de descarte.</li>
+    <li><strong>Baixa Parcial por Aplicação:</strong> A cada sessão realizada (ex: 35U no terço superior), o saldo restante é abatido.</li>
+    <li><strong>Alerta de Risco Financeiro:</strong> O dashboard calcula em reais quanto dinheiro está parado na geladeira e avisa quando o frasco está prestes a vencer para incentivar a profissional a preencher a agenda com retoques rápidos.</li>
+  </ul>
+
+  <!-- SEÇÃO 7: CONCLUSÃO E PROPOSTA DE VALOR -->
+  <div class="page-break"></div>
+  <h2 class="section-title">7. Resumo da Proposta de Valor para o NotebookLM</h2>
+  <p>
+    Para orientar a síntese, apresentação de slides ou geração de áudio no NotebookLM, os três pilares estratégicos da plataforma são:
+  </p>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Pilar</th>
+        <th>Problema que Resolve</th>
+        <th>Como o Lumina Resolve na Prática</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>1. Clareza Financeira &amp; Margem</strong></td>
+        <td>A profissional tem faturamento alto mas não sabe quanto sobra de verdade após taxas e insumos.</td>
+        <td>Calcula o Lucro Real Líquido por venda considerando 5 modelos de split, faixas de cartão e custos de insumos.</td>
+      </tr>
+      <tr>
+        <td><strong>2. Retenção Ativa &amp; Recorrência</strong></td>
+        <td>Clientes fazem um procedimento e não voltam porque ninguém lembrou do momento de retoque.</td>
+        <td>Fila inteligente "Quem Devo Chamar Hoje?", ordenada por maior valor financeiro em risco e com disparo em 1 clique via WhatsApp.</td>
+      </tr>
+      <tr>
+        <td><strong>3. Agilidade &amp; Segurança Operacional</strong></td>
+        <td>Falta de tempo para preencher prontuários complexos e perda de dinheiro com Botox vencido na geladeira.</td>
+        <td>Fluxos em menos de 30 segundos no celular, anamnese com assinatura digital e rastreamento rigoroso de frascos de toxina.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="callout callout-success">
+    <strong>Conclusão Executiva:</strong> O Lumina posiciona-se como o parceiro de lucratividade da profissional de estética, transformando a rotina de trabalho em um negócio previsível, lucrativo e com alta taxa de retorno de clientes satisfeitas.
+  </div>
+
+</body>
+</html>

@@ -40,6 +40,7 @@ import { PublicBookingPage } from "@/features/public-booking/PublicBookingPage";
 import { BookingManagementPage } from "@/features/public-booking/BookingManagementPage";
 import { AnamnesisPage } from "@/features/anamnesis/AnamnesisPage";
 import { PublicAnamnesisPage } from "@/features/anamnesis/PublicAnamnesisPage";
+import { PlansPage } from "@/features/billing/PlansPage";
 
 export const router = createBrowserRouter([
   {
@@ -55,6 +56,7 @@ export const router = createBrowserRouter([
           { path: "/como-calculamos", element: <HowWeCalculatePage /> },
           { path: "/termos", element: <TermsOfServicePage /> },
           { path: "/privacidade", element: <PrivacyPolicyPage /> },
+          { path: "/planos", element: <PlansPage /> },
           { path: "/login", element: <LoginPage /> },
           { path: "/redefinir-senha", element: <ResetPasswordPage /> },
           { path: "/reset-password", element: <Navigate to="/redefinir-senha" replace /> },
@@ -97,6 +99,7 @@ export const router = createBrowserRouter([
               { path: "/despesas-fixas", element: <FixedExpensesPage /> },
               { path: "/simulador", element: <PriceSimulatorPage /> },
               { path: "/relatorios", element: <ReportsPage /> },
+              { path: "/assinatura", element: <PlansPage /> },
               { path: "*", element: <Navigate to="/dashboard" replace /> },
 
             ],

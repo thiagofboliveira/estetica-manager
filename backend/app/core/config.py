@@ -102,10 +102,11 @@ class Settings(BaseSettings):
     # Sem elas o teste pula (skip), nunca falha — nunca commitar valores.
     SUPABASE_TEST_EMAIL: str | None = None
     SUPABASE_TEST_PASSWORD: str | None = None
-    # A publishable/anon key (a mesma de frontend/.env.local) — só para
-    # autenticar a chamada de teste. O backend em si nunca precisa dela
-    # para validar token (só do JWKS público, via SUPABASE_URL).
     SUPABASE_TEST_ANON_KEY: str | None = None
+    # Configurações do Gateway Asaas v3
+    ASAAS_API_KEY: str | None = None
+    ASAAS_API_URL: str = "https://sandbox.asaas.com/api/v3"
+    ASAAS_WEBHOOK_SECRET: str | None = None
 
 
 @lru_cache
