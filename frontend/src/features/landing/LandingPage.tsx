@@ -56,8 +56,8 @@ export function LandingPage() {
           <Link to="/login" className={styles.btnSecondary}>
             Entrar
           </Link>
-          <Link to="/login" className={styles.btnPrimary}>
-            Começar Grátis →
+          <Link to="/planos" className={styles.btnPrimary}>
+            Começar 14 Dias Grátis →
           </Link>
         </div>
       </header>
@@ -81,8 +81,8 @@ export function LandingPage() {
         </p>
 
         <div className={styles.heroCtaGroup}>
-          <Link to="/login" className={styles.heroBtnMain}>
-            Acessar Sistema Agora
+          <Link to="/planos" className={styles.heroBtnMain}>
+            Começar 14 Dias Grátis
           </Link>
           <Link to="/dashboard" className={styles.heroBtnDemo}>
             Ver Demonstração ao Vivo ↗
@@ -240,71 +240,116 @@ export function LandingPage() {
         </div>
       </section>
 
-      {/* Pricing Section (A-13) */}
+      {/* Pricing Section (Promoção de Inauguração) */}
       <section id="precos" className={styles.pricingSection}>
         <div className={styles.pricingHeader}>
-          <h2>Preço justo, transparente e sem pegadinhas</h2>
+          <h2>Promoção Especial de Inauguração — Preço Travado</h2>
           <p>
-            Tudo o que você precisa para gerenciar o lucro real e reter pacientes, 
-            pelo valor de uma fração de um atendimento.
+            Garanta sua vaga como clínica pioneira com preço promocional vitalício.
+            Sem taxa de adesão, sem fidelidade e cancele quando quiser.
           </p>
+          <div className={styles.pricingTrialPill}>
+            <span>✨</span>
+            <span>2 semanas (14 dias) grátis no primeiro mês sem cobrança imediata</span>
+          </div>
         </div>
 
-        <div className={styles.pricingCard}>
-          <div className={styles.pricingBadge}>
-            🛡️ Sem fidelidade, cancele quando quiser em 1 clique
+        <div className={styles.pricingGrid}>
+          {/* Card Mensal */}
+          <div className={styles.pricingCardItem}>
+            <div>
+              <h3 className={styles.cardTitle}>Plano Mensal</h3>
+              <p className={styles.cardDesc}>Flexibilidade total mês a mês, sem compromisso de longo prazo.</p>
+              <div className={styles.pricingPriceRow}>
+                <span className={styles.pricingCurrency}>R$</span>
+                <span className={styles.pricingAmount}>80</span>
+                <span className={styles.pricingPeriod}>/mês</span>
+              </div>
+              <div className={styles.pricingBillingSub}>Cobrado R$ 80 a cada mês</div>
+            </div>
+
+            <ul className={styles.pricingFeaturesMini}>
+              <li><span>✓</span><span>Lucro Real por atendimento</span></li>
+              <li><span>✓</span><span>Régua "Quem chamar hoje?"</span></li>
+              <li><span>✓</span><span>Agenda pública na bio</span></li>
+              <li><span>✓</span><span>Prontuário e fotos Antes/Depois</span></li>
+              <li><span>✓</span><span>14 dias grátis de degustação</span></li>
+            </ul>
+
+            <Link to="/planos" className={styles.pricingBtn}>
+              Começar 14 Dias Grátis
+            </Link>
           </div>
 
-          <div className={styles.pricingPriceRow}>
-            <span className={styles.pricingCurrency}>R$</span>
-            <span className={styles.pricingAmount}>39</span>
-            <span className={styles.pricingPeriod}>/mês</span>
-          </div>
-          <div className={styles.pricingRation}>
-            💡 Uma única paciente recuperada paga 3 meses de assinatura.
+          {/* Card Trimestral (Destaque) */}
+          <div className={`${styles.pricingCardItem} ${styles.featuredCard}`}>
+            <div className={styles.cardTopBadge}>Mais Escolhido</div>
+            <div>
+              <h3 className={styles.cardTitle}>Plano Trimestral</h3>
+              <p className={styles.cardDesc}>Mais tranquilidade e economia para o planejamento da sua clínica.</p>
+              <div className={styles.pricingPriceRow}>
+                <span className={styles.pricingCurrency}>R$</span>
+                <span className={styles.pricingAmount}>65</span>
+                <span className={styles.pricingPeriod}>/mês</span>
+              </div>
+              <div className={styles.pricingBillingSub}>Cobrado R$ 195 a cada 3 meses</div>
+              <div className={styles.savingsTag}>Economize 18,75%</div>
+            </div>
+
+            <ul className={styles.pricingFeaturesMini}>
+              <li><span>✓</span><span>Todos os recursos do Lumina Pro</span></li>
+              <li><span>✓</span><span>Preço congelado de inauguração</span></li>
+              <li><span>✓</span><span>Disparos WhatsApp com 1 clique</span></li>
+              <li><span>✓</span><span>Suporte prioritário</span></li>
+              <li><span>✓</span><span>14 dias grátis de degustação</span></li>
+            </ul>
+
+            <Link to="/planos" className={`${styles.pricingBtn} ${styles.featuredBtn}`}>
+              Garantir Vaga Trimestral
+            </Link>
           </div>
 
-          <ul className={styles.pricingFeatures}>
-            <li>
-              <span>✓</span>
-              <span><strong>Cálculo de Lucro Real:</strong> saiba exatamente quanto sobra no seu bolso em cada atendimento.</span>
-            </li>
-            <li>
-              <span>✓</span>
-              <span><strong>Motor de Retenção:</strong> lista diária "Quem devo chamar hoje?" pronta no WhatsApp.</span>
-            </li>
-            <li>
-              <span>✓</span>
-              <span><strong>Agenda Pública na Bio:</strong> link com prevenção contra duplo agendamento e sem atrito.</span>
-            </li>
-            <li>
-              <span>✓</span>
-              <span><strong>Gestão de Pacotes e Sessões:</strong> conciliação automática sem misturar dinheiro e atendimento.</span>
-            </li>
-            <li>
-              <span>✓</span>
-              <span><strong>Total liberdade:</strong> sem contrato de 12 meses, sem multa rescisória de 50-80%, sem pegadinhas.</span>
-            </li>
-          </ul>
+          {/* Card Anual */}
+          <div className={`${styles.pricingCardItem} ${styles.annualCard}`}>
+            <div className={`${styles.cardTopBadge} ${styles.annualBadge}`}>Maior Economia 37% OFF</div>
+            <div>
+              <h3 className={styles.cardTitle}>Plano Anual</h3>
+              <p className={styles.cardDesc}>O melhor custo-benefício. Garanta o menor valor da história da plataforma.</p>
+              <div className={styles.pricingPriceRow}>
+                <span className={styles.pricingCurrency}>R$</span>
+                <span className={styles.pricingAmount}>50</span>
+                <span className={styles.pricingPeriod}>/mês</span>
+              </div>
+              <div className={styles.pricingBillingSub}>Cobrado R$ 600 anualmente</div>
+              <div className={styles.savingsTag}>Economize R$ 360 no ano</div>
+            </div>
 
-          <Link to="/login" className={styles.pricingBtn}>
-            Começar Agora com Minha Conta →
-          </Link>
+            <ul className={styles.pricingFeaturesMini}>
+              <li><span>✓</span><span>Todos os recursos liberados</span></li>
+              <li><span>✓</span><span>Maior desconto vitalício</span></li>
+              <li><span>✓</span><span>Cálculo contábil de 5 modelos</span></li>
+              <li><span>✓</span><span>Anamnese digital com assinatura</span></li>
+              <li><span>✓</span><span>14 dias grátis de degustação</span></li>
+            </ul>
+
+            <Link to="/planos" className={styles.pricingBtn}>
+              Garantir Vaga Anual
+            </Link>
+          </div>
         </div>
       </section>
 
       {/* Final Call to Action */}
       <section className={styles.ctaSection}>
-
         <div className={styles.ctaContent}>
           <h2>Pronto para transformar a retenção da sua clínica?</h2>
           <p>
-            Acesse o sistema agora mesmo e veja a lista de oportunidades de retorno 
-            já prontas para serem contatadas.
+            Acesse o sistema agora mesmo com 14 dias de degustação gratuita
+            e garanta seu preço promocional de inauguração travado.
           </p>
           <div className={styles.ctaButtons}>
-            <Link to="/login" className={styles.ctaBtnInverse}>
-              Acessar Minha Conta →
+            <Link to="/planos" className={styles.ctaBtnInverse}>
+              Começar 14 Dias Grátis Agora →
             </Link>
           </div>
         </div>
