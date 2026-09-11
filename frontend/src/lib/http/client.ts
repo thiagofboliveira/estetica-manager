@@ -16,7 +16,7 @@ export class ApiError extends Error {
   }
 }
 
-type Opts = RequestInit & { headers?: Record<string, string> };
+export type Opts = RequestInit & { headers?: Record<string, string>; public?: boolean };
 
 /** Deduplica refresh concorrentes: 5 queries paralelas dão 1 refresh, não 5. */
 let refreshing: Promise<string | null> | null = null;
@@ -32,7 +32,21 @@ async function freshToken(force = false): Promise<string | null> {
 }
 
 async function request<T>(path: string, opts: Opts = {}, isRetry = false): Promise<T> {
-  const token = await freshToken();
+  const isPublic = Boolean(
+    opts.public ||
+    path.includes("/public/") ||
+    path.includes("/public-card/") ||
+    path.startsWith("/public")
+  );
+
+  let token: string | null = null;
+  if (!isPublic) {
+    token = await freshToken();
+  } else {
+    // Para rotas públicas, nunca bloqueamos no refresh de sessão do Supabase
+    token = await getSessionToken().catch(() => null);
+  }
+
   const cleanPath = path.startsWith("/api/v1") ? path.replace(/^\/api\/v1/, "") : path;
 
   const res = await fetch(`${BASE}${cleanPath}`, {
@@ -45,6 +59,9 @@ async function request<T>(path: string, opts: Opts = {}, isRetry = false): Promi
   });
 
   if (res.status === 401 && !isRetry) {
+    if (isPublic) {
+      throw new ApiError(401, "UNAUTHENTICATED", "Não autorizado");
+    }
     // Uma única tentativa de refresh forçado. Se falhar, é logout de verdade.
     const renewed = await freshToken(true);
     if (renewed) return request<T>(path, opts, true);
@@ -54,6 +71,7 @@ async function request<T>(path: string, opts: Opts = {}, isRetry = false): Promi
     location.assign("/login");
     throw new ApiError(401, "UNAUTHENTICATED", "Sessão expirada");
   }
+
 
   if (res.status === 204) return undefined as T;
 

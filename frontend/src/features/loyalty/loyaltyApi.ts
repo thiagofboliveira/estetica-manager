@@ -99,9 +99,10 @@ export const loyaltyApi = {
     api.get<LoyaltyOverviewOut>("/loyalty/overview"),
 
   getPublicVipCard: (code: string): Promise<PublicVipCardOut> =>
-    api.get<PublicVipCardOut>(`/loyalty/public-card/${code}`),
+    api.get<PublicVipCardOut>(`/loyalty/public-card/${encodeURIComponent(code)}`, { public: true }),
 
   sendVipCardEmail: (patientId: string): Promise<SendVipEmailResponse> =>
     api.post<SendVipEmailResponse>(`/loyalty/patients/${patientId}/send-card-email`, {}),
 };
+
 

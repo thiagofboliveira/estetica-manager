@@ -262,17 +262,19 @@ class LoyaltyService:
             # Resolve clínica e profissional
             clinic_name = "Clínica Lumina"
             booking_slug = None
-            prof = session.get(Professional, patient.professional_id)
-            if prof:
-                booking_slug = prof.slug
-                if prof.clinic_id:
-                    clinic = session.get(Clinic, prof.clinic_id)
-                    if clinic and clinic.name:
-                        clinic_name = clinic.name
+            if patient.professional_id:
+                prof = session.get(Professional, patient.professional_id)
+                if prof:
+                    booking_slug = prof.slug
+                    if prof.clinic_id:
+                        clinic = session.get(Clinic, prof.clinic_id)
+                        if clinic and clinic.name:
+                            clinic_name = clinic.name
+                        elif prof.name:
+                            clinic_name = f"Espaço {prof.name}"
                     elif prof.name:
                         clinic_name = f"Espaço {prof.name}"
-                elif prof.name:
-                    clinic_name = f"Espaço {prof.name}"
+
 
             # Regras de próximo tier
             tier = patient.vip_tier or VipTier.BRONZE

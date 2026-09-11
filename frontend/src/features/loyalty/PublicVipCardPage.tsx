@@ -7,7 +7,8 @@ import styles from "./PublicVipCardPage.module.css";
 
 export function PublicVipCardPage() {
   const { code } = useParams<{ code: string }>();
-  const { data: card, isLoading, isError } = usePublicVipCard(code || "");
+  const cleanCode = code ? decodeURIComponent(code).trim() : "";
+  const { data: card, isLoading, isError, refetch } = usePublicVipCard(cleanCode);
 
   const [copiedCode, setCopiedCode] = useState(false);
   const [copiedMessage, setCopiedMessage] = useState(false);
@@ -34,6 +35,19 @@ export function PublicVipCardPage() {
     }
   }
 
+  if (!cleanCode) {
+    return (
+      <div className={styles.wrapper}>
+        <div className={styles.centerBox}>
+          <h2 style={{ color: "#f87171", fontSize: "1.4rem" }}>Link Inválido</h2>
+          <p style={{ color: "#94a3b8", maxWidth: "380px" }}>
+            Nenhum código de Cartão VIP foi informado. Verifique o link e tente novamente.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   if (isLoading) {
     return (
       <div className={styles.wrapper}>
@@ -51,13 +65,22 @@ export function PublicVipCardPage() {
         <div className={styles.centerBox}>
           <h2 style={{ color: "#f87171", fontSize: "1.4rem" }}>Cartão VIP não encontrado</h2>
           <p style={{ color: "#94a3b8", maxWidth: "380px" }}>
-            Não encontramos nenhum cartão vinculado ao código <strong>{code}</strong>.
+            Não encontramos nenhum cartão vinculado ao código <strong>{cleanCode}</strong>.
             Verifique o link enviado pela clínica ou solicite um novo acesso.
           </p>
+          <button
+            type="button"
+            onClick={() => refetch()}
+            className={styles.copyCodeBtn}
+            style={{ marginTop: "16px", padding: "8px 16px" }}
+          >
+            🔄 Tentar Novamente
+          </button>
         </div>
       </div>
     );
   }
+
 
   const tierClass =
     card.vip_tier === "DIAMOND"

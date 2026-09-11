@@ -37,13 +37,17 @@ export function useLoyaltyOverview() {
 }
 
 export function usePublicVipCard(code: string) {
+  const cleanCode = code ? code.trim() : "";
   return useQuery({
-    queryKey: loyaltyKeys.publicCard(code),
-    queryFn: () => loyaltyApi.getPublicVipCard(code),
-    enabled: Boolean(code),
+    queryKey: loyaltyKeys.publicCard(cleanCode),
+    queryFn: () => loyaltyApi.getPublicVipCard(cleanCode),
+    enabled: Boolean(cleanCode),
+    networkMode: "always",
+    retry: 1,
     ...CACHE.CATALOG,
   });
 }
+
 
 export function useSendVipCardEmail(patientId: string) {
   return useMutation({

@@ -12,7 +12,10 @@ from app.schemas.loyalty import (
     ReferralInfoOut,
     SendVipEmailResponse,
 )
+import logging
 from app.services.loyalty_service import InsufficientPointsError, LoyaltyService
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/loyalty", tags=["loyalty"])
 
@@ -24,6 +27,11 @@ def get_public_vip_card(code: str) -> PublicVipCardOut:
         return LoyaltyService.get_public_vip_card(code)
     except ValueError as exc:
         raise HTTPException(status.HTTP_404_NOT_FOUND, str(exc)) from exc
+    except Exception as exc:
+        logger.exception("Erro ao buscar cartão VIP público para o código '%s': %s", code, exc)
+        raise HTTPException(
+            status.HTTP_500_INTERNAL_SERVER_ERROR, "Erro ao carregar Cartão VIP"
+        ) from exc
 
 
 @router.get("/overview", response_model=LoyaltyOverviewOut)
