@@ -1,5 +1,7 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
+import { useAuth } from "@/lib/auth/AuthContext";
 import {
   IconSparkles,
   IconCheck,
@@ -40,6 +42,9 @@ const CYCLE_DETAILS: Record<
 };
 
 export function PlansPage() {
+  const { user } = useAuth();
+  const navigate = useNavigate();
+
   const [selectedCycle, setSelectedCycle] = useState<BillingCycle>("QUARTERLY");
   const [billingType, setBillingType] = useState<"PIX" | "CREDIT_CARD" | "BOLETO">("CREDIT_CARD");
   const [document, setDocument] = useState("");
@@ -49,6 +54,7 @@ export function PlansPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [checkoutSuccess, setCheckoutSuccess] = useState<CheckoutResponse | null>(null);
   const [checkoutError, setCheckoutError] = useState<string | null>(null);
+  const [copiedPix, setCopiedPix] = useState(false);
 
   const { data: plans, isLoading, isError } = useQuery({
     queryKey: ["billing-plans"],
@@ -56,6 +62,15 @@ export function PlansPage() {
   });
 
   const plan = plans?.[0];
+
+  // Restaura ciclo e cupom se o usuário acabou de voltar do login
+  useEffect(() => {
+    const savedCycle = sessionStorage.getItem("selectedPlanCycle") as BillingCycle | null;
+    if (savedCycle && ["MONTHLY", "QUARTERLY", "YEARLY"].includes(savedCycle)) {
+      setSelectedCycle(savedCycle);
+      sessionStorage.removeItem("selectedPlanCycle");
+    }
+  }, []);
 
   function handleSelectCycle(cycle: BillingCycle) {
     setSelectedCycle(cycle);
@@ -74,6 +89,18 @@ export function PlansPage() {
 
   async function handleCheckout(e: React.FormEvent) {
     e.preventDefault();
+
+    // Se o usuário ainda não está logado, salva a intenção e guia para o login/cadastro
+    if (!user) {
+      sessionStorage.setItem("returnTo", "/assinatura");
+      sessionStorage.setItem("selectedPlanCycle", selectedCycle);
+      if (appliedCoupon) {
+        sessionStorage.setItem("selectedCouponCode", appliedCoupon.code);
+      }
+      navigate("/login");
+      return;
+    }
+
     setIsSubmitting(true);
     setCheckoutError(null);
 
@@ -87,7 +114,13 @@ export function PlansPage() {
       });
       setCheckoutSuccess(res);
     } catch (err: any) {
-      setCheckoutError(err?.message || "Não foi possível processar a assinatura. Tente novamente.");
+      if (err?.status === 401 || err?.status === 403 || err?.code === "UNAUTHENTICATED") {
+        setCheckoutError(
+          "Sua sessão expirou ou não está autenticada. Acesse sua conta para concluir a assinatura."
+        );
+      } else {
+        setCheckoutError(err?.message || "Não foi possível processar a assinatura. Tente novamente.");
+      }
     } finally {
       setIsSubmitting(false);
     }
@@ -121,9 +154,9 @@ export function PlansPage() {
           <div className={styles.successIcon}>
             <IconCheck width="32" height="32" />
           </div>
-          <h2 className={styles.successTitle}>Assinatura Iniciada!</h2>
+          <h2 className={styles.successTitle}>Assinatura Registrada!</h2>
           <p className={styles.successDesc}>
-            Seu plano <strong>Lumina Pro ({selectedCycle})</strong> foi registrado com sucesso.
+            Seu plano <strong>Lumina Pro ({selectedCycle})</strong> foi vinculado à sua conta com sucesso.
             {checkoutSuccess.is_trial_included ? (
               <>
                 <br />
@@ -133,6 +166,26 @@ export function PlansPage() {
             ) : null}
           </p>
 
+          {/* Se houver código Pix copia e cola */}
+          {checkoutSuccess.pix_qrcode_payload && (
+            <div className={styles.pixBox}>
+              <div className={styles.pixLabel}>Código Pix Copia e Cola:</div>
+              <div className={styles.pixCode}>{checkoutSuccess.pix_qrcode_payload}</div>
+              <button
+                type="button"
+                className={styles.copyPixBtn}
+                onClick={() => {
+                  navigator.clipboard.writeText(checkoutSuccess.pix_qrcode_payload || "");
+                  setCopiedPix(true);
+                  setTimeout(() => setCopiedPix(false), 2500);
+                }}
+              >
+                <IconCheck width="16" height="16" />
+                <span>{copiedPix ? "Código Pix Copiado!" : "Copiar Código Pix"}</span>
+              </button>
+            </div>
+          )}
+
           {checkoutSuccess.invoice_url && (
             <div style={{ marginTop: "1.5rem" }}>
               <a
@@ -141,7 +194,7 @@ export function PlansPage() {
                 rel="noopener noreferrer"
                 className={styles.asaasLinkBtn}
               >
-                <span>Acessar Fatura no Asaas</span>
+                <span>Acessar Fatura Completa no Asaas</span>
                 <IconArrowRight width="16" height="16" />
               </a>
             </div>
@@ -154,7 +207,7 @@ export function PlansPage() {
               style={{ background: "transparent", color: "var(--primary)", border: "1px solid var(--primary)" }}
               onClick={() => {
                 setCheckoutSuccess(null);
-                window.location.href = "/dashboard";
+                navigate("/dashboard");
               }}
             >
               Ir para o Dashboard
@@ -358,10 +411,30 @@ export function PlansPage() {
             </div>
           </div>
 
+          {/* Aviso se o usuário ainda não está logado */}
+          {!user && (
+            <div className={styles.loginPromptBox}>
+              <IconLock width="20" height="20" className={styles.loginPromptIcon} />
+              <div>
+                <strong>Acesso quase liberado!</strong> Para emitir seu Pix e vincular os 14 dias grátis à sua clínica, acesse ou crie sua conta.
+              </div>
+            </div>
+          )}
+
           {checkoutError && (
-            <p style={{ color: "#dc2626", fontSize: "0.875rem", marginBottom: "1rem" }}>
-              {checkoutError}
-            </p>
+            <div style={{ marginBottom: "1rem" }}>
+              <p style={{ color: "#dc2626", fontSize: "0.875rem", margin: "0 0 0.5rem" }}>
+                {checkoutError}
+              </p>
+              {!user && (
+                <Link
+                  to="/login"
+                  style={{ color: "var(--primary)", fontSize: "0.85rem", textDecoration: "underline", fontWeight: 600 }}
+                >
+                  Clique aqui para entrar na sua conta →
+                </Link>
+              )}
+            </div>
           )}
 
           <button
@@ -371,9 +444,20 @@ export function PlansPage() {
           >
             {isSubmitting ? (
               <span>Processando no Asaas...</span>
+            ) : !user ? (
+              <>
+                <span>Entrar / Criar Conta para Liberar 14 Dias Grátis</span>
+                <IconArrowRight width="18" height="18" />
+              </>
             ) : (
               <>
-                <span>Ativar Assinatura com 14 Dias Grátis</span>
+                <span>
+                  {billingType === "PIX"
+                    ? "Gerar Pix com 14 Dias Grátis"
+                    : billingType === "CREDIT_CARD"
+                    ? "Cadastrar Cartão com 14 Dias Grátis"
+                    : "Gerar Boleto com 14 Dias Grátis"}
+                </span>
                 <IconArrowRight width="18" height="18" />
               </>
             )}
