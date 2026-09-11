@@ -33,6 +33,12 @@ class DashboardOut(OutputSchema):
     breakeven_remaining_sessions_estimate: int | None = None
     breakeven_alert: bool = False
 
+    # Gamificação: Metas & Conquistas (Sprint 1)
+    monthly_revenue_goal: MoneyOut | None = None
+    goal_progress_percentage: RateOut | None = None
+    breakeven_beaten: bool = False
+    breakeven_beaten_date: date | None = None
+
     # A-09 — Medição de agendamentos pelo link público
     public_booking_count: int = 0
 

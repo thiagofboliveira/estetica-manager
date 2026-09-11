@@ -19,6 +19,7 @@ class FinancialSettingsUpdate(InputSchema):
     work_end_time: time | None = None
     slot_duration_minutes: int | None = None
     buffer_minutes: int | None = None
+    monthly_revenue_goal: str | None = None
 
 
 class FinancialSettingsOut(OutputSchema):
@@ -35,5 +36,6 @@ class FinancialSettingsOut(OutputSchema):
     work_end_time: time
     slot_duration_minutes: int
     buffer_minutes: int
+    monthly_revenue_goal: MoneyOut | None = None
     created_at: datetime
     updated_at: datetime

@@ -46,6 +46,7 @@ class FinancialSettingsService:
             "split_clinic_percentage",
             "pix_fee_percentage",
             "debit_card_fee_percentage",
+            "monthly_revenue_goal",
         ):
             if pct_field in data and data[pct_field] is not None:
                 data[pct_field] = money(data[pct_field])

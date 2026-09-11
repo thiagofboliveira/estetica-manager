@@ -94,3 +94,8 @@ class FinancialSettings(TenantModel):
     subscription_fee: Mapped[Decimal] = mapped_column(
         Numeric(12, 2, asdecimal=True), nullable=False, default=Decimal("39.00")
     )
+    # Gamificação: Meta de Faturamento Mensal (Sprint 1)
+    monthly_revenue_goal: Mapped[Decimal | None] = mapped_column(
+        Numeric(12, 2, asdecimal=True), nullable=True, default=None
+    )
+

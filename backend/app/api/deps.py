@@ -259,6 +259,7 @@ def get_dashboard_service(
         session_repo=SessionRepository(session, professional_id),
         fixed_expense_repo=FixedExpenseRepository(session, professional_id),
         professional_repo=ProfessionalRepository(session, professional_id),
+        financial_settings_repo=FinancialSettingsRepository(session, professional_id),
     )
 
 

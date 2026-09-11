@@ -12,6 +12,7 @@ export type FinancialSettings = {
   pix_fee_percentage: string;
   debit_card_fee_percentage: string;
   default_payment_method: PaymentMethod;
+  monthly_revenue_goal?: string | null;
   created_at: string;
   updated_at: string;
 };
@@ -23,6 +24,7 @@ export type FinancialSettingsUpdate = {
   pix_fee_percentage?: string | null;
   debit_card_fee_percentage?: string | null;
   default_payment_method?: PaymentMethod | null;
+  monthly_revenue_goal?: string | null;
 };
 
 export type PaymentFeeRule = {

@@ -25,6 +25,7 @@ from app.domain.financial.period import (
     resolve_period,
 )
 from app.repositories.fixed_expense import FixedExpenseRepository
+from app.repositories.financial_settings import FinancialSettingsRepository
 from app.repositories.professional import ProfessionalRepository
 from app.repositories.sale import SaleRepository
 from app.repositories.session import SessionRepository
@@ -39,11 +40,13 @@ class DashboardService:
         session_repo: SessionRepository,
         fixed_expense_repo: FixedExpenseRepository,
         professional_repo: ProfessionalRepository,
+        financial_settings_repo: FinancialSettingsRepository | None = None,
     ) -> None:
         self._sales = sale_repo
         self._sessions = session_repo
         self._fixed_expenses = fixed_expense_repo
         self._professionals = professional_repo
+        self._financial_settings = financial_settings_repo
 
     def get_dashboard(
         self,
@@ -103,6 +106,12 @@ class DashboardService:
                 ]
             )
 
+        monthly_revenue_goal = None
+        if self._financial_settings is not None:
+            settings_obj = self._financial_settings.get_singleton()
+            if settings_obj and settings_obj.monthly_revenue_goal is not None:
+                monthly_revenue_goal = settings_obj.monthly_revenue_goal
+
         result = build_dashboard(
             sales=sales,
             session_count=session_count,
@@ -113,6 +122,7 @@ class DashboardService:
             date_to=period.date_to,
             has_any_sale_ever=self._sales.has_any_sale(),
             average_ticket_recent=average_ticket_recent,
+            monthly_revenue_goal=monthly_revenue_goal,
         )
         return result, period
 
@@ -183,11 +193,20 @@ class DashboardService:
             else (None, None)
         )
 
+        total_monthly_goal = Decimal("0.00")
+        has_any_goal = False
+
         for pid in professional_ids:
             with tenant_session(pid) as sess:
                 s_repo = SaleRepository(sess, pid)
                 sess_repo = SessionRepository(sess, pid)
                 fe_repo = FixedExpenseRepository(sess, pid)
+                fs_repo = FinancialSettingsRepository(sess, pid)
+
+                cfg = fs_repo.get_singleton()
+                if cfg and cfg.monthly_revenue_goal is not None:
+                    total_monthly_goal += cfg.monthly_revenue_goal
+                    has_any_goal = True
 
                 if s_repo.has_any_sale():
                     has_any_sale = True
@@ -243,5 +262,6 @@ class DashboardService:
             date_to=period.date_to,
             has_any_sale_ever=has_any_sale,
             average_ticket_recent=average_ticket_recent,
+            monthly_revenue_goal=total_monthly_goal if has_any_goal else None,
         )
         return result, period

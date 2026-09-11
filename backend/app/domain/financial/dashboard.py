@@ -84,6 +84,12 @@ class DashboardResult:
     # True só no mês CORRENTE em andamento, a poucos dias do
     # fechamento, sem ter batido o breakeven ainda.
     breakeven_alert: bool = False
+    # Gamificação: Metas & Conquistas (Sprint 1)
+    monthly_revenue_goal: Decimal | None = None
+    goal_progress_percentage: Decimal | None = None
+    breakeven_beaten: bool = False
+    breakeven_beaten_date: date | None = None
+
 
 
 def calculate_recent_average_ticket(sales: list[SaleForDashboard]) -> Decimal | None:
@@ -118,6 +124,7 @@ def build_dashboard(
     date_to: date,
     has_any_sale_ever: bool,
     average_ticket_recent: Decimal | None = None,
+    monthly_revenue_goal: Decimal | None = None,
 ) -> DashboardResult:
     gross_revenue = money(sum((s.gross_amount for s in sales), ZERO))
     net_profit = money(sum((s.net_profit for s in sales), ZERO))
@@ -148,6 +155,9 @@ def build_dashboard(
     breakeven_remaining = None
     breakeven_sessions_estimate = None
     breakeven_alert = False
+    breakeven_beaten = False
+    breakeven_beaten_date = None
+
     if period_kind is PeriodKind.MONTH:
         fixed_total = money(sum((monthly_equivalent(e) for e in fixed_expenses), ZERO))
         net_after_fixed = money(net_profit - fixed_total)
@@ -158,6 +168,16 @@ def build_dashboard(
             # independente de haver histórico de ticket médio ou não —
             # não é uma estimativa, é a conta exata (I7).
             breakeven_sessions_estimate = 0
+            if fixed_total > ZERO:
+                breakeven_beaten = True
+                # Descobre o dia em que o lucro acumulado superou fixed_total
+                accumulated = ZERO
+                sorted_sales = sorted(sales, key=lambda s: s.sold_at)
+                for s in sorted_sales:
+                    accumulated += s.net_profit
+                    if accumulated >= fixed_total:
+                        breakeven_beaten_date = s.sold_at
+                        break
         elif average_ticket_recent is not None and average_ticket_recent > ZERO:
             breakeven_sessions_estimate = int(
                 (breakeven_remaining / average_ticket_recent).to_integral_value(
@@ -170,6 +190,12 @@ def build_dashboard(
             last_day_of_month = monthrange(today.year, today.month)[1]
             days_left = last_day_of_month - today.day
             breakeven_alert = days_left <= BREAKEVEN_ALERT_DAYS_BEFORE_MONTH_END
+
+    goal_progress_percentage = None
+    if monthly_revenue_goal is not None and monthly_revenue_goal > ZERO:
+        goal_progress_percentage = (gross_revenue / monthly_revenue_goal * Decimal("100")).quantize(
+            Decimal("0.1")
+        )
 
     return DashboardResult(
         has_any_data=has_any_sale_ever,
@@ -187,4 +213,8 @@ def build_dashboard(
         breakeven_remaining_amount=breakeven_remaining,
         breakeven_remaining_sessions_estimate=breakeven_sessions_estimate,
         breakeven_alert=breakeven_alert,
+        monthly_revenue_goal=monthly_revenue_goal,
+        goal_progress_percentage=goal_progress_percentage,
+        breakeven_beaten=breakeven_beaten,
+        breakeven_beaten_date=breakeven_beaten_date,
     )

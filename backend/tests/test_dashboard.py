@@ -235,3 +235,61 @@ class TestResolvePeriod:
                 custom_from=date(2026, 3, 1),
                 custom_to=date(2026, 1, 1),
             )
+
+
+class TestDashboardGamificacao:
+    def test_meta_de_faturamento_progresso(self) -> None:
+        today = date(2026, 9, 15)
+        sales = [
+            SaleForDashboard(
+                gross_amount=D("15000.00"),
+                net_profit=D("10000.00"),
+                expected_receipt_date=None,
+                sold_at=date(2026, 9, 10),
+            )
+        ]
+        result = build_dashboard(
+            sales=sales,
+            session_count=5,
+            fixed_expenses=[],
+            period_kind=PeriodKind.MONTH,
+            today=today,
+            date_to=today,
+            has_any_sale_ever=True,
+            monthly_revenue_goal=D("20000.00"),
+        )
+        assert result.monthly_revenue_goal == D("20000.00")
+        assert result.goal_progress_percentage == D("75.0")
+
+    def test_breakeven_beaten_date(self) -> None:
+        today = date(2026, 9, 20)
+        fixed = [FixedExpenseForDashboard(amount=D("3000.00"), periodicity="MONTHLY")]
+        sales = [
+            SaleForDashboard(
+                gross_amount=D("2000.00"),
+                net_profit=D("1500.00"),
+                expected_receipt_date=None,
+                sold_at=date(2026, 9, 5),
+            ),
+            SaleForDashboard(
+                gross_amount=D("3000.00"),
+                net_profit=D("2000.00"),
+                expected_receipt_date=None,
+                sold_at=date(2026, 9, 12),
+            ),
+        ]
+        result = build_dashboard(
+            sales=sales,
+            session_count=4,
+            fixed_expenses=fixed,
+            period_kind=PeriodKind.MONTH,
+            today=today,
+            date_to=today,
+            has_any_sale_ever=True,
+        )
+        assert result.breakeven_remaining_amount == D("0.00")
+        assert result.breakeven_beaten is True
+        # Bateu na segunda venda (1500 + 2000 = 3500 >= 3000) no dia 12/09
+        assert result.breakeven_beaten_date == date(2026, 9, 12)
+
+

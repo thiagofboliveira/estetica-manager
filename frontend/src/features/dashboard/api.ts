@@ -32,6 +32,12 @@ export type Dashboard = {
   breakeven_remaining_sessions_estimate: number | null;
   breakeven_alert: boolean;
 
+  // Gamificação: Metas & Conquistas (Sprint 1)
+  monthly_revenue_goal?: string | null;
+  goal_progress_percentage?: string | null;
+  breakeven_beaten?: boolean;
+  breakeven_beaten_date?: string | null;
+
   public_booking_count?: number;
   scope?: string;
   professionals_count?: number;
