@@ -60,3 +60,34 @@ class LoyaltyOverviewOut(OutputSchema):
     tier_counts: dict[str, int]
     total_referrals_count: int
     total_converted_referrals: int
+
+
+class PublicLoyaltyRewardOut(OutputSchema):
+    points_cost: int
+    title: str
+    description: str
+    discount_value: Decimal | None = None
+
+
+class PublicVipCardOut(OutputSchema):
+    patient_first_name: str
+    patient_full_name: str
+    clinic_name: str
+    vip_tier: str
+    vip_badge: str
+    loyalty_points: int
+    monetary_credit_value: Decimal
+    next_tier: str | None = None
+    points_to_next_tier: int = 0
+    next_tier_threshold: int | None = None
+    referral_code: str
+    referral_whatsapp_message: str
+    public_booking_slug: str | None = None
+    catalog_rewards: list[PublicLoyaltyRewardOut] = Field(default_factory=list)
+
+
+class SendVipEmailResponse(OutputSchema):
+    success: bool
+    message: str
+    recipient_email: str
+

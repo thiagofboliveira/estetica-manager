@@ -131,6 +131,54 @@
   background: #059669;
 }
 
+.emailButton {
+  background: #6366f1;
+  color: #ffffff;
+  border: none;
+  font-weight: 600;
+  padding: 10px 16px;
+  border-radius: 10px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-size: 0.9rem;
+  cursor: pointer;
+  text-decoration: none;
+  transition: background 0.15s ease;
+}
+
+.emailButton:hover:not(:disabled) {
+  background: #4f46e5;
+}
+
+.emailButton:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.vipLinkButton {
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  color: #1e293b;
+  font-weight: 600;
+  padding: 8px 14px;
+  border-radius: 10px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  font-size: 0.85rem;
+  cursor: pointer;
+  text-decoration: none;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.vipLinkButton:hover {
+  background: #f1f5f9;
+  border-color: #94a3b8;
+}
+
 .adjustButton {
   background: #ffffff;
   border: 1px solid #cbd5e1;
@@ -145,6 +193,7 @@
 .adjustButton:hover {
   background: #f8fafc;
 }
+
 
 /* Card Traga uma Amiga */
 .referralSection {

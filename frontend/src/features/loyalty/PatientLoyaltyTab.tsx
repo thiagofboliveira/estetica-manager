@@ -3,6 +3,7 @@ import {
   useAdjustLoyaltyPoints,
   usePatientLoyalty,
   usePatientReferral,
+  useSendVipCardEmail,
 } from "./useLoyalty";
 import type { LoyaltyPatientOut, ReferralInfoOut } from "./loyaltyApi";
 import styles from "./PatientLoyaltyTab.module.css";
@@ -23,12 +24,16 @@ export function PatientLoyaltyTab({
   const loyaltyQuery = usePatientLoyalty(patientId);
   const referralQuery = usePatientReferral(patientId);
   const adjustMutation = useAdjustLoyaltyPoints(patientId);
+  const sendEmailMutation = useSendVipCardEmail(patientId);
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [adjustType, setAdjustType] = useState<"BONUS" | "REDEEMED">("BONUS");
   const [pointsInput, setPointsInput] = useState<string>("50");
   const [reasonInput, setReasonInput] = useState<string>("");
   const [copiedCode, setCopiedCode] = useState(false);
+  const [copiedVipUrl, setCopiedVipUrl] = useState(false);
+  const [emailSuccessMsg, setEmailSuccessMsg] = useState<string | null>(null);
+
 
   if (loyaltyQuery.isLoading || referralQuery.isLoading) {
     return <p>Carregando dados de fidelidade e indicação…</p>;
@@ -73,6 +78,29 @@ export function PatientLoyaltyTab({
       await navigator.clipboard.writeText(referral.whatsapp_share_text);
       setCopiedCode(true);
       setTimeout(() => setCopiedCode(false), 2500);
+    } catch {
+      // Fallback
+    }
+  }
+
+  async function handleSendVipEmail() {
+    setEmailSuccessMsg(null);
+    try {
+      const res = await sendEmailMutation.mutateAsync();
+      setEmailSuccessMsg(`✓ Cartão VIP enviado com sucesso para ${res.recipient_email}!`);
+      setTimeout(() => setEmailSuccessMsg(null), 5000);
+    } catch (err: any) {
+      alert(err?.response?.data?.detail || err?.message || "Erro ao enviar e-mail com Cartão VIP.");
+    }
+  }
+
+  async function handleCopyVipLink() {
+    if (!loyalty) return;
+    const vipUrl = `${window.location.origin}/clube-vip/${loyalty.referral_code}`;
+    try {
+      await navigator.clipboard.writeText(vipUrl);
+      setCopiedVipUrl(true);
+      setTimeout(() => setCopiedVipUrl(false), 2500);
     } catch {
       // Fallback
     }
@@ -133,34 +161,73 @@ export function PatientLoyaltyTab({
         </div>
 
         <div className={styles.vipActions}>
-          {whatsappBalanceUrl ? (
-            <a
-              href={whatsappBalanceUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className={styles.whatsappButton}
-            >
-              💬 Enviar Saldo por WhatsApp
-            </a>
-          ) : (
+          <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", alignItems: "center" }}>
+            {whatsappBalanceUrl ? (
+              <a
+                href={whatsappBalanceUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className={styles.whatsappButton}
+              >
+                💬 Enviar Saldo por WhatsApp
+              </a>
+            ) : (
+              <button
+                type="button"
+                disabled
+                className={styles.whatsappButton}
+                style={{ opacity: 0.6, cursor: "not-allowed" }}
+                title="Paciente sem WhatsApp cadastrado ou sem consentimento LGPD"
+              >
+                💬 WhatsApp desabilitado
+              </button>
+            )}
+
             <button
               type="button"
-              disabled
-              className={styles.whatsappButton}
-              style={{ opacity: 0.6, cursor: "not-allowed" }}
-              title="Paciente sem WhatsApp cadastrado ou sem consentimento LGPD"
+              className={styles.emailButton}
+              onClick={handleSendVipEmail}
+              disabled={sendEmailMutation.isPending}
+              title="Disparar Cartão VIP Digital por e-mail para a paciente"
             >
-              💬 WhatsApp desabilitado
+              {sendEmailMutation.isPending ? "📧 Enviando E-mail..." : "📧 Disparar Cartão VIP por E-mail"}
             </button>
-          )}
+          </div>
 
-          <button
-            type="button"
-            className={styles.adjustButton}
-            onClick={() => setIsModalOpen(true)}
-          >
-            ⚖️ Resgatar / Ajustar Pontos
-          </button>
+          <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", alignItems: "center" }}>
+            <a
+              href={`/clube-vip/${loyalty.referral_code}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className={styles.vipLinkButton}
+              title="Abrir página pública do Cartão VIP desta paciente"
+            >
+              💳 Abrir Cartão VIP ↗
+            </a>
+
+            <button
+              type="button"
+              className={styles.vipLinkButton}
+              onClick={handleCopyVipLink}
+              title="Copiar link seguro do Cartão VIP"
+            >
+              {copiedVipUrl ? "✓ Link Copiado!" : "🔗 Copiar Link do Cartão"}
+            </button>
+
+            <button
+              type="button"
+              className={styles.adjustButton}
+              onClick={() => setIsModalOpen(true)}
+            >
+              ⚖️ Resgatar / Ajustar Pontos
+            </button>
+          </div>
+
+          {emailSuccessMsg && (
+            <div style={{ fontSize: "0.85rem", color: "#16a34a", fontWeight: 600, width: "100%", textAlign: "right" }}>
+              {emailSuccessMsg}
+            </div>
+          )}
         </div>
       </section>
 

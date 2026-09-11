@@ -1,6 +1,6 @@
 from uuid import UUID
 
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, HTTPException, Request, status
 
 from app.api.deps import LoyaltySvc
 from app.schemas.loyalty import (
@@ -8,11 +8,22 @@ from app.schemas.loyalty import (
     LoyaltyOverviewOut,
     LoyaltyPatientOut,
     LoyaltyTransactionOut,
+    PublicVipCardOut,
     ReferralInfoOut,
+    SendVipEmailResponse,
 )
-from app.services.loyalty_service import InsufficientPointsError
+from app.services.loyalty_service import InsufficientPointsError, LoyaltyService
 
 router = APIRouter(prefix="/loyalty", tags=["loyalty"])
+
+
+@router.get("/public-card/{code}", response_model=PublicVipCardOut)
+def get_public_vip_card(code: str) -> PublicVipCardOut:
+    """Rota pública para visualização do Cartão VIP digital da paciente (sem senha)."""
+    try:
+        return LoyaltyService.get_public_vip_card(code)
+    except ValueError as exc:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, str(exc)) from exc
 
 
 @router.get("/overview", response_model=LoyaltyOverviewOut)
@@ -50,3 +61,18 @@ def get_patient_referral_info(patient_id: UUID, svc: LoyaltySvc) -> ReferralInfo
         return svc.get_referral_info(patient_id)
     except ValueError as exc:
         raise HTTPException(status.HTTP_404_NOT_FOUND, str(exc)) from exc
+
+
+@router.post("/patients/{patient_id}/send-card-email", response_model=SendVipEmailResponse)
+def send_patient_vip_email(
+    patient_id: UUID,
+    request: Request,
+    svc: LoyaltySvc,
+) -> SendVipEmailResponse:
+    """Dispara por e-mail o Cartão VIP digital da paciente com link sem senha."""
+    try:
+        origin = request.headers.get("origin") or str(request.base_url).rstrip("/")
+        return svc.send_vip_card_email(patient_id, app_base_url=origin)
+    except ValueError as exc:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, str(exc)) from exc
+

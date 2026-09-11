@@ -7,6 +7,7 @@ export const loyaltyKeys = {
   overview: () => [...loyaltyKeys.all, "overview"] as const,
   patient: (patientId: string) => [...loyaltyKeys.all, "patient", patientId] as const,
   referral: (patientId: string) => [...loyaltyKeys.all, "referral", patientId] as const,
+  publicCard: (code: string) => [...loyaltyKeys.all, "public-card", code] as const,
 };
 
 export function usePatientLoyalty(patientId: string) {
@@ -35,6 +36,21 @@ export function useLoyaltyOverview() {
   });
 }
 
+export function usePublicVipCard(code: string) {
+  return useQuery({
+    queryKey: loyaltyKeys.publicCard(code),
+    queryFn: () => loyaltyApi.getPublicVipCard(code),
+    enabled: Boolean(code),
+    ...CACHE.CATALOG,
+  });
+}
+
+export function useSendVipCardEmail(patientId: string) {
+  return useMutation({
+    mutationFn: () => loyaltyApi.sendVipCardEmail(patientId),
+  });
+}
+
 export function useAdjustLoyaltyPoints(patientId: string) {
   const queryClient = useQueryClient();
 
@@ -49,3 +65,4 @@ export function useAdjustLoyaltyPoints(patientId: string) {
     },
   });
 }
+

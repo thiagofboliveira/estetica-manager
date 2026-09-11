@@ -41,6 +41,7 @@ import { BookingManagementPage } from "@/features/public-booking/BookingManageme
 import { AnamnesisPage } from "@/features/anamnesis/AnamnesisPage";
 import { PublicAnamnesisPage } from "@/features/anamnesis/PublicAnamnesisPage";
 import { PlansPage } from "@/features/billing/PlansPage";
+import { PublicVipCardPage } from "@/features/loyalty/PublicVipCardPage";
 
 export const router = createBrowserRouter([
   {
@@ -64,8 +65,10 @@ export const router = createBrowserRouter([
           { path: "/agendar/:slug", element: <PublicBookingPage /> },
           { path: "/agendamento/:id", element: <BookingManagementPage /> },
           { path: "/anamnese/:token", element: <PublicAnamnesisPage /> },
+          { path: "/clube-vip/:code", element: <PublicVipCardPage /> },
           {
             element: <RequireAuth />,
+
             children: [
           {
             path: "/super-admin",

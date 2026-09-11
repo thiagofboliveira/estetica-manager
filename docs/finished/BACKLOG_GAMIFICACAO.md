@@ -168,12 +168,41 @@ A entrega foi submetida a verificação automatizada completa com cobertura tota
 
 ---
 
+
+---
+
+## 💎 Cartão VIP Digital (Sem Senha) e Disparo por E-mail
+
+Para que as pacientes acompanhem seu saldo de pontos, nível VIP e benefícios sem a fricção de criar senhas ou lembrar logins, foi implementado o **Cartão VIP Digital**:
+
+1. **Página Pública Responsiva (`/clube-vip/:code`):**
+   * Acesso via link direto seguro gerado a partir do `referral_code` exclusivo da paciente.
+   * Design mobile-first com tema visual específico por categoria (Bronze, Prata, Ouro e Diamante).
+   * Exibição de pontos acumulados e equivalente monetário em créditos/descontos.
+   * Barra de progresso para a próxima categoria VIP e pontos restantes.
+   * Compartilhamento facilitado no WhatsApp ("Traga uma Amiga") já preenchido com link de indicação.
+   * Catálogo interativo de benefícios e resgates com sinalizador de recompensas disponíveis.
+   * Botão de agendamento online direto com a clínica via `public_booking_slug`.
+
+2. **Disparo Transacional de E-mail:**
+   * Serviço `EmailService.send_vip_card_email` com template HTML responsivo, gradiente temático de acordo com a categoria da paciente, saldo de pontos e botão com link direto para o Cartão VIP.
+   * Endpoint `POST /api/v1/loyalty/patients/{patient_id}/send-card-email`.
+   * Botões integrados na ficha da paciente (`PatientLoyaltyTab.tsx`): "📧 Disparar Cartão VIP por E-mail", "💳 Abrir Cartão VIP ↗" e "🔗 Copiar Link do Cartão".
+
+3. **Arquivos do Módulo VIP:**
+   * Backend: `alembic/versions/0035_patients_rls_bypass_and_nullif.py`, `app/services/email_service.py`, `app/services/loyalty_service.py`, `app/repositories/patient.py`, `app/schemas/loyalty.py`, `app/api/v1/loyalty.py`, `tests/test_loyalty_public_card_and_email.py`.
+   * Frontend: `features/loyalty/PublicVipCardPage.tsx`, `features/loyalty/PublicVipCardPage.module.css`, `features/loyalty/loyaltyApi.ts`, `features/loyalty/useLoyalty.ts`, `features/loyalty/PatientLoyaltyTab.tsx`, `app/router.tsx`.
+
+---
+
 ## 🚀 Histórico de Commits e Entrega
 
 * `aa2b55d`: feat(sprint1): metas financeiras, break-even e micro-feedbacks no dashboard
 * `fa24312`: feat(sprint2): checklist de maturidade clinica e onboarding gamificado
 * `e76a9e1`: feat(sprint3): clube vip, sistema de fidelidade e programa traga uma amiga
 * `b8e17cf`: fix(qa): adicionar configuracao de meta mensal no financeiro, modal no onboarding e corrigir regressões
+* `feat(loyalty)`: pagina publica do cartao vip digital e disparo por e-mail
 
 **Branch:** `main`  
 **Status do Repositório:** Sincronizado e publicado em `origin/main`.
+

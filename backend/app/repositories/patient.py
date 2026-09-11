@@ -156,6 +156,23 @@ class PatientRepository(TenantRepository[Patient]):
         )
         return self._session.scalar(stmt)
 
+    def get_by_referral_code(self, referral_code: str) -> Patient | None:
+        """Busca paciente ativo pelo código de indicação (case-insensitive)."""
+        stmt = self._scoped().where(
+            func.upper(Patient.referral_code) == referral_code.strip().upper(),
+            Patient.is_active.is_(True),
+        )
+        return self._session.scalar(stmt)
+
+    @classmethod
+    def get_by_referral_code_unscoped(cls, session, referral_code: str) -> Patient | None:
+        """Busca paciente globalmente pelo código de indicação para o Cartão VIP público."""
+        stmt = select(Patient).where(
+            func.upper(Patient.referral_code) == referral_code.strip().upper(),
+            Patient.is_active.is_(True),
+        )
+        return session.scalar(stmt)
+
     def list_referred_by(self, patient_id: UUID) -> list[Patient]:
         """Retorna lista de pacientes indicados por um determinado paciente."""
         stmt = (

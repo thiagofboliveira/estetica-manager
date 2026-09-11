@@ -55,6 +55,36 @@ export type LoyaltyOverviewOut = {
   total_converted_referrals: number;
 };
 
+export type PublicLoyaltyReward = {
+  points_cost: number;
+  title: string;
+  description: string;
+  discount_value: number | string | null;
+};
+
+export type PublicVipCardOut = {
+  patient_first_name: string;
+  patient_full_name: string;
+  clinic_name: string;
+  vip_tier: "BRONZE" | "SILVER" | "GOLD" | "DIAMOND" | string;
+  vip_badge: string;
+  loyalty_points: number;
+  monetary_credit_value: number | string;
+  next_tier: string | null;
+  points_to_next_tier: number;
+  next_tier_threshold: number | null;
+  referral_code: string;
+  referral_whatsapp_message: string;
+  public_booking_slug: string | null;
+  catalog_rewards: PublicLoyaltyReward[];
+};
+
+export type SendVipEmailResponse = {
+  success: boolean;
+  message: string;
+  recipient_email: string;
+};
+
 export const loyaltyApi = {
   getPatientLoyalty: (patientId: string): Promise<LoyaltyPatientOut> =>
     api.get<LoyaltyPatientOut>(`/loyalty/patients/${patientId}`),
@@ -67,4 +97,11 @@ export const loyaltyApi = {
 
   getOverview: (): Promise<LoyaltyOverviewOut> =>
     api.get<LoyaltyOverviewOut>("/loyalty/overview"),
+
+  getPublicVipCard: (code: string): Promise<PublicVipCardOut> =>
+    api.get<PublicVipCardOut>(`/loyalty/public-card/${code}`),
+
+  sendVipCardEmail: (patientId: string): Promise<SendVipEmailResponse> =>
+    api.post<SendVipEmailResponse>(`/loyalty/patients/${patientId}/send-card-email`, {}),
 };
+

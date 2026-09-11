@@ -2,6 +2,7 @@ from decimal import Decimal
 from urllib.parse import quote
 from uuid import UUID
 
+from app.db.session import unsafe_session_without_tenant
 from app.domain.loyalty.rules import (
     VIP_TIER_CONFIG,
     VipTier,
@@ -9,9 +10,11 @@ from app.domain.loyalty.rules import (
     determine_vip_tier,
     generate_referral_code,
 )
+from app.models.clinic import Clinic
 from app.models.financial_settings import FinancialSettings
 from app.models.loyalty import LoyaltyTransaction, LoyaltyTransactionType
 from app.models.patient import Patient
+from app.models.professional import Professional
 from app.models.sale import Sale
 from app.repositories.financial_settings import FinancialSettingsRepository
 from app.repositories.loyalty_repository import LoyaltyRepository
@@ -22,9 +25,13 @@ from app.schemas.loyalty import (
     LoyaltyOverviewOut,
     LoyaltyPatientOut,
     LoyaltyTransactionOut,
+    PublicLoyaltyRewardOut,
+    PublicVipCardOut,
     ReferralFriendOut,
     ReferralInfoOut,
+    SendVipEmailResponse,
 )
+from app.services.email_service import EmailService
 
 
 class InsufficientPointsError(Exception):
@@ -243,3 +250,146 @@ class LoyaltyService:
             total_referrals_count=total_referrals,
             total_converted_referrals=total_converted,
         )
+
+    @classmethod
+    def get_public_vip_card(cls, referral_code: str) -> PublicVipCardOut:
+        """Retorna os dados do Cartão VIP público da paciente para acesso seguro sem senha."""
+        with unsafe_session_without_tenant("public vip card") as session:
+            patient = PatientRepository.get_by_referral_code_unscoped(session, referral_code)
+            if not patient:
+                raise ValueError("Cartão VIP não encontrado com o código informado.")
+
+            # Resolve clínica e profissional
+            clinic_name = "Clínica Lumina"
+            booking_slug = None
+            prof = session.get(Professional, patient.professional_id)
+            if prof:
+                booking_slug = prof.slug
+                if prof.clinic_id:
+                    clinic = session.get(Clinic, prof.clinic_id)
+                    if clinic and clinic.name:
+                        clinic_name = clinic.name
+                    elif prof.name:
+                        clinic_name = f"Espaço {prof.name}"
+                elif prof.name:
+                    clinic_name = f"Espaço {prof.name}"
+
+            # Regras de próximo tier
+            tier = patient.vip_tier or VipTier.BRONZE
+            tier_cfg = VIP_TIER_CONFIG.get(tier, VIP_TIER_CONFIG[VipTier.BRONZE])
+            next_tier = None
+            points_to_next = 0
+            next_tier_target = None
+
+            if tier == VipTier.BRONZE:
+                next_tier = "PRATA"
+                next_tier_target = 100
+                points_to_next = max(0, 100 - patient.loyalty_points)
+            elif tier == VipTier.SILVER:
+                next_tier = "OURO"
+                next_tier_target = 300
+                points_to_next = max(0, 300 - patient.loyalty_points)
+            elif tier == VipTier.GOLD:
+                next_tier = "DIAMANTE"
+                next_tier_target = 700
+                points_to_next = max(0, 700 - patient.loyalty_points)
+
+            # Crédito em reais (R$ 0,50 por ponto padrão)
+            credit_value = Decimal(patient.loyalty_points) * Decimal("0.50")
+
+            first_name = patient.name.split()[0] if patient.name else "Cliente"
+            wa_text = (
+                f"Oi amiga! Ganhei um benefício especial para você na {clinic_name}! ✨ "
+                f"Use meu código exclusivo *{patient.referral_code}* no seu primeiro agendamento "
+                f"para ganhar um presente de boas-vindas!"
+            )
+
+            rewards = [
+                PublicLoyaltyRewardOut(
+                    points_cost=50,
+                    title="R$ 25 de Desconto",
+                    description="Abata R$ 25,00 direto na sua próxima sessão de qualquer procedimento.",
+                    discount_value=Decimal("25.00"),
+                ),
+                PublicLoyaltyRewardOut(
+                    points_cost=100,
+                    title="R$ 50 de Desconto",
+                    description="Crédito de R$ 50,00 ou aplicação de Máscara Revitalizante.",
+                    discount_value=Decimal("50.00"),
+                ),
+                PublicLoyaltyRewardOut(
+                    points_cost=200,
+                    title="Drenagem Facial Revitalizante",
+                    description="Sessão cortesia de Drenagem e Massagem Lifting Facial.",
+                    discount_value=Decimal("120.00"),
+                ),
+                PublicLoyaltyRewardOut(
+                    points_cost=300,
+                    title="Peeling de Diamante Completo",
+                    description="Higienização profunda, esfoliação com ponteira de diamante e fototerapia.",
+                    discount_value=Decimal("180.00"),
+                ),
+            ]
+
+            return PublicVipCardOut(
+                patient_first_name=first_name,
+                patient_full_name=patient.name,
+                clinic_name=clinic_name,
+                vip_tier=tier,
+                vip_badge=tier_cfg["badge"],
+                loyalty_points=patient.loyalty_points,
+                monetary_credit_value=credit_value,
+                next_tier=next_tier,
+                points_to_next_tier=points_to_next,
+                next_tier_threshold=next_tier_target,
+                referral_code=patient.referral_code,
+                referral_whatsapp_message=wa_text,
+                public_booking_slug=booking_slug,
+                catalog_rewards=rewards,
+            )
+
+    def send_vip_card_email(self, patient_id: UUID, app_base_url: str = "") -> SendVipEmailResponse:
+        """Gera e envia o Cartão VIP por e-mail para a paciente."""
+        patient = self._patient_repo.get(patient_id)
+        if not patient:
+            raise ValueError("Paciente não encontrada.")
+
+        if not patient.email or "@" not in patient.email:
+            raise ValueError("Paciente não possui e-mail válido cadastrado.")
+
+        if not patient.referral_code:
+            patient.referral_code = generate_referral_code(patient.name)
+            self._patient_repo.flush()
+
+        clinic_name = "Clínica Lumina"
+        booking_slug = None
+        if self._professional_repo:
+            prof = self._professional_repo.get_current()
+            if prof:
+                booking_slug = prof.slug
+                if prof.name:
+                    clinic_name = f"Espaço {prof.name}"
+
+        card_url = f"{app_base_url}/clube-vip/{patient.referral_code}" if app_base_url else f"/clube-vip/{patient.referral_code}"
+        booking_url = f"{app_base_url}/agendar/{booking_slug}" if booking_slug and app_base_url else None
+        credit_val = Decimal(patient.loyalty_points) * Decimal("0.50")
+
+        email_svc = EmailService()
+        email_svc.send_vip_card_email(
+            recipient_email=patient.email,
+            patient_name=patient.name,
+            clinic_name=clinic_name,
+            vip_tier=patient.vip_tier or VipTier.BRONZE,
+            loyalty_points=patient.loyalty_points,
+            credit_value=credit_val,
+            referral_code=patient.referral_code,
+            vip_card_url=card_url,
+            booking_url=booking_url,
+        )
+
+        return SendVipEmailResponse(
+            success=True,
+            message=f"Cartão VIP enviado com sucesso para {patient.email}",
+            recipient_email=patient.email,
+        )
+
