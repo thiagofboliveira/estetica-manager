@@ -28,6 +28,7 @@ export function PatientsPage() {
   const [search, setSearch] = useState("");
   const debounced = useDebouncedValue(search, 300);
   const [gender, setGender] = useState<Gender | "">("");
+  const [vipTier, setVipTier] = useState<string>("");
   const [hasUpcomingBooking, setHasUpcomingBooking] = useState<TriState>(undefined);
   const [hasCompletedTreatment, setHasCompletedTreatment] = useState<TriState>(undefined);
   const [page, setPage] = useState(1);
@@ -36,16 +37,21 @@ export function PatientsPage() {
   // página que pode nem existir mais no novo recorte filtrado.
   useEffect(
     () => setPage(1),
-    [debounced, gender, hasUpcomingBooking, hasCompletedTreatment],
+    [debounced, gender, vipTier, hasUpcomingBooking, hasCompletedTreatment],
   );
 
   const hasActiveFilters =
-    Boolean(search) || Boolean(gender) || hasUpcomingBooking !== undefined || hasCompletedTreatment !== undefined;
+    Boolean(search) ||
+    Boolean(gender) ||
+    Boolean(vipTier) ||
+    hasUpcomingBooking !== undefined ||
+    hasCompletedTreatment !== undefined;
 
   const query = usePatientsPage(
     {
       search: debounced || undefined,
       gender: gender || undefined,
+      vip_tier: vipTier || undefined,
       has_upcoming_booking: hasUpcomingBooking,
       has_completed_treatment: hasCompletedTreatment,
     },
@@ -89,6 +95,18 @@ export function PatientsPage() {
               {opt.label}
             </option>
           ))}
+        </select>
+
+        <select
+          value={vipTier}
+          onChange={(e) => setVipTier(e.target.value)}
+          aria-label="Filtrar por Categoria VIP"
+        >
+          <option value="">Categoria VIP: todas</option>
+          <option value="BRONZE">🥉 Bronze</option>
+          <option value="SILVER">🥈 Prata</option>
+          <option value="GOLD">🥇 Ouro</option>
+          <option value="DIAMOND">💎 Diamante VIP</option>
         </select>
 
         <button
@@ -143,7 +161,48 @@ export function PatientsPage() {
                 {result.items.map((p) => (
                   <li key={p.id} className="list__item">
                     <button className="list__item-btn tap-target" onClick={() => navigate(p.id)}>
-                      <span className="list__item-title">{p.name}</span>
+                      <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
+                        <span className="list__item-title">{p.name}</span>
+                        {p.vip_tier && (
+                          <span
+                            style={{
+                              fontSize: "0.72rem",
+                              fontWeight: 700,
+                              padding: "2px 7px",
+                              borderRadius: "10px",
+                              background:
+                                p.vip_tier === "DIAMOND"
+                                  ? "#e0f2fe"
+                                  : p.vip_tier === "GOLD"
+                                  ? "#fef9c3"
+                                  : p.vip_tier === "SILVER"
+                                  ? "#f1f5f9"
+                                  : "#fef3c7",
+                              color:
+                                p.vip_tier === "DIAMOND"
+                                  ? "#0369a1"
+                                  : p.vip_tier === "GOLD"
+                                  ? "#854d0e"
+                                  : p.vip_tier === "SILVER"
+                                  ? "#334155"
+                                  : "#92400e",
+                            }}
+                          >
+                            {p.vip_tier === "DIAMOND"
+                              ? "💎 Diamante"
+                              : p.vip_tier === "GOLD"
+                              ? "🥇 Ouro"
+                              : p.vip_tier === "SILVER"
+                              ? "🥈 Prata"
+                              : "🥉 Bronze"}
+                          </span>
+                        )}
+                        {p.loyalty_points ? (
+                          <span style={{ fontSize: "0.76rem", color: "#059669", fontWeight: 700 }}>
+                            {p.loyalty_points} pts
+                          </span>
+                        ) : null}
+                      </div>
                       {p.phone && <span className="list__item-sub">{p.phone}</span>}
                     </button>
                   </li>

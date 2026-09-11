@@ -47,6 +47,7 @@ def list_patients(
     gender: Gender | None = Query(default=None),
     has_upcoming_booking: bool | None = Query(default=None),
     has_completed_treatment: bool | None = Query(default=None),
+    vip_tier: str | None = Query(default=None),
     page: int = Query(default=1, ge=1),
     page_size: int = Query(default=20, ge=1, le=200),
 ) -> PatientListOut:
@@ -58,6 +59,7 @@ def list_patients(
         gender=gender,
         has_upcoming_booking=has_upcoming_booking,
         has_completed_treatment=has_completed_treatment,
+        vip_tier=vip_tier,
     )
     return PatientListOut(
         items=[PatientOut.model_validate(p) for p in patients],
@@ -66,6 +68,7 @@ def list_patients(
             gender=gender,
             has_upcoming_booking=has_upcoming_booking,
             has_completed_treatment=has_completed_treatment,
+            vip_tier=vip_tier,
         ),
         page=page,
         page_size=page_size,

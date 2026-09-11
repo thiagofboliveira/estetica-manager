@@ -2,6 +2,8 @@ import { api } from "@/lib/http/client";
 
 export type Gender = "FEMALE" | "MALE" | "OTHER" | "UNDISCLOSED";
 
+export type VipTier = "BRONZE" | "SILVER" | "GOLD" | "DIAMOND";
+
 export type Patient = {
   id: string;
   name: string;
@@ -13,6 +15,10 @@ export type Patient = {
   consent_at: string | null;
   is_active: boolean;
   gender: Gender | null;
+  loyalty_points?: number;
+  vip_tier?: VipTier;
+  referral_code?: string | null;
+  referred_by_id?: string | null;
   created_at: string;
   updated_at: string;
 };
@@ -57,6 +63,7 @@ export type PatientListParams = {
   gender?: Gender;
   has_upcoming_booking?: boolean;
   has_completed_treatment?: boolean;
+  vip_tier?: string;
   page?: number;
   page_size?: number;
 };
@@ -66,6 +73,7 @@ export const patientsApi = {
     const qs = new URLSearchParams();
     if (params.search) qs.set("search", params.search);
     if (params.gender) qs.set("gender", params.gender);
+    if (params.vip_tier) qs.set("vip_tier", params.vip_tier);
     if (params.has_upcoming_booking != null) {
       qs.set("has_upcoming_booking", String(params.has_upcoming_booking));
     }

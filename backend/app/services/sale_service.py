@@ -44,6 +44,8 @@ from app.domain.financial.calculator import (
 from app.domain.financial.calculator import (
     SplitBase as CalcSplitBase,
 )
+from app.domain.loyalty.rules import calculate_earned_points, determine_vip_tier
+from app.models.loyalty import LoyaltyTransactionType
 from app.models.procedure import ProcedureType
 from app.models.sale import Sale, SaleStatus
 from app.models.sale_item import SaleItem
@@ -52,6 +54,7 @@ from app.models.session import SessionStatus
 from app.models.supply import MovementType, Supply, SupplyMovement
 from app.repositories.booking import BookingRepository
 from app.repositories.financial_settings import FinancialSettingsRepository
+from app.repositories.loyalty_repository import LoyaltyRepository
 from app.repositories.patient import PatientRepository
 from app.repositories.payment_fee_rule import PaymentFeeRuleRepository
 from app.repositories.procedure import ProcedureRepository
@@ -104,6 +107,7 @@ class SaleService:
         professional_repo: ProfessionalRepository,
         booking_repo: BookingRepository | None = None,
         return_opportunity_repo: ReturnOpportunityRepository | None = None,
+        loyalty_repo: LoyaltyRepository | None = None,
     ) -> None:
         self._sales = sale_repo
         self._sale_items = sale_item_repo
@@ -115,6 +119,7 @@ class SaleService:
         self._professionals = professional_repo
         self._bookings = booking_repo
         self._return_opportunities = return_opportunity_repo
+        self._loyalty = loyalty_repo
 
     def find_existing_by_idempotency_key(self, idempotency_key: str) -> Sale | None:
         """Usado pela rota só para decidir 200 vs 201 na resposta — a
@@ -289,6 +294,45 @@ class SaleService:
         else:
             sale._reactivations_converted = 0
 
+        # Gamificação Sprint 3: Clube VIP, Fidelidade e Motor de Indicação
+        if self._loyalty and getattr(settings, "loyalty_enabled", True):
+            patient = self._patients.get(dto.patient_id)
+            if patient:
+                # 1. Pontos acumulados pela paciente compradora
+                earned = calculate_earned_points(
+                    sale.gross_amount, getattr(settings, "loyalty_points_per_currency", Decimal("0.10"))
+                )
+                if earned > 0:
+                    patient.loyalty_points += earned
+                    patient.vip_tier = determine_vip_tier(patient.loyalty_points)
+                    self._loyalty.add_transaction(
+                        patient_id=patient.id,
+                        sale_id=sale.id,
+                        points=earned,
+                        balance_after=patient.loyalty_points,
+                        transaction_type=LoyaltyTransactionType.EARNED,
+                        description=f"Pontos acumulados na venda de R$ {sale.gross_amount:.2f}",
+                    )
+
+                # 2. Bônus para quem indicou ("Traga uma Amiga")
+                reward_pts = getattr(settings, "referral_reward_points", 50)
+                if patient.referred_by_id and reward_pts > 0:
+                    # Verifica se é a 1ª venda ativa desta paciente indicada
+                    past_sales_count = self._sales.count_for_patient(patient.id)
+                    # Note que a venda atual já foi inserida no repository mas ainda não comitada
+                    if past_sales_count <= 1:
+                        referrer = self._patients.get(patient.referred_by_id)
+                        if referrer:
+                            referrer.loyalty_points += reward_pts
+                            referrer.vip_tier = determine_vip_tier(referrer.loyalty_points)
+                            self._loyalty.add_transaction(
+                                patient_id=referrer.id,
+                                sale_id=sale.id,
+                                points=reward_pts,
+                                balance_after=referrer.loyalty_points,
+                                transaction_type=LoyaltyTransactionType.BONUS,
+                                description=f"Bônus de indicação: {patient.name} realizou seu primeiro procedimento!",
+                            )
 
         self._sales.flush()
         return sale

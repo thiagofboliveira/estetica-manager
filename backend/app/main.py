@@ -15,6 +15,7 @@ from app.api.v1 import (
     export,
     financial_settings,
     fixed_expenses,
+    loyalty,
     patient_photos,
     patients,
     payment_fee_rules,
@@ -223,4 +224,5 @@ app.include_router(vials.router, prefix="/api/v1")
 app.include_router(supplies.router, prefix="/api/v1")
 app.include_router(billing.router, prefix="/api/v1")
 app.include_router(campaigns.router, prefix="/api/v1")
+app.include_router(loyalty.router, prefix="/api/v1")
 

@@ -759,7 +759,9 @@ function TemplateFormModal({
 
   const previewSimulated = messageText
     .replace(/{nome}/gi, "Mariana")
-    .replace(/{clinica}/gi, "nossa clínica");
+    .replace(/{clinica}/gi, "nossa clínica")
+    .replace(/{pontos}/gi, "150")
+    .replace(/{nivel_vip}/gi, "💎 Diamante VIP");
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -769,7 +771,7 @@ function TemplateFormModal({
     }
     onSave({
       title: title.trim(),
-      category: category.trim(),
+      category,
       description: description.trim() || undefined,
       message_text: messageText.trim(),
     });
@@ -780,56 +782,55 @@ function TemplateFormModal({
       <div className={styles.modalContent} onClick={(e) => e.stopPropagation()}>
         <div className={styles.modalHeader}>
           <h2 className={styles.modalTitle}>
-            {template?.id ? "Editar Modelo de Campanha" : "Novo Modelo de Campanha"}
+            {template?.id ? "Editar Modelo de Campanha" : "Criar Novo Modelo de Campanha"}
           </h2>
           <button type="button" className={styles.iconBtn} onClick={onClose}>
             <IconX width="18" height="18" />
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+        <form onSubmit={handleSubmit} className={styles.formContainer}>
           <div className={styles.formGroup}>
-            <label className={styles.formLabel}>Título da Campanha *</label>
+            <label className={styles.formLabel}>Título do Modelo *</label>
             <input
               type="text"
               className={styles.formInput}
-              placeholder="Ex: 💉 Botox Day Especial de Outono"
+              placeholder="Ex: 💎 Exclusivo Clube VIP Diamante"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               required
             />
           </div>
 
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
-            <div className={styles.formGroup}>
-              <label className={styles.formLabel}>Categoria</label>
-              <select
-                className={styles.formInput}
-                value={category}
-                onChange={(e) => setCategory(e.target.value)}
-              >
-                <option value="promos">📢 Promoção / Oferta</option>
-                <option value="retencao">🎯 Retenção / Manutenção</option>
-                <option value="reativacao">✨ Reativação VIP</option>
-                <option value="aniversario">🎂 Aniversário</option>
-                <option value="outros">💡 Outros</option>
-              </select>
-            </div>
-
-            <div className={styles.formGroup}>
-              <label className={styles.formLabel}>Objetivo da Campanha (opcional)</label>
-              <input
-                type="text"
-                className={styles.formInput}
-                placeholder="Ex: Preenchimento rápido de agenda"
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-              />
-            </div>
+          <div className={styles.formGroup}>
+            <label className={styles.formLabel}>Categoria Estratégica *</label>
+            <select
+              className={styles.formSelect}
+              value={category}
+              onChange={(e) => setCategory(e.target.value)}
+            >
+              <option value="promos">🔥 Promoção / Lançamento</option>
+              <option value="retencao">🎯 Retenção / Manutenção</option>
+              <option value="reengajamento">❄️ Reengajamento (Clientes Sumidas)</option>
+              <option value="aniversario">🎂 Aniversariantes</option>
+              <option value="indica">🎁 Indicação ("Traga uma Amiga")</option>
+              <option value="fidelidade">🏆 Clube VIP & Fidelidade</option>
+            </select>
           </div>
 
           <div className={styles.formGroup}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <label className={styles.formLabel}>Descrição / Objetivo (Opcional)</label>
+            <input
+              type="text"
+              className={styles.formInput}
+              placeholder="Ex: Disparo exclusivo para clientes VIP com saldo de pontos alto"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+            />
+          </div>
+
+          <div className={styles.formGroup}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "6px" }}>
               <label className={styles.formLabel}>Texto da Mensagem no WhatsApp *</label>
               <div className={styles.variableChips}>
                 <span style={{ fontSize: "11px", color: "var(--text-muted)" }}>Inserir:</span>
@@ -848,6 +849,22 @@ function TemplateFormModal({
                   title="Será substituído pelo nome da clínica"
                 >
                   + {"{clinica}"}
+                </button>
+                <button
+                  type="button"
+                  className={styles.varChip}
+                  onClick={() => insertVariable("{pontos}")}
+                  title="Será substituído pelo saldo de pontos do Clube VIP da paciente"
+                >
+                  + {"{pontos}"}
+                </button>
+                <button
+                  type="button"
+                  className={styles.varChip}
+                  onClick={() => insertVariable("{nivel_vip}")}
+                  title="Será substituído pela Categoria VIP (Bronze, Prata, Ouro, Diamante)"
+                >
+                  + {"{nivel_vip}"}
                 </button>
               </div>
             </div>
@@ -902,17 +919,37 @@ function DispatchCampaignModal({
   onClose: () => void;
 }) {
   const [search, setSearch] = useState("");
+  const [selectedVipTier, setSelectedVipTier] = useState<string>("ALL");
   const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null);
   const patientsQuery = usePatients(search);
-  const patients = patientsQuery.data ?? [];
+  const rawPatients = patientsQuery.data ?? [];
+
+  const patients = useMemo(() => {
+    if (selectedVipTier === "ALL") return rawPatients;
+    if (selectedVipTier === "WITH_POINTS") {
+      return rawPatients.filter((p) => (p.loyalty_points || 0) > 0);
+    }
+    return rawPatients.filter((p) => (p.vip_tier || "BRONZE") === selectedVipTier);
+  }, [rawPatients, selectedVipTier]);
 
   const firstName = selectedPatient
     ? selectedPatient.name.trim().split(" ")[0]
     : "Mariana";
 
+  const vipTierName =
+    selectedPatient?.vip_tier === "DIAMOND"
+      ? "Diamante VIP"
+      : selectedPatient?.vip_tier === "GOLD"
+      ? "Ouro"
+      : selectedPatient?.vip_tier === "SILVER"
+      ? "Prata"
+      : "Bronze";
+
   const personalizedMessage = template.message_text
     .replace(/{nome}/gi, firstName)
-    .replace(/{clinica}/gi, "nossa clínica");
+    .replace(/{clinica}/gi, "nossa clínica")
+    .replace(/{pontos}/gi, String(selectedPatient?.loyalty_points || 0))
+    .replace(/{nivel_vip}/gi, vipTierName);
 
   const cleanPhone = selectedPatient?.phone
     ? selectedPatient.phone.replace(/\D/g, "")
@@ -937,6 +974,50 @@ function DispatchCampaignModal({
           </button>
         </div>
 
+        {/* Filtro de Categoria VIP */}
+        <div style={{ display: "flex", gap: "6px", flexWrap: "wrap", marginBottom: "4px" }}>
+          <button
+            type="button"
+            className={`${styles.categoryTab} ${selectedVipTier === "ALL" ? styles.categoryTabActive : ""}`}
+            onClick={() => setSelectedVipTier("ALL")}
+            style={{ fontSize: "11px", padding: "4px 8px" }}
+          >
+            Todas ({rawPatients.length})
+          </button>
+          <button
+            type="button"
+            className={`${styles.categoryTab} ${selectedVipTier === "DIAMOND" ? styles.categoryTabActive : ""}`}
+            onClick={() => setSelectedVipTier("DIAMOND")}
+            style={{ fontSize: "11px", padding: "4px 8px" }}
+          >
+            💎 Diamante
+          </button>
+          <button
+            type="button"
+            className={`${styles.categoryTab} ${selectedVipTier === "GOLD" ? styles.categoryTabActive : ""}`}
+            onClick={() => setSelectedVipTier("GOLD")}
+            style={{ fontSize: "11px", padding: "4px 8px" }}
+          >
+            🥇 Ouro
+          </button>
+          <button
+            type="button"
+            className={`${styles.categoryTab} ${selectedVipTier === "SILVER" ? styles.categoryTabActive : ""}`}
+            onClick={() => setSelectedVipTier("SILVER")}
+            style={{ fontSize: "11px", padding: "4px 8px" }}
+          >
+            🥈 Prata
+          </button>
+          <button
+            type="button"
+            className={`${styles.categoryTab} ${selectedVipTier === "WITH_POINTS" ? styles.categoryTabActive : ""}`}
+            onClick={() => setSelectedVipTier("WITH_POINTS")}
+            style={{ fontSize: "11px", padding: "4px 8px" }}
+          >
+            ⭐ Com Pontos &gt; 0
+          </button>
+        </div>
+
         <div className={styles.formGroup}>
           <label className={styles.formLabel}>Buscar Paciente:</label>
           <input
@@ -951,7 +1032,7 @@ function DispatchCampaignModal({
         <div className={styles.patientSelectList}>
           {patients.length === 0 ? (
             <div style={{ padding: "16px", textAlign: "center", color: "var(--text-muted)", fontSize: "13px" }}>
-              Nenhuma paciente encontrada para "{search}".
+              Nenhuma paciente encontrada com o filtro selecionado.
             </div>
           ) : (
             patients.map((p) => (
@@ -963,8 +1044,47 @@ function DispatchCampaignModal({
                 onClick={() => setSelectedPatient(p)}
               >
                 <div>
-                  <div style={{ fontWeight: 600, fontSize: "13.5px", color: "var(--text-h)" }}>
-                    {p.name}
+                  <div style={{ fontWeight: 600, fontSize: "13.5px", color: "var(--text-h)", display: "flex", alignItems: "center", gap: "8px" }}>
+                    <span>{p.name}</span>
+                    {p.vip_tier && (
+                      <span
+                        style={{
+                          fontSize: "10.5px",
+                          fontWeight: 700,
+                          padding: "1px 6px",
+                          borderRadius: "10px",
+                          background:
+                            p.vip_tier === "DIAMOND"
+                              ? "#e0f2fe"
+                              : p.vip_tier === "GOLD"
+                              ? "#fef9c3"
+                              : p.vip_tier === "SILVER"
+                              ? "#f1f5f9"
+                              : "#fef3c7",
+                          color:
+                            p.vip_tier === "DIAMOND"
+                              ? "#0369a1"
+                              : p.vip_tier === "GOLD"
+                              ? "#854d0e"
+                              : p.vip_tier === "SILVER"
+                              ? "#334155"
+                              : "#92400e",
+                        }}
+                      >
+                        {p.vip_tier === "DIAMOND"
+                          ? "💎 Diamante"
+                          : p.vip_tier === "GOLD"
+                          ? "🥇 Ouro"
+                          : p.vip_tier === "SILVER"
+                          ? "🥈 Prata"
+                          : "🥉 Bronze"}
+                      </span>
+                    )}
+                    {p.loyalty_points ? (
+                      <span style={{ fontSize: "11px", color: "#16a34a", fontWeight: 700 }}>
+                        {p.loyalty_points} pts
+                      </span>
+                    ) : null}
                   </div>
                   <div style={{ fontSize: "12px", color: "var(--text-muted)" }}>
                     {p.phone || "Sem telefone cadastrado"}

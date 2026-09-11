@@ -285,6 +285,8 @@ def get_expenses_by_category_service(
 def get_sale_service(
     session: DbSession, professional_id: CurrentProfessional
 ) -> SaleService:
+    from app.repositories.loyalty_repository import LoyaltyRepository
+
     return SaleService(
         sale_repo=SaleRepository(session, professional_id),
         sale_item_repo=SaleItemRepository(session, professional_id),
@@ -296,6 +298,7 @@ def get_sale_service(
         professional_repo=ProfessionalRepository(session, professional_id),
         booking_repo=BookingRepository(session, professional_id),
         return_opportunity_repo=ReturnOpportunityRepository(session, professional_id),
+        loyalty_repo=LoyaltyRepository(session, professional_id),
     )
 
 
@@ -528,4 +531,22 @@ def get_campaign_service(
 
 
 CampaignSvc = Annotated["CampaignService", Depends(get_campaign_service)]
+
+
+def get_loyalty_service(
+    session: DbSession, professional_id: CurrentProfessional
+) -> "LoyaltyService":
+    from app.repositories.loyalty_repository import LoyaltyRepository
+    from app.services.loyalty_service import LoyaltyService
+
+    return LoyaltyService(
+        loyalty_repo=LoyaltyRepository(session, professional_id),
+        patient_repo=PatientRepository(session, professional_id),
+        settings_repo=FinancialSettingsRepository(session, professional_id),
+        professional_repo=ProfessionalRepository(session, professional_id),
+    )
+
+
+LoyaltySvc = Annotated["LoyaltyService", Depends(get_loyalty_service)]
+
 

@@ -9,8 +9,11 @@ Hard delete real só por processo administrativo, fora do produto.
 from datetime import date, datetime
 from enum import StrEnum
 
-from sqlalchemy import Enum
+from uuid import UUID
+
+from sqlalchemy import Enum, ForeignKey, Integer, String
 from sqlalchemy.dialects.postgresql import TIMESTAMP
+from sqlalchemy.dialects.postgresql import UUID as PGUUID
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.models.base import TenantModel
@@ -50,4 +53,18 @@ class Patient(TenantModel):
     is_active: Mapped[bool] = mapped_column(default=True, nullable=False)
     anonymized_at: Mapped[datetime | None] = mapped_column(
         TIMESTAMP(timezone=True), nullable=True
+    )
+
+    # Gamificação Sprint 3: Clube VIP & Fidelidade & Indicação
+    loyalty_points: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    vip_tier: Mapped[str] = mapped_column(
+        String(20), default="BRONZE", nullable=False, index=True
+    )
+    referral_code: Mapped[str | None] = mapped_column(
+        String(20), nullable=True, index=True
+    )
+    referred_by_id: Mapped[UUID | None] = mapped_column(
+        PGUUID(as_uuid=True),
+        ForeignKey("patients.id", ondelete="SET NULL"),
+        nullable=True,
     )

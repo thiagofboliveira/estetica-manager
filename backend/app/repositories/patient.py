@@ -23,6 +23,7 @@ class PatientRepository(TenantRepository[Patient]):
         gender: Gender | None = None,
         has_upcoming_booking: bool | None = None,
         has_completed_treatment: bool | None = None,
+        vip_tier: str | None = None,
     ) -> Select:
         """Base de SELECT compartilhada por list() e count() — mesmo
         filtro de ativos/busca/atributos, para a contagem bater com a
@@ -38,6 +39,8 @@ class PatientRepository(TenantRepository[Patient]):
             )
         if gender is not None:
             stmt = stmt.where(Patient.gender == gender)
+        if vip_tier:
+            stmt = stmt.where(Patient.vip_tier == vip_tier)
         if has_upcoming_booking is not None:
             upcoming = self._upcoming_booking_subquery()
             stmt = stmt.where(
@@ -107,12 +110,13 @@ class PatientRepository(TenantRepository[Patient]):
         gender: Gender | None = None,
         has_upcoming_booking: bool | None = None,
         has_completed_treatment: bool | None = None,
+        vip_tier: str | None = None,
     ) -> list[Patient]:
         """Lista ativos, com busca opcional por nome (case/acento-insensível
         via unaccent — requer a extensão habilitada na migration)."""
         stmt = (
             self._filtered(
-                search, gender, has_upcoming_booking, has_completed_treatment
+                search, gender, has_upcoming_booking, has_completed_treatment, vip_tier
             )
             .order_by(Patient.name)
             .limit(limit)
@@ -127,10 +131,11 @@ class PatientRepository(TenantRepository[Patient]):
         gender: Gender | None = None,
         has_upcoming_booking: bool | None = None,
         has_completed_treatment: bool | None = None,
+        vip_tier: str | None = None,
     ) -> int:
         stmt = select(func.count()).select_from(
             self._filtered(
-                search, gender, has_upcoming_booking, has_completed_treatment
+                search, gender, has_upcoming_booking, has_completed_treatment, vip_tier
             ).subquery()
         )
         return self._session.scalar(stmt) or 0
@@ -150,6 +155,16 @@ class PatientRepository(TenantRepository[Patient]):
             Patient.phone == phone.strip(), Patient.is_active.is_(True)
         )
         return self._session.scalar(stmt)
+
+    def list_referred_by(self, patient_id: UUID) -> list[Patient]:
+        """Retorna lista de pacientes indicados por um determinado paciente."""
+        stmt = (
+            self._scoped()
+            .where(Patient.referred_by_id == patient_id)
+            .where(Patient.is_active.is_(True))
+            .order_by(Patient.created_at.desc())
+        )
+        return list(self._session.scalars(stmt))
 
     def list_never_treated(self, *, limit: int = 20, offset: int = 0) -> list[Patient]:
         """F4-02: pacientes ativos sem nenhuma Session COMPLETED nem Sale

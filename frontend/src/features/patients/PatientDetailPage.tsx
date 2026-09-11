@@ -8,8 +8,9 @@ import { IconAlertTriangle, IconCheck, IconCopy } from "@/ui/icons";
 import { patientsApi } from "./api";
 import { PatientPhotosGallery } from "./PatientPhotosGallery";
 import { usePatientPhotos } from "./usePatientPhotos";
+import { PatientLoyaltyTab } from "@/features/loyalty/PatientLoyaltyTab";
 
-type Tab = "data" | "history" | "anamnesis" | "photos";
+type Tab = "data" | "history" | "anamnesis" | "photos" | "loyalty";
 
 export function PatientDetailPage() {
   const { id = "" } = useParams();
@@ -121,10 +122,46 @@ export function PatientDetailPage() {
                     {patient.name.charAt(0).toUpperCase()}
                   </div>
                   <div>
-                    <h1 className="patient-header__name">{patient.name}</h1>
+                    <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap" }}>
+                      <h1 className="patient-header__name" style={{ margin: 0 }}>{patient.name}</h1>
+                      <span
+                        style={{
+                          fontSize: "0.8rem",
+                          fontWeight: 700,
+                          padding: "3px 10px",
+                          borderRadius: "16px",
+                          background:
+                            patient.vip_tier === "DIAMOND"
+                              ? "#e0f2fe"
+                              : patient.vip_tier === "GOLD"
+                              ? "#fef9c3"
+                              : patient.vip_tier === "SILVER"
+                              ? "#f1f5f9"
+                              : "#fef3c7",
+                          color:
+                            patient.vip_tier === "DIAMOND"
+                              ? "#0369a1"
+                              : patient.vip_tier === "GOLD"
+                              ? "#854d0e"
+                              : patient.vip_tier === "SILVER"
+                              ? "#334155"
+                              : "#92400e",
+                          border: "1px solid currentColor",
+                        }}
+                      >
+                        {patient.vip_tier === "DIAMOND"
+                          ? "💎 Diamante VIP"
+                          : patient.vip_tier === "GOLD"
+                          ? "🥇 Ouro"
+                          : patient.vip_tier === "SILVER"
+                          ? "🥈 Prata"
+                          : "🥉 Bronze"}
+                      </span>
+                    </div>
                     <p className="patient-header__meta">
                       {patient.phone ? patient.phone : "Sem telefone"}
                       {patient.email ? ` • ${patient.email}` : ""}
+                      {patient.loyalty_points ? ` • 🏆 ${patient.loyalty_points} pontos` : ""}
                     </p>
                   </div>
                 </div>
@@ -224,6 +261,15 @@ export function PatientDetailPage() {
                   onClick={() => setTab("photos")}
                 >
                   📷 Fotos & Evolução {photosQuery.data && photosQuery.data.length > 0 ? `(${photosQuery.data.length})` : ""}
+                </button>
+                <button
+                  type="button"
+                  role="tab"
+                  aria-selected={tab === "loyalty"}
+                  className="tab-button tap-target"
+                  onClick={() => setTab("loyalty")}
+                >
+                  🏆 Clube VIP & Fidelidade {patient.loyalty_points ? `(${patient.loyalty_points} pts)` : ""}
                 </button>
               </div>
 
@@ -506,6 +552,14 @@ export function PatientDetailPage() {
 
                 {tab === "photos" && (
                   <PatientPhotosGallery patientId={patient.id} patientName={patient.name} />
+                )}
+
+                {tab === "loyalty" && (
+                  <PatientLoyaltyTab
+                    patientId={patient.id}
+                    patientPhone={patient.phone}
+                    patientConsentWhatsapp={patient.consent_whatsapp}
+                  />
                 )}
               </div>
             </>

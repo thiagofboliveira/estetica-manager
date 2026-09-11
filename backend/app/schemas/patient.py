@@ -16,6 +16,7 @@ class PatientCreate(InputSchema):
     notes: str | None = None
     consent_whatsapp: bool = False
     gender: Gender | None = None
+    referred_by_id: UUID | None = None
 
     @field_validator("phone")
     @classmethod
@@ -38,6 +39,8 @@ class PatientUpdate(InputSchema):
     notes: str | None = None
     consent_whatsapp: bool | None = None
     gender: Gender | None = None
+    referred_by_id: UUID | None = None
+    vip_tier: str | None = None
 
     @field_validator("phone")
     @classmethod
@@ -63,6 +66,10 @@ class PatientOut(OutputSchema):
     consent_at: datetime | None
     is_active: bool
     gender: Gender | None
+    loyalty_points: int = 0
+    vip_tier: str = "BRONZE"
+    referral_code: str | None = None
+    referred_by_id: UUID | None = None
     created_at: datetime
     updated_at: datetime
 

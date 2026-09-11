@@ -5,6 +5,7 @@ from uuid import UUID, uuid4
 
 from app.core.phone import InvalidPhoneError, normalize_br_phone
 from app.core.tz import today_in_timezone
+from app.domain.loyalty.rules import generate_referral_code
 from app.domain.messaging.templates import build_whatsapp_link
 from app.domain.retention.enums import ReturnOpportunityStatus
 from app.models.patient import Gender, Patient
@@ -45,6 +46,7 @@ class PatientService:
     def create(self, dto: PatientCreate) -> Patient:
         phone = normalize_br_phone(dto.phone) if dto.phone else None
         consent_at = datetime.now(UTC) if dto.consent_whatsapp else None
+        referral_code = generate_referral_code(dto.name)
         patient = Patient(
             name=dto.name,
             phone=phone,
@@ -54,6 +56,10 @@ class PatientService:
             consent_whatsapp=dto.consent_whatsapp,
             consent_at=consent_at,
             gender=dto.gender,
+            referral_code=referral_code,
+            referred_by_id=dto.referred_by_id,
+            loyalty_points=0,
+            vip_tier="BRONZE",
         )
         return self._repo.add(patient)
 
@@ -192,6 +198,7 @@ class PatientService:
         gender: Gender | None = None,
         has_upcoming_booking: bool | None = None,
         has_completed_treatment: bool | None = None,
+        vip_tier: str | None = None,
     ) -> list[Patient]:
         return self._repo.list(
             limit=limit,
@@ -200,6 +207,7 @@ class PatientService:
             gender=gender,
             has_upcoming_booking=has_upcoming_booking,
             has_completed_treatment=has_completed_treatment,
+            vip_tier=vip_tier,
         )
 
     def count(
@@ -209,12 +217,14 @@ class PatientService:
         gender: Gender | None = None,
         has_upcoming_booking: bool | None = None,
         has_completed_treatment: bool | None = None,
+        vip_tier: str | None = None,
     ) -> int:
         return self._repo.count(
             search=search,
             gender=gender,
             has_upcoming_booking=has_upcoming_booking,
             has_completed_treatment=has_completed_treatment,
+            vip_tier=vip_tier,
         )
 
     def update(self, patient_id: UUID, dto: PatientUpdate) -> Patient:

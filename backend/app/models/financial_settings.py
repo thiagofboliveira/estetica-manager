@@ -99,3 +99,15 @@ class FinancialSettings(TenantModel):
         Numeric(12, 2, asdecimal=True), nullable=True, default=None
     )
 
+    # Gamificação: Clube VIP, Fidelidade e Indicação (Sprint 3)
+    loyalty_enabled: Mapped[bool] = mapped_column(default=True, nullable=False)
+    loyalty_points_per_currency: Mapped[Decimal] = mapped_column(
+        Numeric(5, 2, asdecimal=True), default=Decimal("0.10"), nullable=False
+    )
+    loyalty_redemption_rate: Mapped[Decimal] = mapped_column(
+        Numeric(5, 2, asdecimal=True), default=Decimal("1.00"), nullable=False
+    )
+    referral_reward_points: Mapped[int] = mapped_column(
+        default=50, nullable=False
+    )
+

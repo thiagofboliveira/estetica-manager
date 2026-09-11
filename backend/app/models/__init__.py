@@ -42,6 +42,7 @@ from app.models.supply import (
 )
 from app.models.campaign import CampaignTemplate
 from app.models.coupon import Coupon
+from app.models.loyalty import LoyaltyTransaction, LoyaltyTransactionType
 from app.models.subscription import Subscription, SubscriptionStatus
 from app.models.terms_acceptance import TermsAcceptance
 from app.models.user import User
@@ -90,6 +91,8 @@ __all__ = [
     "BookingStatus",
     "TermsAcceptance",
     "CampaignTemplate",
+    "LoyaltyTransaction",
+    "LoyaltyTransactionType",
     "AnamnesisTemplate",
     "AnamnesisQuestion",
     "AnamnesisSubmission",

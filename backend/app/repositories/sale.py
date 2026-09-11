@@ -31,3 +31,12 @@ class SaleRepository(TenantRepository[Sale]):
         vendeu nada" (first-run) de "não vendeu neste mês"."""
         stmt = exists(self._scoped().where(Sale.status == SaleStatus.ACTIVE)).select()
         return bool(self._session.scalar(stmt))
+
+    def count_for_patient(self, patient_id) -> int:
+        """Retorna quantidade de vendas ativas de uma paciente."""
+        stmt = (
+            self._scoped()
+            .where(Sale.patient_id == patient_id)
+            .where(Sale.status == SaleStatus.ACTIVE)
+        )
+        return len(list(self._session.scalars(stmt)))
