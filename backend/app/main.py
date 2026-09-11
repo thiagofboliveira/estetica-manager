@@ -10,6 +10,7 @@ from app.api.v1 import (
     anamnesis,
     billing,
     bookings,
+    campaigns,
     dashboard,
     export,
     financial_settings,
@@ -221,4 +222,5 @@ app.include_router(patient_photos.router, prefix="/api/v1")
 app.include_router(vials.router, prefix="/api/v1")
 app.include_router(supplies.router, prefix="/api/v1")
 app.include_router(billing.router, prefix="/api/v1")
+app.include_router(campaigns.router, prefix="/api/v1")
 

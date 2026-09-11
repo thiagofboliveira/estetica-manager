@@ -40,6 +40,7 @@ from app.models.supply import (
     SupplyCategory,
     SupplyMovement,
 )
+from app.models.campaign import CampaignTemplate
 from app.models.coupon import Coupon
 from app.models.subscription import Subscription, SubscriptionStatus
 from app.models.terms_acceptance import TermsAcceptance
@@ -88,6 +89,7 @@ __all__ = [
     "Booking",
     "BookingStatus",
     "TermsAcceptance",
+    "CampaignTemplate",
     "AnamnesisTemplate",
     "AnamnesisQuestion",
     "AnamnesisSubmission",

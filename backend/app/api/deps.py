@@ -514,3 +514,17 @@ def get_billing_service(session: DbSession) -> "BillingService":
 
 BillingSvc = Annotated["BillingService", Depends(get_billing_service)]
 
+
+def get_campaign_service(
+    session: DbSession, professional_id: CurrentProfessional
+) -> "CampaignService":
+    from app.repositories.campaign import CampaignTemplateRepository
+    from app.services.campaign_service import CampaignService
+
+    return CampaignService(
+        repo=CampaignTemplateRepository(session, professional_id)
+    )
+
+
+CampaignSvc = Annotated["CampaignService", Depends(get_campaign_service)]
+
