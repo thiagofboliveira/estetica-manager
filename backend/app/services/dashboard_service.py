@@ -8,6 +8,7 @@ banco (tests/test_dashboard.py).
 """
 
 from datetime import date
+from decimal import Decimal
 from uuid import UUID
 
 from app.core.tz import today_in_timezone

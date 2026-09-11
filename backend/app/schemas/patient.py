@@ -73,6 +73,16 @@ class PatientOut(OutputSchema):
     created_at: datetime
     updated_at: datetime
 
+    @field_validator("loyalty_points", mode="before")
+    @classmethod
+    def default_loyalty_points(cls, v: int | None) -> int:
+        return v if v is not None else 0
+
+    @field_validator("vip_tier", mode="before")
+    @classmethod
+    def default_vip_tier(cls, v: str | None) -> str:
+        return v if v is not None else "BRONZE"
+
 
 class PatientListOut(OutputSchema):
     items: list[PatientOut]

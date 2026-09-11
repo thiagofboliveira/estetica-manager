@@ -24,6 +24,7 @@ const schema = z.object({
     return !isNaN(n) && n >= 0 && n <= 100;
   }, "Percentual deve estar entre 0% e 100%"),
   default_payment_method: z.enum(["PIX", "DEBIT", "CREDIT", "CASH", "TRANSFER"]),
+  monthly_revenue_goal: z.string().optional(),
 });
 
 type FormValues = z.infer<typeof schema>;
@@ -55,6 +56,9 @@ export function FinancialSettingsForm({ initial }: Props) {
       pix_fee_percentage: initial.pix_fee_percentage ?? "0.00",
       debit_card_fee_percentage: initial.debit_card_fee_percentage ?? "1.99",
       default_payment_method: initial.default_payment_method ?? "PIX",
+      monthly_revenue_goal: initial.monthly_revenue_goal
+        ? String(Number(initial.monthly_revenue_goal))
+        : "",
     },
   });
 
@@ -69,6 +73,10 @@ export function FinancialSettingsForm({ initial }: Props) {
     setServerError(null);
     setSaved(false);
     try {
+      const cleanGoal = values.monthly_revenue_goal?.trim()
+        ? values.monthly_revenue_goal.replace(/[^\d.,]/g, "").replace(",", ".")
+        : null;
+
       await updateSettings.mutateAsync({
         split_clinic_percentage: values.has_split === "YES" ? values.split_clinic_percentage : "0.00",
         split_base: values.has_split === "YES" ? (values.split_base as SplitBase) : "GROSS",
@@ -76,6 +84,7 @@ export function FinancialSettingsForm({ initial }: Props) {
         pix_fee_percentage: values.pix_fee_percentage,
         debit_card_fee_percentage: values.debit_card_fee_percentage,
         default_payment_method: values.default_payment_method as PaymentMethod,
+        monthly_revenue_goal: cleanGoal,
       });
       setSaved(true);
       toast.success("Configurações financeiras salvas com sucesso!");
@@ -251,6 +260,128 @@ export function FinancialSettingsForm({ initial }: Props) {
               <option value="TRANSFER">Transferência</option>
             </select>
           </label>
+        </fieldset>
+
+        {/* Gamificação: Meta de Faturamento Mensal */}
+        <fieldset
+          id="meta-faturamento"
+          className="form__field"
+          style={{
+            background: "#f0fdf4",
+            border: "1.5px solid #86efac",
+            borderRadius: "10px",
+            padding: "16px 18px",
+            marginTop: "12px",
+            marginBottom: "12px",
+          }}
+        >
+          <legend
+            style={{
+              fontSize: "0.95rem",
+              fontWeight: 700,
+              color: "#166534",
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "6px",
+              padding: "0 8px",
+              background: "#ffffff",
+              border: "1px solid #bbf7d0",
+              borderRadius: "6px",
+            }}
+          >
+            <span>🎯 Meta de Faturamento Mensal</span>
+          </legend>
+          <p className="form__hint" style={{ color: "#15803d", marginTop: "4px", fontSize: "0.85rem", lineHeight: 1.4 }}>
+            Defina quanto sua clínica almeja faturar a cada mês. Essa meta alimenta o termômetro de conquista, previsibilidade de caixa e as celebrações de metas batidas no Dashboard.
+          </p>
+
+          <div style={{ marginTop: "12px" }}>
+            <label className="form__field" style={{ marginBottom: "8px" }}>
+              <span style={{ fontWeight: 600, color: "#166534", fontSize: "0.9rem" }}>
+                Valor da meta do mês (R$)
+              </span>
+              <div style={{ position: "relative", maxWidth: "280px" }}>
+                <span
+                  style={{
+                    position: "absolute",
+                    left: "12px",
+                    top: "50%",
+                    transform: "translateY(-50%)",
+                    color: "#6b7280",
+                    fontWeight: 600,
+                    fontSize: "0.9rem",
+                    pointerEvents: "none",
+                  }}
+                >
+                  R$
+                </span>
+                <input
+                  {...register("monthly_revenue_goal")}
+                  type="text"
+                  inputMode="decimal"
+                  placeholder="ex: 15000.00"
+                  aria-label="Meta de faturamento mensal em reais"
+                  style={{
+                    paddingLeft: "42px",
+                    fontWeight: 700,
+                    fontSize: "1.05rem",
+                    color: "#14532d",
+                    border: "1.5px solid #86efac",
+                    borderRadius: "6px",
+                    width: "100%",
+                  }}
+                />
+              </div>
+            </label>
+
+            {/* Sugestões Rápidas de Meta */}
+            <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap", marginTop: "10px" }}>
+              <span style={{ fontSize: "0.78rem", color: "#166534", fontWeight: 600 }}>
+                Sugestões rápidas:
+              </span>
+              {[
+                { label: "R$ 5.000", val: "5000.00" },
+                { label: "R$ 10.000", val: "10000.00" },
+                { label: "R$ 20.000", val: "20000.00" },
+                { label: "R$ 30.000", val: "30000.00" },
+                { label: "R$ 50.000", val: "50000.00" },
+              ].map((sug) => (
+                <button
+                  key={sug.val}
+                  type="button"
+                  style={{
+                    fontSize: "0.78rem",
+                    padding: "4px 10px",
+                    borderRadius: "6px",
+                    border: "1px solid #86efac",
+                    background: "#ffffff",
+                    color: "#15803d",
+                    cursor: "pointer",
+                    fontWeight: 600,
+                    transition: "all 0.15s ease",
+                  }}
+                  onClick={() => setValue("monthly_revenue_goal", sug.val, { shouldDirty: true })}
+                >
+                  {sug.label}
+                </button>
+              ))}
+              <button
+                type="button"
+                style={{
+                  fontSize: "0.78rem",
+                  padding: "4px 10px",
+                  borderRadius: "6px",
+                  border: "1px dashed #cbd5e1",
+                  background: "transparent",
+                  color: "#64748b",
+                  cursor: "pointer",
+                }}
+                onClick={() => setValue("monthly_revenue_goal", "", { shouldDirty: true })}
+              >
+                Limpar meta
+              </button>
+            </div>
+          </div>
         </fieldset>
 
         {serverError && (

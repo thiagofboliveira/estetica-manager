@@ -48,8 +48,14 @@ class FinancialSettingsService:
             "debit_card_fee_percentage",
             "monthly_revenue_goal",
         ):
-            if pct_field in data and data[pct_field] is not None:
-                data[pct_field] = money(data[pct_field])
+            if pct_field in data:
+                val = data[pct_field]
+                if val is None or (isinstance(val, str) and not val.strip()):
+                    data[pct_field] = None
+                else:
+                    if isinstance(val, str):
+                        val = val.strip().replace("R$", "").replace(" ", "").replace(",", ".")
+                    data[pct_field] = money(val)
 
         for field, value in data.items():
             setattr(settings, field, value)

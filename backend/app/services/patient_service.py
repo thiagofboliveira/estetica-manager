@@ -112,6 +112,8 @@ class PatientService:
                 email=item.email.strip() if item.email else None,
                 notes=item.notes,
                 consent_whatsapp=False,
+                loyalty_points=0,
+                vip_tier="BRONZE",
                 is_active=True,
                 created_at=now,
                 updated_at=now,

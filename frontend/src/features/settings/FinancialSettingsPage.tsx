@@ -1,4 +1,4 @@
-import { useSearchParams } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { AsyncBoundary } from "@/ui/AsyncBoundary";
 import { FinancialSettingsForm } from "./FinancialSettingsForm";
 import { PaymentFeeRulesManager } from "./PaymentFeeRulesManager";
@@ -33,10 +33,19 @@ export function FinancialSettingsPage() {
     <div className={styles.page}>
       <header className={styles.header}>
         <div className={styles.titleGroup}>
-          <h1 className={styles.title}>Financeiro &amp; Taxas</h1>
+          <h1 className={styles.title}>Financeiro &amp; Metas</h1>
           <p className={styles.subtitle}>
-            Gerencie seu modelo de comissões, taxas de maquininha e resumo semanal.
+            Gerencie seu modelo de comissões, taxas de maquininha, meta mensal e resumo semanal.
           </p>
+        </div>
+        <div>
+          <Link
+            to="/despesas-fixas"
+            className="button button--secondary"
+            style={{ fontSize: "0.82rem", textDecoration: "none", display: "inline-flex", alignItems: "center", gap: "6px" }}
+          >
+            <span>Custos Fixos &amp; Equilíbrio &rarr;</span>
+          </Link>
         </div>
       </header>
 

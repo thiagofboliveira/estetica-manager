@@ -2,8 +2,9 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import { usePatients } from "@/features/patients/hooks";
 import { useProcedures } from "@/features/procedures/hooks";
-import { useFinancialSettings } from "@/features/settings/hooks";
+import { useFinancialSettings, useUpdateFinancialSettings } from "@/features/settings/hooks";
 import { useCampaignTemplates } from "@/features/whatsapp-campaigns/useCampaignTemplates";
+import { toast } from "@/ui/ToastContext";
 import {
   IconCheck,
   IconArrowRight,
@@ -21,6 +22,11 @@ export function OnboardingChecklist({ hasAnySale }: Props) {
     return localStorage.getItem("estetica_onboarding_dismissed") === "true";
   });
   const [isMinimized, setIsMinimized] = useState(false);
+
+  // Gamificação: Modal rápido para definição de meta
+  const [showGoalModal, setShowGoalModal] = useState(false);
+  const [goalInputValue, setGoalInputValue] = useState("");
+  const updateSettingsMutation = useUpdateFinancialSettings();
 
   const proceduresQuery = useProcedures();
   const patientsQuery = usePatients();
@@ -111,6 +117,31 @@ export function OnboardingChecklist({ hasAnySale }: Props) {
   function handleDismiss() {
     localStorage.setItem("estetica_onboarding_dismissed", "true");
     setDismissed(true);
+  }
+
+  function handleOpenGoalModal() {
+    const currentGoal = settingsQuery.data?.monthly_revenue_goal;
+    setGoalInputValue(currentGoal ? String(Number(currentGoal)) : "15000.00");
+    setShowGoalModal(true);
+  }
+
+  async function handleSaveGoalModal(valueToSave?: string) {
+    const val = valueToSave ?? goalInputValue;
+    const clean = val.trim() ? val.replace(/[^\d.,]/g, "").replace(",", ".") : null;
+    if (!clean || Number(clean) <= 0) {
+      toast.error("Informe um valor de meta válido maior que zero.");
+      return;
+    }
+    try {
+      await updateSettingsMutation.mutateAsync({
+        monthly_revenue_goal: clean,
+      });
+      toast.success("Meta financeira configurada com sucesso!");
+      setShowGoalModal(false);
+      settingsQuery.refetch();
+    } catch {
+      toast.error("Erro ao salvar meta financeira.");
+    }
   }
 
   // Níveis de Maturidade
@@ -241,10 +272,22 @@ export function OnboardingChecklist({ hasAnySale }: Props) {
                 </div>
 
                 {!step.done ? (
-                  <Link to={step.link} className={styles.stepActionBtn}>
-                    <span>{step.actionText}</span>
-                    <IconArrowRight width="13" height="13" />
-                  </Link>
+                  step.id === "goals" ? (
+                    <button
+                      type="button"
+                      onClick={handleOpenGoalModal}
+                      className={styles.stepActionBtn}
+                      style={{ background: "#f0fdf4", border: "1px solid #86efac", color: "#166534" }}
+                    >
+                      <span>Definir</span>
+                      <IconArrowRight width="13" height="13" />
+                    </button>
+                  ) : (
+                    <Link to={step.link} className={styles.stepActionBtn}>
+                      <span>{step.actionText}</span>
+                      <IconArrowRight width="13" height="13" />
+                    </Link>
+                  )
                 ) : (
                   <span style={{ fontSize: "11.5px", fontWeight: 700, color: "#16a34a" }}>
                     Pronto ✓
@@ -275,6 +318,100 @@ export function OnboardingChecklist({ hasAnySale }: Props) {
             </Link>
           </div>
         </>
+      )}
+
+      {/* Modal Ágil de Meta Financeira Mensal */}
+      {showGoalModal && (
+        <div
+          className={styles.modalOverlay}
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="modal-meta-title"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setShowGoalModal(false);
+          }}
+        >
+          <div className={styles.modalDialog}>
+            <header className={styles.modalHeader}>
+              <h3 id="modal-meta-title" className={styles.modalTitle}>
+                <span>🎯</span>
+                <span>Definir Meta do Mês</span>
+              </h3>
+              <p className={styles.modalDesc}>
+                Defina um objetivo financeiro para sua clínica faturar este mês e ative o termômetro de conquista do Dashboard.
+              </p>
+            </header>
+
+            <div className={styles.modalInputGroup}>
+              <span className={styles.modalInputPrefix}>R$</span>
+              <input
+                type="text"
+                inputMode="decimal"
+                value={goalInputValue}
+                onChange={(e) => setGoalInputValue(e.target.value)}
+                placeholder="ex: 20000.00"
+                className={styles.modalInput}
+                autoFocus
+              />
+            </div>
+
+            <div>
+              <span style={{ fontSize: "12px", fontWeight: 600, color: "#475569", display: "block", marginBottom: "6px" }}>
+                Valores sugeridos:
+              </span>
+              <div className={styles.chipRow}>
+                {[
+                  { label: "R$ 5.000", val: "5000.00" },
+                  { label: "R$ 10.000", val: "10000.00" },
+                  { label: "R$ 20.000", val: "20000.00" },
+                  { label: "R$ 30.000", val: "30000.00" },
+                  { label: "R$ 50.000", val: "50000.00" },
+                ].map((sug) => (
+                  <button
+                    key={sug.val}
+                    type="button"
+                    className={styles.chipBtn}
+                    onClick={() => {
+                      setGoalInputValue(sug.val);
+                      handleSaveGoalModal(sug.val);
+                    }}
+                  >
+                    {sug.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <footer className={styles.modalFooter}>
+              <div className={styles.modalFooterLeft}>
+                <Link
+                  to="/financeiro"
+                  onClick={() => setShowGoalModal(false)}
+                  style={{ fontSize: "12px", color: "var(--primary, #0284c7)", textDecoration: "none", fontWeight: 500 }}
+                >
+                  Abrir Financeiro Completo →
+                </Link>
+              </div>
+              <div style={{ display: "flex", gap: "8px" }}>
+                <button
+                  type="button"
+                  className={styles.cancelBtn}
+                  onClick={() => setShowGoalModal(false)}
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="button"
+                  className={styles.saveBtn}
+                  disabled={updateSettingsMutation.isPending}
+                  onClick={() => handleSaveGoalModal()}
+                >
+                  {updateSettingsMutation.isPending ? "Salvando…" : "Salvar Meta"}
+                </button>
+              </div>
+            </footer>
+          </div>
+        </div>
       )}
     </section>
   );
