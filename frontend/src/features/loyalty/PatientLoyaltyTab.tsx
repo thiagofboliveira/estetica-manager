@@ -225,13 +225,14 @@ export function PatientLoyaltyTab({
             </button>
 
             <Link
-              to="/configuracoes-financeiras?tab=loyalty"
+              to="/catalogo-vip"
               className={styles.vipLinkButton}
               title="Configurar catálogo de pontos e recompensas VIP"
             >
-              ⚙️ Catálogo VIP
+              🎁 Catálogo VIP
             </Link>
           </div>
+
 
 
           {emailSuccessMsg && (

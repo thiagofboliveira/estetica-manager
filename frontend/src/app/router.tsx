@@ -42,8 +42,10 @@ import { AnamnesisPage } from "@/features/anamnesis/AnamnesisPage";
 import { PublicAnamnesisPage } from "@/features/anamnesis/PublicAnamnesisPage";
 import { PlansPage } from "@/features/billing/PlansPage";
 import { PublicVipCardPage } from "@/features/loyalty/PublicVipCardPage";
+import { LoyaltyCatalogPage } from "@/features/loyalty/LoyaltyCatalogPage";
 
 export const router = createBrowserRouter([
+
   {
     // G-08a: o boundary agora envolve a árvore INTEIRA, não só a
     // autenticada — /login e /setup são as telas do primeiro contato;
@@ -98,8 +100,11 @@ export const router = createBrowserRouter([
               { path: "/vendas/nova-pacote", element: <NewPackageSalePage /> },
               { path: "/agenda", element: <AgendaPage /> },
               { path: "/agenda/rapido", element: <ModoOcupadoPage /> },
+              { path: "/catalogo-vip", element: <LoyaltyCatalogPage /> },
               { path: "/financeiro", element: <FinancialSettingsPage /> },
+              { path: "/configuracoes-financeiras", element: <Navigate to="/financeiro" replace /> },
               { path: "/despesas-fixas", element: <FixedExpensesPage /> },
+
               { path: "/simulador", element: <PriceSimulatorPage /> },
               { path: "/relatorios", element: <ReportsPage /> },
               { path: "/assinatura", element: <PlansPage /> },
