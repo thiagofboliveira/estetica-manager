@@ -16,6 +16,8 @@ import { DashboardSkeleton } from "./DashboardSkeleton";
 import { ROICard } from "./ROICard";
 import { BotoxVialCard } from "@/features/vials/BotoxVialCard";
 import { MonthlyAchievementsCard } from "./MonthlyAchievementsCard";
+import { MESSAGES, fillTemplate } from "@/lib/constants/messages";
+
 import {
   IconCalendar,
   IconPlus,
@@ -81,6 +83,22 @@ export function DashboardPage() {
     }
     return { totalPotential, dueCount, totalCards: retentionCards.length };
   }, [retentionCards]);
+
+  // Lista prioritária de pacientes para chamar hoje (atrasados primeiro, depois janela ideal)
+  const dueRetentionCards = useMemo(() => {
+    return retentionCards
+      .filter(
+        (c) =>
+          c.primary_opportunity?.timing === "DUE" ||
+          c.primary_opportunity?.timing === "OVERDUE"
+      )
+      .sort((a, b) => {
+        if (a.primary_opportunity?.timing === "OVERDUE" && b.primary_opportunity?.timing !== "OVERDUE") return -1;
+        if (b.primary_opportunity?.timing === "OVERDUE" && a.primary_opportunity?.timing !== "OVERDUE") return 1;
+        return Number(b.total_potential_value || 0) - Number(a.total_potential_value || 0);
+      });
+  }, [retentionCards]);
+
 
   // Aguarda o dado principal antes de decidir entre onboarding e dashboard,
   // evitando o flash de onboarding quando dashboardQuery.data ainda é undefined.
@@ -228,7 +246,7 @@ export function DashboardPage() {
                 {unconfirmedSessions.length === 1 ? "" : "s"} agendado
                 {unconfirmedSessions.length === 1 ? "" : "s"} para amanhã aguardando confirmação no WhatsApp para evitar faltas.
               </p>
-              {unconfirmedSessions.slice(0, 2).map((item) => (
+              {unconfirmedSessions.slice(0, 3).map((item) => (
                 <div key={item.session_id} className={styles.appointmentItem}>
                   <div className={styles.appointmentInfo}>
                     <span className={styles.appointmentPatient}>{item.patient_name}</span>
@@ -259,7 +277,128 @@ export function DashboardPage() {
             <IconArrowRight width="14" height="14" />
           </Link>
         </div>
+
+        {/* Card 3: Quem Chamar Hoje (Retornos e Reengajamento) */}
+        <div className={styles.todayCard}>
+          <div className={styles.cardHeader}>
+            <div className={styles.cardHeaderTitle}>
+              <div
+                className={styles.cardIcon}
+                style={{
+                  background: dueRetentionCards.length > 0 ? "rgba(225, 29, 72, 0.12)" : undefined,
+                  color: dueRetentionCards.length > 0 ? "#e11d48" : undefined,
+                }}
+              >
+                <IconTarget width="18" height="18" />
+              </div>
+              <h2 className={styles.cardTitle}>Quem Chamar Hoje</h2>
+            </div>
+            <span
+              className={styles.countBadge}
+              style={{
+                background:
+                  dueRetentionCards.length > 0
+                    ? "rgba(225, 29, 72, 0.15)"
+                    : "rgba(34, 197, 94, 0.15)",
+                color: dueRetentionCards.length > 0 ? "#e11d48" : "#16a34a",
+              }}
+            >
+              {dueRetentionCards.length > 0
+                ? `${dueRetentionCards.length} para chamar`
+                : "Tudo em dia"}
+            </span>
+          </div>
+
+          {dueRetentionCards.length === 0 ? (
+            <div className={styles.cardEmpty}>
+              <p>Tudo em dia! 🎉</p>
+              <p style={{ fontSize: "12.5px" }}>
+                Nenhum paciente com retorno vencendo hoje. Suas clientes estão com retornos agendados ou no prazo ideal.
+              </p>
+            </div>
+          ) : (
+            <div className={styles.appointmentList}>
+              {dueRetentionCards.slice(0, 3).map((card) => {
+                const cleanPhone = card.patient_phone ? card.patient_phone.replace(/\D/g, "") : null;
+                const isOverdue = card.primary_opportunity?.timing === "OVERDUE";
+                const daysDiff = card.primary_opportunity?.days_diff ?? 0;
+                const defaultMsg = fillTemplate(MESSAGES.RETENTION.WHATSAPP_DEFAULT, {
+                  patient_name: card.patient_name,
+                  procedure_name: card.primary_opportunity?.procedure_name || "procedimento",
+                });
+                const whatsappUrl =
+                  cleanPhone && card.whatsapp_enabled
+                    ? `https://wa.me/55${cleanPhone}?text=${encodeURIComponent(defaultMsg)}`
+                    : null;
+
+                return (
+                  <div key={card.patient_id} className={styles.appointmentItem}>
+                    <div className={styles.appointmentInfo}>
+                      <span className={styles.appointmentPatient}>{card.patient_name}</span>
+                      <span className={styles.appointmentProcedure}>
+                        {card.primary_opportunity?.procedure_name} •{" "}
+                        <span
+                          style={{
+                            fontWeight: 600,
+                            color: isOverdue ? "#dc2626" : "#4f46e5",
+                          }}
+                        >
+                          {isOverdue ? `${Math.abs(daysDiff)}d atrasado` : "Na janela"}
+                        </span>
+                      </span>
+                    </div>
+                    {whatsappUrl ? (
+                      <a
+                        href={whatsappUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        style={{
+                          display: "inline-flex",
+                          alignItems: "center",
+                          gap: "4px",
+                          color: "#16a34a",
+                          fontWeight: 600,
+                          fontSize: "12.5px",
+                          textDecoration: "none",
+                          flexShrink: 0,
+                        }}
+                        title={`Enviar WhatsApp para ${card.patient_name}`}
+                      >
+                        <IconWhatsApp width="14" height="14" />
+                        <span>Chamar</span>
+                      </a>
+                    ) : (
+                      <Link
+                        to="/retornos"
+                        style={{
+                          color: "var(--accent)",
+                          fontWeight: 600,
+                          fontSize: "12.5px",
+                          textDecoration: "none",
+                          flexShrink: 0,
+                        }}
+                      >
+                        Ver
+                      </Link>
+                    )}
+                  </div>
+                );
+              })}
+              {dueRetentionCards.length > 3 && (
+                <span style={{ fontSize: "12px", color: "var(--text-muted)" }}>
+                  + {dueRetentionCards.length - 3} outros retornos hoje
+                </span>
+              )}
+            </div>
+          )}
+
+          <Link to="/retornos" className={styles.cardLink}>
+            <span>Ver todos os retornos</span>
+            <IconArrowRight width="14" height="14" />
+          </Link>
+        </div>
       </div>
+
 
       {/* Alerta Inteligente de Insumos Críticos & Frascos de Botox Abertos */}
       <BotoxVialCard />

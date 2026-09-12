@@ -85,18 +85,19 @@
   color: #ffffff !important;
 }
 
-/* Today's Operational Section (Cards lado a lado) */
+/* Today's Operational Section (Cards lado a lado: 3 colunas no desktop) */
 .todayGrid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(3, 1fr);
   gap: 16px;
 }
 
-@media (max-width: 840px) {
+@media (max-width: 1040px) {
   .todayGrid {
     grid-template-columns: 1fr;
   }
 }
+
 
 .todayCard {
   background: var(--bg-card);
