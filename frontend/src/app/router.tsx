@@ -101,8 +101,10 @@ export const router = createBrowserRouter([
               { path: "/agenda", element: <AgendaPage /> },
               { path: "/agenda/rapido", element: <ModoOcupadoPage /> },
               { path: "/catalogo-vip", element: <LoyaltyCatalogPage /> },
+              { path: "/fidelidade", element: <Navigate to="/catalogo-vip" replace /> },
               { path: "/financeiro", element: <FinancialSettingsPage /> },
               { path: "/configuracoes-financeiras", element: <Navigate to="/financeiro" replace /> },
+
               { path: "/despesas-fixas", element: <FixedExpensesPage /> },
 
               { path: "/simulador", element: <PriceSimulatorPage /> },

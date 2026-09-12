@@ -24,7 +24,7 @@ const NAV_ITEMS = [
   { to: "/disparos-whatsapp", label: "Disparos WhatsApp", Icon: IconWhatsApp, end: false },
   { to: "/relatorios", label: "Relatórios", Icon: IconBarChart, end: false },
   { to: "/pacientes", label: "Pacientes", Icon: IconUsers, end: false },
-  { to: "/catalogo-vip", label: "Catálogo VIP", Icon: IconGift, end: false },
+  { to: "/catalogo-vip", label: "Clube VIP & Fidelidade", Icon: IconGift, end: false },
   { to: "/anamnese", label: "Anamnese", Icon: IconClipboard, end: false },
   { to: "/procedimentos", label: "Procedimentos", Icon: IconSparkles, end: false },
   { to: "/estoque", label: "Estoque & Insumos", Icon: IconDroplet, end: false },
@@ -33,6 +33,7 @@ const NAV_ITEMS = [
   { to: "/despesas-fixas", label: "Despesas Fixas", Icon: IconReceipt, end: false },
   { to: "/assinatura", label: "Planos & Assinatura", Icon: IconCrown, end: false },
 ];
+
 
 
 
