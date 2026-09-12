@@ -1,12 +1,15 @@
 from uuid import UUID
 
-from fastapi import APIRouter, HTTPException, Request, status
+from fastapi import APIRouter, HTTPException, Query, Request, Response, status
 
 from app.api.deps import LoyaltySvc
 from app.schemas.loyalty import (
     LoyaltyAdjustRequest,
     LoyaltyOverviewOut,
     LoyaltyPatientOut,
+    LoyaltyRewardCreate,
+    LoyaltyRewardOut,
+    LoyaltyRewardUpdate,
     LoyaltyTransactionOut,
     PublicVipCardOut,
     ReferralInfoOut,
@@ -38,6 +41,45 @@ def get_public_vip_card(code: str) -> PublicVipCardOut:
 def get_loyalty_overview(svc: LoyaltySvc) -> LoyaltyOverviewOut:
     """Retorna métricas consolidadas do Clube VIP e Fidelidade da clínica."""
     return svc.get_overview()
+
+
+@router.get("/rewards", response_model=list[LoyaltyRewardOut])
+def list_rewards(
+    svc: LoyaltySvc,
+    active_only: bool = Query(False, description="Filtrar apenas recompensas ativas"),
+) -> list[LoyaltyRewardOut]:
+    """Lista as recompensas e benefícios do catálogo VIP da profissional."""
+    return svc.list_rewards(active_only=active_only)
+
+
+@router.post("/rewards", response_model=LoyaltyRewardOut, status_code=status.HTTP_201_CREATED)
+def create_reward(payload: LoyaltyRewardCreate, svc: LoyaltySvc) -> LoyaltyRewardOut:
+    """Cria uma nova recompensa no catálogo VIP."""
+    try:
+        return svc.create_reward(payload)
+    except ValueError as exc:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, str(exc)) from exc
+
+
+@router.put("/rewards/{reward_id}", response_model=LoyaltyRewardOut)
+def update_reward(
+    reward_id: UUID, payload: LoyaltyRewardUpdate, svc: LoyaltySvc
+) -> LoyaltyRewardOut:
+    """Atualiza uma recompensa existente no catálogo VIP."""
+    try:
+        return svc.update_reward(reward_id, payload)
+    except ValueError as exc:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, str(exc)) from exc
+
+
+@router.delete("/rewards/{reward_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_reward(reward_id: UUID, svc: LoyaltySvc) -> Response:
+    """Remove uma recompensa do catálogo VIP."""
+    try:
+        svc.delete_reward(reward_id)
+        return Response(status_code=status.HTTP_204_NO_CONTENT)
+    except ValueError as exc:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, str(exc)) from exc
 
 
 @router.get("/patients/{patient_id}", response_model=LoyaltyPatientOut)
@@ -83,4 +125,5 @@ def send_patient_vip_email(
         return svc.send_vip_card_email(patient_id, app_base_url=origin)
     except ValueError as exc:
         raise HTTPException(status.HTTP_400_BAD_REQUEST, str(exc)) from exc
+
 

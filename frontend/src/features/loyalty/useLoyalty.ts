@@ -1,6 +1,11 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { CACHE } from "@/lib/query/client";
-import { loyaltyApi, type LoyaltyAdjustRequest } from "./loyaltyApi";
+import {
+  loyaltyApi,
+  type LoyaltyAdjustRequest,
+  type LoyaltyRewardCreateInput,
+  type LoyaltyRewardUpdateInput,
+} from "./loyaltyApi";
 
 export const loyaltyKeys = {
   all: ["loyalty"] as const,
@@ -8,6 +13,7 @@ export const loyaltyKeys = {
   patient: (patientId: string) => [...loyaltyKeys.all, "patient", patientId] as const,
   referral: (patientId: string) => [...loyaltyKeys.all, "referral", patientId] as const,
   publicCard: (code: string) => [...loyaltyKeys.all, "public-card", code] as const,
+  rewards: () => [...loyaltyKeys.all, "rewards"] as const,
 };
 
 export function usePatientLoyalty(patientId: string) {
@@ -48,7 +54,6 @@ export function usePublicVipCard(code: string) {
   });
 }
 
-
 export function useSendVipCardEmail(patientId: string) {
   return useMutation({
     mutationFn: () => loyaltyApi.sendVipCardEmail(patientId),
@@ -69,4 +74,47 @@ export function useAdjustLoyaltyPoints(patientId: string) {
     },
   });
 }
+
+export function useLoyaltyRewards(activeOnly: boolean = false) {
+  return useQuery({
+    queryKey: [...loyaltyKeys.rewards(), { activeOnly }],
+    queryFn: () => loyaltyApi.listRewards(activeOnly),
+    ...CACHE.CATALOG,
+  });
+}
+
+export function useCreateLoyaltyReward() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (payload: LoyaltyRewardCreateInput) => loyaltyApi.createReward(payload),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: loyaltyKeys.rewards() });
+      queryClient.invalidateQueries({ queryKey: ["loyalty", "public-card"] });
+    },
+  });
+}
+
+export function useUpdateLoyaltyReward() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, data }: { id: string; data: LoyaltyRewardUpdateInput }) =>
+      loyaltyApi.updateReward(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: loyaltyKeys.rewards() });
+      queryClient.invalidateQueries({ queryKey: ["loyalty", "public-card"] });
+    },
+  });
+}
+
+export function useDeleteLoyaltyReward() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => loyaltyApi.deleteReward(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: loyaltyKeys.rewards() });
+      queryClient.invalidateQueries({ queryKey: ["loyalty", "public-card"] });
+    },
+  });
+}
+
 

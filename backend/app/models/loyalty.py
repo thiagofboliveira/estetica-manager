@@ -1,7 +1,8 @@
+from decimal import Decimal
 from enum import StrEnum
 from uuid import UUID
 
-from sqlalchemy import ForeignKey, Integer, String
+from sqlalchemy import Boolean, ForeignKey, Integer, Numeric, String
 from sqlalchemy.dialects.postgresql import UUID as PGUUID
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -37,3 +38,19 @@ class LoyaltyTransaction(TenantModel):
     points: Mapped[int] = mapped_column(Integer, nullable=False)
     balance_after: Mapped[int] = mapped_column(Integer, nullable=False)
     description: Mapped[str] = mapped_column(String(255), nullable=False)
+
+
+class LoyaltyReward(TenantModel):
+    """Catálogo de recompensas e benefícios configuráveis por pontos."""
+
+    __tablename__ = "loyalty_rewards"
+
+    points_cost: Mapped[int] = mapped_column(Integer, nullable=False)
+    title: Mapped[str] = mapped_column(String(120), nullable=False)
+    description: Mapped[str] = mapped_column(String(255), nullable=False, default="")
+    discount_value: Mapped[Decimal | None] = mapped_column(
+        Numeric(10, 2, asdecimal=True), nullable=True
+    )
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+    order_index: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+

@@ -1,6 +1,9 @@
 from uuid import UUID
 
-from app.models.loyalty import LoyaltyTransaction
+from sqlalchemy import select
+from sqlalchemy.orm import Session
+
+from app.models.loyalty import LoyaltyReward, LoyaltyTransaction
 from app.repositories.base import TenantRepository
 
 
@@ -35,3 +38,38 @@ class LoyaltyRepository(TenantRepository[LoyaltyTransaction]):
             description=description,
         )
         return self.add(tx)
+
+
+class LoyaltyRewardRepository(TenantRepository[LoyaltyReward]):
+    model = LoyaltyReward
+
+    def list_all(self) -> list[LoyaltyReward]:
+        stmt = self._scoped().order_by(LoyaltyReward.order_index.asc(), LoyaltyReward.points_cost.asc())
+        return list(self._session.scalars(stmt))
+
+    def list_active(self) -> list[LoyaltyReward]:
+        stmt = (
+            self._scoped()
+            .where(LoyaltyReward.is_active.is_(True))
+            .order_by(LoyaltyReward.order_index.asc(), LoyaltyReward.points_cost.asc())
+        )
+        return list(self._session.scalars(stmt))
+
+    def get_by_id(self, reward_id: UUID) -> LoyaltyReward | None:
+        stmt = self._scoped().where(LoyaltyReward.id == reward_id)
+        return self._session.scalars(stmt).first()
+
+    @classmethod
+    def list_active_by_professional_unscoped(
+        cls, session: Session, professional_id: UUID
+    ) -> list[LoyaltyReward]:
+        stmt = (
+            select(LoyaltyReward)
+            .where(
+                LoyaltyReward.professional_id == professional_id,
+                LoyaltyReward.is_active.is_(True),
+            )
+            .order_by(LoyaltyReward.order_index.asc(), LoyaltyReward.points_cost.asc())
+        )
+        return list(session.scalars(stmt))
+

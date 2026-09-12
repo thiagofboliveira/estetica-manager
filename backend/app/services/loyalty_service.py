@@ -2,6 +2,8 @@ from decimal import Decimal
 from urllib.parse import quote
 from uuid import UUID
 
+from sqlalchemy import select
+
 from app.db.session import unsafe_session_without_tenant
 from app.domain.loyalty.rules import (
     VIP_TIER_CONFIG,
@@ -12,18 +14,21 @@ from app.domain.loyalty.rules import (
 )
 from app.models.clinic import Clinic
 from app.models.financial_settings import FinancialSettings
-from app.models.loyalty import LoyaltyTransaction, LoyaltyTransactionType
+from app.models.loyalty import LoyaltyReward, LoyaltyTransaction, LoyaltyTransactionType
 from app.models.patient import Patient
 from app.models.professional import Professional
 from app.models.sale import Sale
 from app.repositories.financial_settings import FinancialSettingsRepository
-from app.repositories.loyalty_repository import LoyaltyRepository
+from app.repositories.loyalty_repository import LoyaltyRepository, LoyaltyRewardRepository
 from app.repositories.patient import PatientRepository
 from app.repositories.professional import ProfessionalRepository
 from app.schemas.loyalty import (
     LoyaltyAdjustRequest,
     LoyaltyOverviewOut,
     LoyaltyPatientOut,
+    LoyaltyRewardCreate,
+    LoyaltyRewardOut,
+    LoyaltyRewardUpdate,
     LoyaltyTransactionOut,
     PublicLoyaltyRewardOut,
     PublicVipCardOut,
@@ -45,11 +50,14 @@ class LoyaltyService:
         patient_repo: PatientRepository,
         settings_repo: FinancialSettingsRepository,
         professional_repo: ProfessionalRepository | None = None,
+        reward_repo: LoyaltyRewardRepository | None = None,
     ) -> None:
         self._loyalty_repo = loyalty_repo
         self._patient_repo = patient_repo
         self._settings_repo = settings_repo
         self._professional_repo = professional_repo
+        self._reward_repo = reward_repo
+
 
     def _get_settings(self) -> FinancialSettings:
         settings = self._settings_repo.get_singleton()
@@ -299,6 +307,7 @@ class LoyaltyService:
             # Crédito em reais (R$ 0,50 por ponto padrão)
             credit_value = Decimal(patient.loyalty_points) * Decimal("0.50")
 
+
             first_name = patient.name.split()[0] if patient.name else "Cliente"
             wa_text = (
                 f"Oi amiga! Ganhei um benefício especial para você na {clinic_name}! ✨ "
@@ -306,32 +315,50 @@ class LoyaltyService:
                 f"para ganhar um presente de boas-vindas!"
             )
 
-            rewards = [
-                PublicLoyaltyRewardOut(
-                    points_cost=50,
-                    title="R$ 25 de Desconto",
-                    description="Abata R$ 25,00 direto na sua próxima sessão de qualquer procedimento.",
-                    discount_value=Decimal("25.00"),
-                ),
-                PublicLoyaltyRewardOut(
-                    points_cost=100,
-                    title="R$ 50 de Desconto",
-                    description="Crédito de R$ 50,00 ou aplicação de Máscara Revitalizante.",
-                    discount_value=Decimal("50.00"),
-                ),
-                PublicLoyaltyRewardOut(
-                    points_cost=200,
-                    title="Drenagem Facial Revitalizante",
-                    description="Sessão cortesia de Drenagem e Massagem Lifting Facial.",
-                    discount_value=Decimal("120.00"),
-                ),
-                PublicLoyaltyRewardOut(
-                    points_cost=300,
-                    title="Peeling de Diamante Completo",
-                    description="Higienização profunda, esfoliação com ponteira de diamante e fototerapia.",
-                    discount_value=Decimal("180.00"),
-                ),
-            ]
+            # Catálogo de Recompensas: busca customizado da profissional ou cai no padrão
+            custom_rewards: list[LoyaltyReward] = []
+            if patient.professional_id:
+                custom_rewards = LoyaltyRewardRepository.list_active_by_professional_unscoped(
+                    session, patient.professional_id
+                )
+
+            if custom_rewards:
+                rewards = [
+                    PublicLoyaltyRewardOut(
+                        points_cost=r.points_cost,
+                        title=r.title,
+                        description=r.description or "",
+                        discount_value=r.discount_value,
+                    )
+                    for r in custom_rewards
+                ]
+            else:
+                rewards = [
+                    PublicLoyaltyRewardOut(
+                        points_cost=50,
+                        title="R$ 25 de Desconto",
+                        description="Abata R$ 25,00 direto na sua próxima sessão de qualquer procedimento.",
+                        discount_value=Decimal("25.00"),
+                    ),
+                    PublicLoyaltyRewardOut(
+                        points_cost=100,
+                        title="R$ 50 de Desconto",
+                        description="Crédito de R$ 50,00 ou aplicação de Máscara Revitalizante.",
+                        discount_value=Decimal("50.00"),
+                    ),
+                    PublicLoyaltyRewardOut(
+                        points_cost=200,
+                        title="Drenagem Facial Revitalizante",
+                        description="Sessão cortesia de Drenagem e Massagem Lifting Facial.",
+                        discount_value=Decimal("120.00"),
+                    ),
+                    PublicLoyaltyRewardOut(
+                        points_cost=300,
+                        title="Peeling de Diamante Completo",
+                        description="Higienização profunda, esfoliação com ponteira de diamante e fototerapia.",
+                        discount_value=Decimal("180.00"),
+                    ),
+                ]
 
             return PublicVipCardOut(
                 patient_first_name=first_name,
@@ -394,4 +421,57 @@ class LoyaltyService:
             message=f"Cartão VIP enviado com sucesso para {patient.email}",
             recipient_email=patient.email,
         )
+
+    def list_rewards(self, active_only: bool = False) -> list[LoyaltyRewardOut]:
+        if not self._reward_repo:
+            return []
+        rewards = self._reward_repo.list_active() if active_only else self._reward_repo.list_all()
+        return [LoyaltyRewardOut.model_validate(r) for r in rewards]
+
+    def create_reward(self, payload: LoyaltyRewardCreate) -> LoyaltyRewardOut:
+        if not self._reward_repo:
+            raise ValueError("Repositório de recompensas não configurado.")
+        reward = LoyaltyReward(
+            points_cost=payload.points_cost,
+            title=payload.title,
+            description=payload.description,
+            discount_value=payload.discount_value,
+            is_active=payload.is_active,
+            order_index=payload.order_index,
+        )
+        saved = self._reward_repo.add(reward)
+        return LoyaltyRewardOut.model_validate(saved)
+
+    def update_reward(self, reward_id: UUID, payload: LoyaltyRewardUpdate) -> LoyaltyRewardOut:
+        if not self._reward_repo:
+            raise ValueError("Repositório de recompensas não configurado.")
+        reward = self._reward_repo.get(reward_id)
+        if not reward:
+            raise ValueError("Recompensa não encontrada.")
+
+        if payload.points_cost is not None:
+            reward.points_cost = payload.points_cost
+        if payload.title is not None:
+            reward.title = payload.title
+        if payload.description is not None:
+            reward.description = payload.description
+        if payload.discount_value is not None:
+            reward.discount_value = payload.discount_value
+        if payload.is_active is not None:
+            reward.is_active = payload.is_active
+        if payload.order_index is not None:
+            reward.order_index = payload.order_index
+
+        self._reward_repo.flush()
+        return LoyaltyRewardOut.model_validate(reward)
+
+    def delete_reward(self, reward_id: UUID) -> None:
+        if not self._reward_repo:
+            raise ValueError("Repositório de recompensas não configurado.")
+        reward = self._reward_repo.get(reward_id)
+        if not reward:
+            raise ValueError("Recompensa não encontrada.")
+        self._reward_repo.delete(reward)
+        self._reward_repo.flush()
+
 

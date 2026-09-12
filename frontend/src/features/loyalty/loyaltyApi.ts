@@ -85,6 +85,35 @@ export type SendVipEmailResponse = {
   recipient_email: string;
 };
 
+export type LoyaltyReward = {
+  id: string;
+  points_cost: number;
+  title: string;
+  description: string;
+  discount_value: number | string | null;
+  is_active: boolean;
+  order_index: number;
+  created_at?: string | null;
+};
+
+export type LoyaltyRewardCreateInput = {
+  points_cost: number;
+  title: string;
+  description?: string;
+  discount_value?: number | null;
+  is_active?: boolean;
+  order_index?: number;
+};
+
+export type LoyaltyRewardUpdateInput = {
+  points_cost?: number;
+  title?: string;
+  description?: string;
+  discount_value?: number | null;
+  is_active?: boolean;
+  order_index?: number;
+};
+
 export const loyaltyApi = {
   getPatientLoyalty: (patientId: string): Promise<LoyaltyPatientOut> =>
     api.get<LoyaltyPatientOut>(`/loyalty/patients/${patientId}`),
@@ -103,6 +132,20 @@ export const loyaltyApi = {
 
   sendVipCardEmail: (patientId: string): Promise<SendVipEmailResponse> =>
     api.post<SendVipEmailResponse>(`/loyalty/patients/${patientId}/send-card-email`, {}),
+
+  listRewards: (activeOnly: boolean = false): Promise<LoyaltyReward[]> =>
+    api.get<LoyaltyReward[]>(`/loyalty/rewards${activeOnly ? "?active_only=true" : ""}`),
+
+  createReward: (payload: LoyaltyRewardCreateInput): Promise<LoyaltyReward> =>
+    api.post<LoyaltyReward>("/loyalty/rewards", payload),
+
+  updateReward: (rewardId: string, payload: LoyaltyRewardUpdateInput): Promise<LoyaltyReward> =>
+    api.put<LoyaltyReward>(`/loyalty/rewards/${rewardId}`, payload),
+
+  deleteReward: (rewardId: string): Promise<void> =>
+    api.del<void>(`/loyalty/rewards/${rewardId}`),
 };
+
+
 
 

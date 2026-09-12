@@ -1,10 +1,12 @@
 import { useState } from "react";
+import { Link } from "react-router-dom";
 import {
   useAdjustLoyaltyPoints,
   usePatientLoyalty,
   usePatientReferral,
   useSendVipCardEmail,
 } from "./useLoyalty";
+
 import type { LoyaltyPatientOut, ReferralInfoOut } from "./loyaltyApi";
 import styles from "./PatientLoyaltyTab.module.css";
 import { formatBRL } from "@/lib/money/format";
@@ -221,7 +223,16 @@ export function PatientLoyaltyTab({
             >
               ⚖️ Resgatar / Ajustar Pontos
             </button>
+
+            <Link
+              to="/configuracoes-financeiras?tab=loyalty"
+              className={styles.vipLinkButton}
+              title="Configurar catálogo de pontos e recompensas VIP"
+            >
+              ⚙️ Catálogo VIP
+            </Link>
           </div>
+
 
           {emailSuccessMsg && (
             <div style={{ fontSize: "0.85rem", color: "#16a34a", fontWeight: 600, width: "100%", textAlign: "right" }}>

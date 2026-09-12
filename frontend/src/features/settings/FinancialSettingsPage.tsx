@@ -3,17 +3,18 @@ import { AsyncBoundary } from "@/ui/AsyncBoundary";
 import { FinancialSettingsForm } from "./FinancialSettingsForm";
 import { PaymentFeeRulesManager } from "./PaymentFeeRulesManager";
 import { WeeklySummarySection } from "./WeeklySummarySection";
+import { LoyaltyRewardsManager } from "@/features/loyalty/LoyaltyRewardsManager";
 import { useFinancialSettings } from "./hooks";
 import { IconSettings, IconCreditCard, IconWhatsApp } from "@/ui/icons";
 import styles from "./FinancialSettingsPage.module.css";
 
-type Tab = "general" | "credit-card" | "weekly-summary";
+type Tab = "general" | "credit-card" | "loyalty" | "weekly-summary";
 
 export function FinancialSettingsPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const rawTab = searchParams.get("tab");
   const activeTab: Tab =
-    rawTab === "credit-card" || rawTab === "weekly-summary"
+    rawTab === "credit-card" || rawTab === "loyalty" || rawTab === "weekly-summary"
       ? rawTab
       : "general";
 
@@ -35,7 +36,7 @@ export function FinancialSettingsPage() {
         <div className={styles.titleGroup}>
           <h1 className={styles.title}>Financeiro &amp; Metas</h1>
           <p className={styles.subtitle}>
-            Gerencie seu modelo de comissões, taxas de maquininha, meta mensal e resumo semanal.
+            Gerencie seu modelo de comissões, taxas de maquininha, catálogo do Clube VIP e resumo semanal.
           </p>
         </div>
         <div>
@@ -80,6 +81,19 @@ export function FinancialSettingsPage() {
         <button
           type="button"
           role="tab"
+          aria-selected={activeTab === "loyalty"}
+          className={`${styles.tabBtn} ${activeTab === "loyalty" ? styles.tabBtnActive : ""}`}
+          onClick={() => handleTabChange("loyalty")}
+        >
+          <span className={styles.tabIcon} style={{ fontSize: "1rem" }}>
+            🎁
+          </span>
+          <span>Catálogo VIP &amp; Recompensas</span>
+        </button>
+
+        <button
+          type="button"
+          role="tab"
           aria-selected={activeTab === "weekly-summary"}
           className={`${styles.tabBtn} ${activeTab === "weekly-summary" ? styles.tabBtnActive : ""}`}
           onClick={() => handleTabChange("weekly-summary")}
@@ -105,9 +119,12 @@ export function FinancialSettingsPage() {
 
         {activeTab === "credit-card" && <PaymentFeeRulesManager />}
 
+        {activeTab === "loyalty" && <LoyaltyRewardsManager />}
+
         {activeTab === "weekly-summary" && <WeeklySummarySection />}
       </div>
     </div>
   );
 }
+
 

@@ -91,3 +91,33 @@ class SendVipEmailResponse(OutputSchema):
     message: str
     recipient_email: str
 
+
+class LoyaltyRewardCreate(InputSchema):
+    points_cost: int = Field(ge=1, description="Pontos necessários para resgatar o benefício")
+    title: str = Field(min_length=2, max_length=120, description="Nome do benefício/recompensa")
+    description: str = Field(default="", max_length=255, description="Descrição detalhada do benefício")
+    discount_value: Decimal | None = Field(default=None, ge=0, description="Valor estimado de desconto em R$")
+    is_active: bool = Field(default=True, description="Se está disponível no catálogo")
+    order_index: int = Field(default=0, ge=0, description="Ordem de exibição no catálogo")
+
+
+class LoyaltyRewardUpdate(InputSchema):
+    points_cost: int | None = Field(default=None, ge=1)
+    title: str | None = Field(default=None, min_length=2, max_length=120)
+    description: str | None = Field(default=None, max_length=255)
+    discount_value: Decimal | None = Field(default=None, ge=0)
+    is_active: bool | None = None
+    order_index: int | None = Field(default=None, ge=0)
+
+
+class LoyaltyRewardOut(OutputSchema):
+    id: UUID
+    points_cost: int
+    title: str
+    description: str
+    discount_value: Decimal | None = None
+    is_active: bool
+    order_index: int
+    created_at: datetime | None = None
+
+

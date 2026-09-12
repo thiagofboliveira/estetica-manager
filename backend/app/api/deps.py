@@ -536,7 +536,7 @@ CampaignSvc = Annotated["CampaignService", Depends(get_campaign_service)]
 def get_loyalty_service(
     session: DbSession, professional_id: CurrentProfessional
 ) -> "LoyaltyService":
-    from app.repositories.loyalty_repository import LoyaltyRepository
+    from app.repositories.loyalty_repository import LoyaltyRepository, LoyaltyRewardRepository
     from app.services.loyalty_service import LoyaltyService
 
     return LoyaltyService(
@@ -544,7 +544,9 @@ def get_loyalty_service(
         patient_repo=PatientRepository(session, professional_id),
         settings_repo=FinancialSettingsRepository(session, professional_id),
         professional_repo=ProfessionalRepository(session, professional_id),
+        reward_repo=LoyaltyRewardRepository(session, professional_id),
     )
+
 
 
 LoyaltySvc = Annotated["LoyaltyService", Depends(get_loyalty_service)]
