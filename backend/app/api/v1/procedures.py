@@ -42,16 +42,35 @@ def _to_procedure_out(proc: Procedure) -> ProcedureOut:
                 )
             )
 
-    out = ProcedureOut.model_validate(proc)
-    out.supplies = supplies_out
-    return out
+    return ProcedureOut(
+        id=proc.id,
+        name=proc.name,
+        type=proc.type,
+        price=proc.price,
+        estimated_cost=proc.estimated_cost,
+        return_interval_days=proc.return_interval_days,
+        default_modality=proc.default_modality,
+        split_override=proc.split_override,
+        is_active=proc.is_active,
+        is_invasive=proc.is_invasive,
+        session_plan=proc.session_plan,
+        image_url=proc.image_url,
+        supplies=supplies_out,
+        created_at=proc.created_at,
+        updated_at=proc.updated_at,
+    )
 
 
 @router.post("", response_model=ProcedureOut, status_code=status.HTTP_201_CREATED)
 def create_procedure(
     payload: ProcedureCreate, svc: ProcedureSvc, events: EventSvc
 ) -> ProcedureOut:
-    procedure = svc.create(payload)
+    try:
+        procedure = svc.create(payload)
+    except ProcedureAlreadyExistsError as exc:
+        raise HTTPException(status.HTTP_409_CONFLICT, str(exc)) from exc
+    except ValueError as exc:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, str(exc)) from exc
     # G-13: emitido na rota, não no service — evita alterar a assinatura
     # de ProcedureService (e seus testes) só para injetar telemetria.
     events.track_first(EventName.FIRST_PROCEDURE_CREATED)
@@ -139,6 +158,10 @@ def update_procedure(
         raise HTTPException(
             status.HTTP_404_NOT_FOUND, "Procedimento não encontrado"
         ) from exc
+    except ProcedureAlreadyExistsError as exc:
+        raise HTTPException(status.HTTP_409_CONFLICT, str(exc)) from exc
+    except ValueError as exc:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, str(exc)) from exc
     return _to_procedure_out(procedure)
 
 

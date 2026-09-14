@@ -1,3 +1,4 @@
+from decimal import Decimal
 from uuid import UUID
 
 from app.core.money import money
@@ -26,7 +27,7 @@ class ProcedureService:
 
     def create(self, dto: ProcedureCreate) -> Procedure:
         procedure = Procedure(
-            name=dto.name,
+            name=dto.name.strip(),
             type=dto.type,
             price=money(dto.price),
             estimated_cost=money(dto.estimated_cost),
@@ -43,16 +44,22 @@ class ProcedureService:
         self._repo.flush()
 
         if dto.supplies:
+            aggregated: dict[UUID, Decimal] = {}
             for item in dto.supplies:
+                aggregated[item.supply_id] = (
+                    aggregated.get(item.supply_id, Decimal("0.00")) + item.quantity
+                )
+
+            for supply_id, quantity in aggregated.items():
                 ps = ProcedureSupply(
                     professional_id=procedure.professional_id,
                     procedure_id=procedure.id,
-                    supply_id=item.supply_id,
-                    quantity=item.quantity,
+                    supply_id=supply_id,
+                    quantity=quantity,
                 )
                 self._repo._session.add(ps)
             self._repo.flush()
-            self._repo._session.refresh(procedure)
+            self._repo._session.refresh(procedure, ["supplies"])
 
         return procedure
 
@@ -126,11 +133,18 @@ class ProcedureService:
         procedure = self.get(procedure_id)
         data = dto.model_dump(exclude_unset=True)
 
+        if "name" in data and data["name"]:
+            data["name"] = data["name"].strip()
+
         supplies_data = data.pop("supplies", None)
 
-        if "price" in data and data["price"] is not None:
+        if "price" in data:
+            if not data["price"]:
+                raise ValueError("Preço é obrigatório")
             data["price"] = money(data["price"])
-        if "estimated_cost" in data and data["estimated_cost"] is not None:
+        if "estimated_cost" in data:
+            if not data["estimated_cost"]:
+                raise ValueError("Custo estimado é obrigatório")
             data["estimated_cost"] = money(data["estimated_cost"])
         if "split_override" in data and data["split_override"] is not None:
             data["split_override"] = money(data["split_override"])
@@ -144,16 +158,22 @@ class ProcedureService:
                 self._repo._session.delete(old_ps)
             self._repo.flush()
 
+            aggregated: dict[UUID, Decimal] = {}
             for item in (dto.supplies or []):
+                aggregated[item.supply_id] = (
+                    aggregated.get(item.supply_id, Decimal("0.00")) + item.quantity
+                )
+
+            for supply_id, quantity in aggregated.items():
                 ps = ProcedureSupply(
                     professional_id=procedure.professional_id,
                     procedure_id=procedure.id,
-                    supply_id=item.supply_id,
-                    quantity=item.quantity,
+                    supply_id=supply_id,
+                    quantity=quantity,
                 )
                 self._repo._session.add(ps)
             self._repo.flush()
-            self._repo._session.refresh(procedure)
+            self._repo._session.refresh(procedure, ["supplies"])
 
         self._repo.flush()
         return procedure

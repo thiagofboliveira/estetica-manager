@@ -19,7 +19,7 @@ const schema = z.object({
   default_modality: z.enum(["IN_PERSON", "REMOTE"]),
   is_invasive: z.boolean(),
   session_plan: z.enum(["SINGLE", "MULTIPLE"]),
-  image_url: z.string().optional(),
+  image_url: z.string().max(500, "URL da foto deve ter no máximo 500 caracteres").optional(),
 });
 
 export type ProcedureFormValues = z.infer<typeof schema> & {

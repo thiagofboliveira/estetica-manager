@@ -167,3 +167,49 @@ def test_session_completion_consumes_supplies_and_calculates_real_cost():
     # Assert real cost was calculated: 50 * 3.00 = 150.00
     assert updated_session.cost_override == Decimal("150.00")
     assert sale.cost_realized == Decimal("150.00")
+
+
+def test_procedure_service_update_with_supplies_and_edge_cases():
+    repo = MagicMock()
+    prof_id = uuid4()
+    repo._professional_id = prof_id
+    repo._session = MagicMock()
+
+    proc_id = uuid4()
+    procedure = Procedure(
+        id=proc_id,
+        professional_id=prof_id,
+        name="Limpeza de Pele",
+        type=ProcedureType.SERVICE,
+        price=Decimal("150.00"),
+        estimated_cost=Decimal("40.00"),
+        return_interval_days=30,
+        default_modality=Modality.IN_PERSON,
+        is_invasive=False,
+        session_plan=SessionPlan.SINGLE,
+    )
+    procedure.supplies = []
+    repo.get.return_value = procedure
+
+    svc = ProcedureService(repo)
+
+    supply_id_1 = uuid4()
+    dto = ProcedureUpdate(
+        name="Limpeza de Pele Profunda",
+        price="200,00",  # Comma should be accepted and converted
+        estimated_cost="50.00",
+        return_interval_days=None,
+        supplies=[
+            ProcedureSupplyItem(supply_id=supply_id_1, quantity=Decimal("2.00"), cost_price="15.00"),
+            ProcedureSupplyItem(supply_id=supply_id_1, quantity=Decimal("1.00")),  # Duplicate should be aggregated
+        ],
+    )
+
+    updated = svc.update(proc_id, dto)
+    assert updated.name == "Limpeza de Pele Profunda"
+    assert updated.price == Decimal("200.00")
+    assert updated.estimated_cost == Decimal("50.00")
+    assert repo._session.add.call_count == 1  # 2 items aggregated into 1 with qty 3.00
+    added_ps = repo._session.add.call_args[0][0]
+    assert added_ps.quantity == Decimal("3.00")
+

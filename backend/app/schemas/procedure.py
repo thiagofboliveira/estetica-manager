@@ -2,7 +2,7 @@ from datetime import datetime
 from decimal import Decimal
 from uuid import UUID
 
-from pydantic import BaseModel, Field, model_validator
+from pydantic import BaseModel, Field, field_validator, model_validator
 
 from app.models.procedure import Modality, ProcedureType, SessionPlan
 from app.schemas.base import InputSchema, OutputSchema
@@ -14,8 +14,24 @@ class ProcedureSupplyItem(BaseModel):
     quantity: Decimal = Field(default=Decimal("1.00"), ge=0)
     supply_name: str | None = None
     unit_measure: str | None = None
-    cost_price: MoneyOut | None = None
-    subtotal_cost: MoneyOut | None = None
+    cost_price: str | None = None
+    subtotal_cost: str | None = None
+
+    @field_validator("cost_price", "subtotal_cost", mode="before")
+    @classmethod
+    def _sanitize_money_fields(cls, v: object) -> str | None:
+        if v is None or v == "":
+            return None
+        if isinstance(v, (int, float, Decimal)):
+            return f"{Decimal(str(v)):.2f}"
+        return str(v).strip()
+
+    @field_validator("quantity", mode="before")
+    @classmethod
+    def _sanitize_qty(cls, v: object) -> Decimal:
+        if v is None or v == "":
+            return Decimal("1.00")
+        return Decimal(str(v))
 
 
 class ProcedureCreate(InputSchema):
@@ -31,8 +47,36 @@ class ProcedureCreate(InputSchema):
     )
     is_invasive: bool = False
     session_plan: SessionPlan = SessionPlan.SINGLE
-    image_url: str | None = None
+    image_url: str | None = Field(default=None, max_length=500)
     supplies: list[ProcedureSupplyItem] | None = None
+
+    @field_validator("return_interval_days", mode="before")
+    @classmethod
+    def _sanitize_return_interval(cls, v: object) -> int | None:
+        if v is None or v == "":
+            return None
+        try:
+            val = int(v)
+            return val if val >= 0 else None
+        except (ValueError, TypeError):
+            return None
+
+    @field_validator("image_url", mode="before")
+    @classmethod
+    def _sanitize_image_url(cls, v: object) -> str | None:
+        if not v or not str(v).strip():
+            return None
+        s = str(v).strip()
+        if len(s) > 500:
+            raise ValueError("URL da foto deve ter no máximo 500 caracteres")
+        return s
+
+    @field_validator("price", "estimated_cost", "split_override", mode="before")
+    @classmethod
+    def _sanitize_money_strings(cls, v: object) -> str | None:
+        if v is None or v == "":
+            return None
+        return str(v).strip().replace("R$", "").replace(" ", "").replace(",", ".")
 
     @model_validator(mode="after")
     def _produto_sem_intervalo_de_retorno(self) -> "ProcedureCreate":
@@ -53,8 +97,42 @@ class ProcedureUpdate(InputSchema):
     is_active: bool | None = None
     is_invasive: bool | None = None
     session_plan: SessionPlan | None = None
-    image_url: str | None = None
+    image_url: str | None = Field(default=None, max_length=500)
     supplies: list[ProcedureSupplyItem] | None = None
+
+    @field_validator("return_interval_days", mode="before")
+    @classmethod
+    def _sanitize_return_interval(cls, v: object) -> int | None:
+        if v is None or v == "":
+            return None
+        try:
+            val = int(v)
+            return val if val >= 0 else None
+        except (ValueError, TypeError):
+            return None
+
+    @field_validator("image_url", mode="before")
+    @classmethod
+    def _sanitize_image_url(cls, v: object) -> str | None:
+        if not v or not str(v).strip():
+            return None
+        s = str(v).strip()
+        if len(s) > 500:
+            raise ValueError("URL da foto deve ter no máximo 500 caracteres")
+        return s
+
+    @field_validator("price", "estimated_cost", "split_override", mode="before")
+    @classmethod
+    def _sanitize_money_strings(cls, v: object) -> str | None:
+        if v is None or v == "":
+            return None
+        return str(v).strip().replace("R$", "").replace(" ", "").replace(",", ".")
+
+    @model_validator(mode="after")
+    def _produto_sem_intervalo_de_retorno(self) -> "ProcedureUpdate":
+        if self.type is ProcedureType.PRODUCT:
+            self.return_interval_days = None
+        return self
 
 
 class ProcedureOut(OutputSchema):
