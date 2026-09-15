@@ -3,6 +3,7 @@ import { formatBRL } from "@/lib/money/format";
 import { money } from "@/lib/money/money";
 import { Logger } from "@/lib/telemetry/logger";
 import { MESSAGES, fillTemplate } from "@/lib/constants/messages";
+import { toWhatsAppUrl } from "@/lib/whatsapp";
 import type { PatientRetentionCard } from "./api";
 import { useUpdateRetentionOpportunity } from "./hooks";
 import { IconAlertTriangle, IconCalendar, IconWhatsApp, IconSparkles } from "@/ui/icons";
@@ -16,7 +17,6 @@ export function RetentionCard({ card }: Props) {
   const updateOpportunity = useUpdateRetentionOpportunity();
   const [feedback, setFeedback] = useState<string | null>(null);
 
-  const cleanPhone = card.patient_phone ? card.patient_phone.replace(/\D/g, "") : null;
   const primaryOpp = card.primary_opportunity;
 
   const defaultMessage = fillTemplate(MESSAGES.RETENTION.WHATSAPP_DEFAULT, {
@@ -24,10 +24,9 @@ export function RetentionCard({ card }: Props) {
     procedure_name: primaryOpp.procedure_name,
   });
 
-  const whatsappUrl =
-    cleanPhone && card.whatsapp_enabled
-      ? `https://wa.me/55${cleanPhone}?text=${encodeURIComponent(defaultMessage)}`
-      : null;
+  const whatsappUrl = card.whatsapp_enabled
+    ? toWhatsAppUrl(card.patient_phone, defaultMessage)
+    : null;
 
   async function handleWhatsAppClick() {
     try {

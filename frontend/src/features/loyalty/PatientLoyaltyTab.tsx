@@ -11,6 +11,7 @@ import type { LoyaltyPatientOut, ReferralInfoOut } from "./loyaltyApi";
 import styles from "./PatientLoyaltyTab.module.css";
 import { formatBRL } from "@/lib/money/format";
 import { money } from "@/lib/money/money";
+import { toWhatsAppUrl } from "@/lib/whatsapp";
 
 interface PatientLoyaltyTabProps {
   patientId: string;
@@ -66,13 +67,11 @@ export function PatientLoyaltyTab({
       ? styles.badgeSilver
       : styles.badgeBronze;
 
-  const cleanPhone = patientPhone ? patientPhone.replace(/\D/g, "") : null;
   const formattedVal = formatBRL(money(Number(loyalty.monetary_value || 0).toFixed(2)));
   const patientWhatsappBalanceMsg = `Olá, ${loyalty.patient_name}! ✨ Seu saldo no nosso Clube VIP é de *${loyalty.loyalty_points} pontos* (equivalente a ${formattedVal} em benefícios). Você está no nível *${loyalty.vip_badge} ${loyalty.vip_tier}*!`;
-  const whatsappBalanceUrl =
-    cleanPhone && patientConsentWhatsapp
-      ? `https://wa.me/55${cleanPhone}?text=${encodeURIComponent(patientWhatsappBalanceMsg)}`
-      : null;
+  const whatsappBalanceUrl = patientConsentWhatsapp
+    ? toWhatsAppUrl(patientPhone, patientWhatsappBalanceMsg)
+    : null;
 
   async function handleCopyReferralMessage() {
     if (!referral) return;

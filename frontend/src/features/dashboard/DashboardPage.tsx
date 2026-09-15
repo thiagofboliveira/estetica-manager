@@ -17,6 +17,7 @@ import { ROICard } from "./ROICard";
 import { BotoxVialCard } from "@/features/vials/BotoxVialCard";
 import { MonthlyAchievementsCard } from "./MonthlyAchievementsCard";
 import { MESSAGES, fillTemplate } from "@/lib/constants/messages";
+import { toWhatsAppUrl } from "@/lib/whatsapp";
 
 import {
   IconCalendar,
@@ -319,17 +320,15 @@ export function DashboardPage() {
           ) : (
             <div className={styles.appointmentList}>
               {dueRetentionCards.slice(0, 3).map((card) => {
-                const cleanPhone = card.patient_phone ? card.patient_phone.replace(/\D/g, "") : null;
                 const isOverdue = card.primary_opportunity?.timing === "OVERDUE";
                 const daysDiff = card.primary_opportunity?.days_diff ?? 0;
                 const defaultMsg = fillTemplate(MESSAGES.RETENTION.WHATSAPP_DEFAULT, {
                   patient_name: card.patient_name,
                   procedure_name: card.primary_opportunity?.procedure_name || "procedimento",
                 });
-                const whatsappUrl =
-                  cleanPhone && card.whatsapp_enabled
-                    ? `https://wa.me/55${cleanPhone}?text=${encodeURIComponent(defaultMsg)}`
-                    : null;
+                const whatsappUrl = card.whatsapp_enabled
+                  ? toWhatsAppUrl(card.patient_phone, defaultMsg)
+                  : null;
 
                 return (
                   <div key={card.patient_id} className={styles.appointmentItem}>

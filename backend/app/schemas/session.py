@@ -1,6 +1,10 @@
 from datetime import datetime, time
 from uuid import UUID
 
+from typing import Any
+
+from pydantic import field_validator
+
 from app.domain.sales.session_state_machine import SessionStatus
 from app.models.procedure import Modality
 from app.schemas.base import InputSchema, OutputSchema
@@ -12,6 +16,13 @@ class SessionUpdate(InputSchema):
     status: SessionStatus | None = None
     cost_override: str | None = None
     notes: str | None = None
+
+    @field_validator("status", "cost_override", "notes", mode="before")
+    @classmethod
+    def sanitize_optional_fields(cls, v: Any) -> Any:
+        if isinstance(v, str) and not v.strip():
+            return None
+        return v
 
 
 class SessionDetailOut(OutputSchema):

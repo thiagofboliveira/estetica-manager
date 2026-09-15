@@ -1,4 +1,5 @@
 from datetime import date, datetime
+from typing import Any
 from uuid import UUID
 
 from pydantic import EmailStr, Field, field_validator
@@ -17,6 +18,15 @@ class PatientCreate(InputSchema):
     consent_whatsapp: bool = False
     gender: Gender | None = None
     referred_by_id: UUID | None = None
+
+    @field_validator(
+        "email", "birth_date", "notes", "gender", "referred_by_id", mode="before"
+    )
+    @classmethod
+    def sanitize_optional_fields(cls, v: Any) -> Any:
+        if isinstance(v, str) and not v.strip():
+            return None
+        return v
 
     @field_validator("phone")
     @classmethod
@@ -41,6 +51,21 @@ class PatientUpdate(InputSchema):
     gender: Gender | None = None
     referred_by_id: UUID | None = None
     vip_tier: str | None = None
+
+    @field_validator(
+        "email",
+        "birth_date",
+        "notes",
+        "gender",
+        "referred_by_id",
+        "vip_tier",
+        mode="before",
+    )
+    @classmethod
+    def sanitize_optional_fields(cls, v: Any) -> Any:
+        if isinstance(v, str) and not v.strip():
+            return None
+        return v
 
     @field_validator("phone")
     @classmethod
@@ -104,6 +129,15 @@ class PatientBatchImportItem(InputSchema):
         default=None, description="Data da última visita para calcular data de retorno"
     )
 
+    @field_validator(
+        "phone", "email", "notes", "procedure_id", "last_visit_date", mode="before"
+    )
+    @classmethod
+    def sanitize_optional_fields(cls, v: Any) -> Any:
+        if isinstance(v, str) and not v.strip():
+            return None
+        return v
+
 
 class PatientBatchImportRequest(InputSchema):
     patients: list[PatientBatchImportItem] = Field(
@@ -119,6 +153,13 @@ class PatientBatchImportRequest(InputSchema):
         default=False,
         description="Se True, gera oportunidades de retorno retroativas (source=IMPORT) no dia 1",
     )
+
+    @field_validator("default_procedure_id", mode="before")
+    @classmethod
+    def sanitize_optional_fields(cls, v: Any) -> Any:
+        if isinstance(v, str) and not v.strip():
+            return None
+        return v
 
 
 class PatientBatchImportError(OutputSchema):

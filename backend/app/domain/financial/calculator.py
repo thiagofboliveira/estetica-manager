@@ -171,6 +171,8 @@ def calculate_sale(items: list[LineItem], params: SaleParams) -> SaleCalculation
     items_total = money(sum(line_totals, ZERO))
 
     discount = money(params.discount_amount)
+    if discount < ZERO:
+        raise ValueError("desconto não pode ser negativo")
     if discount > items_total:
         raise ValueError("desconto não pode exceder o total dos itens")
 

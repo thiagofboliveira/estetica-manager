@@ -9,6 +9,7 @@ import { patientsApi } from "./api";
 import { PatientPhotosGallery } from "./PatientPhotosGallery";
 import { usePatientPhotos } from "./usePatientPhotos";
 import { PatientLoyaltyTab } from "@/features/loyalty/PatientLoyaltyTab";
+import { toWhatsAppUrl } from "@/lib/whatsapp";
 
 type Tab = "data" | "history" | "anamnesis" | "photos" | "loyalty";
 
@@ -83,11 +84,9 @@ export function PatientDetailPage() {
         isEmpty={(p) => p == null}
       >
         {(patient) => {
-          const cleanPhone = patient.phone ? patient.phone.replace(/\D/g, "") : null;
-          const whatsappUrl =
-            cleanPhone && patient.consent_whatsapp
-              ? `https://wa.me/55${cleanPhone}?text=${encodeURIComponent(`Olá, ${patient.name}!`)}`
-              : null;
+          const whatsappUrl = patient.consent_whatsapp
+            ? toWhatsAppUrl(patient.phone, `Olá, ${patient.name}!`)
+            : null;
 
           const anamnesisList = anamnesisQuery.data || [];
           const allRiskAlerts = Array.from(

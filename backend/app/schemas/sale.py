@@ -1,8 +1,11 @@
 from datetime import date, datetime
+from decimal import Decimal
+from typing import Any
 from uuid import UUID
 
-from pydantic import Field, model_validator
+from pydantic import Field, field_validator, model_validator
 
+from app.core.money import ZERO, money
 from app.models.financial_settings import FeePayer, PaymentMethod, SplitBase
 from app.models.sale import SaleStatus, SaleType
 from app.schemas.base import InputSchema, OutputSchema
@@ -23,6 +26,31 @@ class SaleCreate(InputSchema):
     installments: int = Field(default=1, ge=1)
     notes: str | None = None
     booking_id: UUID | None = None
+
+    @field_validator("booking_id", "notes", mode="before")
+    @classmethod
+    def sanitize_optional_fields(cls, v: Any) -> Any:
+        if isinstance(v, str) and not v.strip():
+            return None
+        return v
+
+    @field_validator("discount_amount", mode="before")
+    @classmethod
+    def sanitize_discount_amount(cls, v: Any) -> Any:
+        if v is None or (isinstance(v, str) and not v.strip()):
+            return "0.00"
+        return v
+
+    @field_validator("discount_amount")
+    @classmethod
+    def validate_discount_amount(cls, v: str) -> str:
+        try:
+            m = money(v)
+        except Exception as exc:
+            raise ValueError(f"Valor de desconto inválido: {v}") from exc
+        if m < ZERO:
+            raise ValueError("Desconto não pode ser negativo")
+        return str(m)
 
     @model_validator(mode="after")
     def _pacote_pre_pago(self) -> "SaleCreate":
@@ -94,6 +122,31 @@ class SaleSimulationInput(InputSchema):
     payment_method: PaymentMethod = PaymentMethod.PIX
     installments: int = Field(default=1, ge=1)
     discount_amount: str = Field(default="0.00")
+
+    @field_validator("procedure_id", "price", "estimated_cost", mode="before")
+    @classmethod
+    def sanitize_optional_fields(cls, v: Any) -> Any:
+        if isinstance(v, str) and not v.strip():
+            return None
+        return v
+
+    @field_validator("discount_amount", mode="before")
+    @classmethod
+    def sanitize_discount_amount(cls, v: Any) -> Any:
+        if v is None or (isinstance(v, str) and not v.strip()):
+            return "0.00"
+        return v
+
+    @field_validator("discount_amount")
+    @classmethod
+    def validate_discount_amount(cls, v: str) -> str:
+        try:
+            m = money(v)
+        except Exception as exc:
+            raise ValueError(f"Valor de desconto inválido: {v}") from exc
+        if m < ZERO:
+            raise ValueError("Desconto não pode ser negativo")
+        return str(m)
 
 
 class SaleSimulationOut(OutputSchema):

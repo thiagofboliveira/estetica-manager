@@ -1,8 +1,9 @@
 from datetime import UTC, datetime
 from decimal import Decimal
+from typing import Any
 from uuid import UUID
 
-from pydantic import Field
+from pydantic import Field, field_validator
 
 from app.schemas.base import InputSchema, OutputSchema
 
@@ -100,6 +101,13 @@ class LoyaltyRewardCreate(InputSchema):
     is_active: bool = Field(default=True, description="Se está disponível no catálogo")
     order_index: int = Field(default=0, ge=0, description="Ordem de exibição no catálogo")
 
+    @field_validator("discount_value", mode="before")
+    @classmethod
+    def sanitize_discount_value(cls, v: Any) -> Any:
+        if isinstance(v, str) and not v.strip():
+            return None
+        return v
+
 
 class LoyaltyRewardUpdate(InputSchema):
     points_cost: int | None = Field(default=None, ge=1)
@@ -108,6 +116,13 @@ class LoyaltyRewardUpdate(InputSchema):
     discount_value: Decimal | None = Field(default=None, ge=0)
     is_active: bool | None = None
     order_index: int | None = Field(default=None, ge=0)
+
+    @field_validator("discount_value", "description", mode="before")
+    @classmethod
+    def sanitize_optional_fields(cls, v: Any) -> Any:
+        if isinstance(v, str) and not v.strip():
+            return None
+        return v
 
 
 class LoyaltyRewardOut(OutputSchema):

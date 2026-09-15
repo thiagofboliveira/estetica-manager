@@ -2,6 +2,7 @@ import { useState } from "react";
 import { AsyncBoundary } from "@/ui/AsyncBoundary";
 import { IconInfo, IconWhatsApp } from "@/ui/icons";
 import { MESSAGES, fillTemplate } from "@/lib/constants/messages";
+import { toWhatsAppUrl } from "@/lib/whatsapp";
 import { useReengagement } from "./hooks";
 import type { ReengagementPatient } from "./api";
 import styles from "./ReengagementSection.module.css";
@@ -12,14 +13,12 @@ function daysSince(isoDate: string): number {
 }
 
 function ReengagementRow({ patient }: { patient: ReengagementPatient }) {
-  const cleanPhone = patient.patient_phone ? patient.patient_phone.replace(/\D/g, "") : null;
   const message = fillTemplate(MESSAGES.RETENTION.WHATSAPP_REENGAGEMENT, {
     patient_name: patient.patient_name,
   });
-  const whatsappUrl =
-    cleanPhone && patient.consent_whatsapp
-      ? `https://wa.me/55${cleanPhone}?text=${encodeURIComponent(message)}`
-      : null;
+  const whatsappUrl = patient.consent_whatsapp
+    ? toWhatsAppUrl(patient.patient_phone, message)
+    : null;
 
   return (
     <div className={styles.row}>

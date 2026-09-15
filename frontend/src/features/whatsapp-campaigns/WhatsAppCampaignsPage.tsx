@@ -27,6 +27,7 @@ import {
 import { formatBRL } from "@/lib/money/format";
 import { money } from "@/lib/money/money";
 import { MESSAGES, fillTemplate } from "@/lib/constants/messages";
+import { toWhatsAppUrl } from "@/lib/whatsapp";
 import styles from "./WhatsAppCampaignsPage.module.css";
 
 const MONTH_NAMES = [
@@ -610,14 +611,11 @@ function BirthdayCard({ item }: { item: PatientBirthday }) {
 }
 
 function ReturnOpportunityCard({ card }: { card: PatientRetentionCard }) {
-  const cleanPhone = card.patient_phone ? card.patient_phone.replace(/\D/g, "") : null;
   const firstName = card.patient_name.split(" ")[0];
   const procName = card.primary_opportunity?.procedure_name || "seu procedimento";
   const defaultMessage = `Oi ${firstName}! ✨ Lembrei de você hoje. Já está na hora de fazermos a manutenção do seu ${procName} para garantir o melhor resultado duradouro. Como está sua agenda essa semana?`;
 
-  const whatsappUrl = cleanPhone
-    ? `https://wa.me/55${cleanPhone}?text=${encodeURIComponent(defaultMessage)}`
-    : null;
+  const whatsappUrl = toWhatsAppUrl(card.patient_phone, defaultMessage);
 
   return (
     <div className={styles.campaignCard}>
@@ -670,14 +668,11 @@ function InactivePatientCard({
   patient: ReengagementPatient;
   isNeverTreated?: boolean;
 }) {
-  const cleanPhone = patient.patient_phone ? patient.patient_phone.replace(/\D/g, "") : null;
   const message = fillTemplate(MESSAGES.RETENTION.WHATSAPP_REENGAGEMENT, {
     patient_name: patient.patient_name,
   });
 
-  const whatsappUrl = cleanPhone
-    ? `https://wa.me/55${cleanPhone}?text=${encodeURIComponent(message)}`
-    : null;
+  const whatsappUrl = toWhatsAppUrl(patient.patient_phone, message);
 
   return (
     <div className={styles.campaignCard}>
@@ -951,13 +946,7 @@ function DispatchCampaignModal({
     .replace(/{pontos}/gi, String(selectedPatient?.loyalty_points || 0))
     .replace(/{nivel_vip}/gi, vipTierName);
 
-  const cleanPhone = selectedPatient?.phone
-    ? selectedPatient.phone.replace(/\D/g, "")
-    : null;
-
-  const whatsappUrl = cleanPhone
-    ? `https://wa.me/55${cleanPhone}?text=${encodeURIComponent(personalizedMessage)}`
-    : null;
+  const whatsappUrl = toWhatsAppUrl(selectedPatient?.phone, personalizedMessage);
 
   return (
     <div className={styles.modalOverlay} onClick={onClose}>
