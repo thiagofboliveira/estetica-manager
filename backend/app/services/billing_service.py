@@ -1,13 +1,12 @@
 """Serviço de Aplicação para Gestão de Billing, Assinaturas e Webhooks."""
 
-from datetime import datetime, timedelta, timezone
-from decimal import Decimal
 import logging
+from datetime import UTC, datetime, timedelta
+from decimal import Decimal
 from uuid import UUID, uuid4
 
 from app.core.asaas import AsaasClient
 from app.domain.billing.coupons import (
-    CouponEvaluation,
     CouponValidationError,
     apply_coupon,
 )
@@ -15,9 +14,7 @@ from app.domain.billing.pricing import (
     BillingCycle,
     get_all_plans,
     get_cycle_pricing,
-    get_plan,
 )
-from app.models.clinic import Clinic
 from app.models.subscription import Subscription, SubscriptionStatus
 from app.repositories.clinic import ClinicRepository
 from app.repositories.coupon_repository import CouponRepository
@@ -32,6 +29,10 @@ from app.schemas.billing import (
 )
 
 logger = logging.getLogger(__name__)
+
+
+class CheckoutConflictError(Exception):
+    """Já existe uma assinatura em andamento incompatível com o pedido."""
 
 
 class BillingService:
@@ -85,14 +86,14 @@ class BillingService:
         sub = self._sub_repo.get_by_clinic_id(clinic_id)
         if sub:
             # Atualiza status se o trial já passou
-            now = datetime.now(timezone.utc)
+            now = datetime.now(UTC)
             if sub.status in (SubscriptionStatus.TRIALING, SubscriptionStatus.TRIALING.value) and now > sub.trial_ends_at:
                 sub.status = SubscriptionStatus.EXPIRED.value
                 self._sub_repo.flush()
             return sub
 
         clinic = self._clinic_repo.get_by_id(clinic_id)
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         trial_start = clinic.created_at if clinic and clinic.created_at else now
         trial_end = trial_start + timedelta(days=14)
         status = SubscriptionStatus.TRIALING if now <= trial_end else SubscriptionStatus.EXPIRED
@@ -112,7 +113,7 @@ class BillingService:
     def get_status(self, clinic_id: UUID) -> SubscriptionStatusOut:
         """Retorna o estado da assinatura da clínica para a UI e guards."""
         sub = self.get_or_create_subscription(clinic_id)
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
 
         days_left = max(0, (sub.trial_ends_at - now).days)
         is_trial_active = (
@@ -218,6 +219,32 @@ class BillingService:
             raise LookupError("Clínica não encontrada")
 
         sub = self.get_or_create_subscription(clinic_id)
+
+        # Idempotência: um segundo clique/retry não pode criar outra assinatura
+        # recorrente no Asaas (cobrança em duplicidade).
+        if sub.asaas_subscription_id and sub.status not in (
+            SubscriptionStatus.CANCELED,
+            SubscriptionStatus.CANCELED.value,
+        ):
+            if sub.cycle not in (payload.cycle, payload.cycle.value):
+                raise CheckoutConflictError(
+                    "Você já tem uma assinatura em andamento. "
+                    "Para trocar de plano, cancele a atual primeiro."
+                )
+            status_str = (
+                sub.status.value if hasattr(sub.status, "value") else str(sub.status)
+            )
+            return CheckoutOut(
+                subscription_id=str(sub.id),
+                status=status_str,
+                amount=str(sub.amount),
+                cycle=payload.cycle,
+                invoice_url=sub.invoice_url,
+                pix_qrcode_payload=sub.pix_qrcode_payload,
+                first_due_date=sub.trial_ends_at.date().isoformat(),
+                is_trial_included=datetime.now(UTC) < sub.trial_ends_at,
+            )
+
         pricing = get_cycle_pricing(payload.cycle)
         final_amount = pricing.total_amount
         coupon_id = None
@@ -229,11 +256,10 @@ class BillingService:
                 if val_res.is_valid:
                     final_amount = Decimal(val_res.final_amount)
                     coupon_id = coupon.id
-                    self._coupon_repo.increment_redemption(coupon.id)
 
         # Determina a data do primeiro vencimento:
         # Se ainda está em trial, preserva os dias grátis restantes!
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         is_trial_active = now < sub.trial_ends_at
         if is_trial_active:
             first_due_date = sub.trial_ends_at.date()
@@ -263,6 +289,9 @@ class BillingService:
         )
 
         # 3. Atualiza registro local
+        # O cupom só é consumido depois de o Asaas aceitar a assinatura.
+        if coupon_id is not None:
+            self._coupon_repo.increment_redemption(coupon_id)
         sub.cycle = payload.cycle
         sub.amount = final_amount
         sub.asaas_customer_id = asaas_customer_id
@@ -300,7 +329,7 @@ class BillingService:
             logger.warning("Assinatura não encontrada para webhook Asaas: sub=%s, cus=%s", asaas_sub_id, customer_id)
             return
 
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
 
         if event in ("PAYMENT_CONFIRMED", "PAYMENT_RECEIVED"):
             sub.status = SubscriptionStatus.ACTIVE.value
