@@ -83,7 +83,19 @@ export type WeeklySummary = {
   unsubscribe_url: string;
 };
 
+export type WeeklyNarrative = {
+  text: string;
+  source: "ai" | "fallback";
+  fallback_reason: "no_provider" | "limit_reached" | "provider_error" | null;
+  remaining_drafts: number;
+};
+
 export const weeklySummaryApi = {
+  narrative: (useCurrentWeek = false) =>
+    api.post<WeeklyNarrative>(
+      `/weekly-summary/narrative?use_current_week=${useCurrentWeek}`,
+      {},
+    ),
   get: (useCurrentWeek = false) =>
     api.get<WeeklySummary>(`/weekly-summary?use_current_week=${useCurrentWeek}`),
   updateSettings: (enabled: boolean) =>

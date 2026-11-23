@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { weeklySummaryApi, type WeeklySummary } from "./api";
+import { weeklySummaryApi, type WeeklyNarrative, type WeeklySummary } from "./api";
 import { formatBRL } from "@/lib/money/format";
 import type { Money } from "@/lib/money/money";
 import { toast } from "@/ui/ToastContext";
@@ -9,10 +9,13 @@ export function WeeklySummarySection() {
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(false);
   const [useCurrentWeek, setUseCurrentWeek] = useState(false);
+  const [narrative, setNarrative] = useState<WeeklyNarrative | null>(null);
+  const [narrating, setNarrating] = useState(false);
 
   useEffect(() => {
     let isMounted = true;
     setLoading(true);
+    setNarrative(null);
     weeklySummaryApi
       .get(useCurrentWeek)
       .then((data) => {
@@ -44,6 +47,17 @@ export function WeeklySummarySection() {
       toast.error("Não foi possível atualizar a configuração do resumo semanal.");
     } finally {
       setUpdating(false);
+    }
+  }
+
+  async function handleNarrate() {
+    setNarrating(true);
+    try {
+      setNarrative(await weeklySummaryApi.narrative(useCurrentWeek));
+    } catch {
+      toast.error("Não foi possível gerar o resumo em texto agora.");
+    } finally {
+      setNarrating(false);
     }
   }
 
@@ -131,6 +145,28 @@ export function WeeklySummarySection() {
               <span style={{ fontSize: "0.72rem", color: "#64748b", display: "block" }}>Chamar esta semana</span>
               <strong style={{ fontSize: "0.95rem", color: "#d97706" }}>{summary.pending_opportunities_count}</strong>
             </div>
+          </div>
+
+          <div style={{ marginBottom: "16px" }}>
+            <button
+              type="button"
+              className="button button--secondary"
+              style={{ fontSize: "0.85rem", padding: "8px 16px" }}
+              onClick={handleNarrate}
+              disabled={narrating}
+            >
+              {narrating ? "Gerando…" : "Resumir minha semana em texto"}
+            </button>
+            {narrative && (
+              <div style={{ marginTop: "10px", background: "#fff", border: "1px solid #e2e8f0", borderRadius: "6px", padding: "12px" }}>
+                <p style={{ margin: 0, fontSize: "0.9rem", color: "#0f172a" }}>{narrative.text}</p>
+                <span style={{ display: "block", marginTop: "6px", fontSize: "0.72rem", color: "#64748b" }}>
+                  {narrative.source === "ai"
+                    ? "Texto sugerido automaticamente a partir dos números acima."
+                    : "Texto padrão com os números acima."}
+                </span>
+              </div>
+            )}
           </div>
 
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "10px" }}>

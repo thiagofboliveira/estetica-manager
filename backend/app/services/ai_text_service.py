@@ -13,6 +13,7 @@ from dataclasses import dataclass
 from datetime import date
 from typing import Literal
 
+from app.domain.ai import weekly_narrative as weekly
 from app.domain.ai.grounding import is_grounded
 from app.domain.ai.reengagement_message import (
     ReengagementContext,
@@ -126,6 +127,21 @@ class AITextService:
             fallback=reengagement_fallback(ctx),
             period_month=period_month,
             allowed=set(),
+        )
+
+    def narrate_weekly(
+        self, ctx: weekly.WeeklyNarrativeContext, *, period_month: date
+    ) -> GeneratedText:
+        """AI-03: texto curto sobre o resumo da semana. Número fora do payload
+        faz o texto ser descartado (a IA não inventa valor)."""
+        return self._generate(
+            system=weekly.SYSTEM_PROMPT,
+            user=weekly.build_user_prompt(ctx),
+            fallback=weekly.fallback_text(ctx),
+            period_month=period_month,
+            allowed=weekly.allowed_for(ctx),
+            max_tokens=400,
+            max_chars=weekly.MAX_NARRATIVE_CHARS,
         )
 
     def record_feedback(self, *, period_month: date, edited: bool) -> None:
