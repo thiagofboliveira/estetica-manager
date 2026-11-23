@@ -5,7 +5,9 @@ import { Logger } from "@/lib/telemetry/logger";
 import { MESSAGES, fillTemplate } from "@/lib/constants/messages";
 import { toWhatsAppUrl } from "@/lib/whatsapp";
 import type { PatientRetentionCard } from "./api";
-import { useDraftReturnMessage, useUpdateRetentionOpportunity } from "./hooks";
+import { retentionApi } from "./api";
+import { useUpdateRetentionOpportunity } from "./hooks";
+import { useDraftComposer } from "./useDraftComposer";
 import { IconAlertTriangle, IconCalendar, IconWhatsApp, IconSparkles } from "@/ui/icons";
 import styles from "./RetentionCard.module.css";
 
@@ -15,10 +17,11 @@ type Props = {
 
 export function RetentionCard({ card }: Props) {
   const updateOpportunity = useUpdateRetentionOpportunity();
-  const draftMessage = useDraftReturnMessage();
   const [feedback, setFeedback] = useState<string | null>(null);
-  const [customMessage, setCustomMessage] = useState<string | null>(null);
-  const [draftNotice, setDraftNotice] = useState<string | null>(null);
+  const composer = useDraftComposer(
+    () => retentionApi.draftMessage(card.primary_opportunity.id),
+    { opportunityId: card.primary_opportunity.id },
+  );
 
   const primaryOpp = card.primary_opportunity;
 
@@ -28,30 +31,11 @@ export function RetentionCard({ card }: Props) {
   });
 
   const whatsappUrl = card.whatsapp_enabled
-    ? toWhatsAppUrl(card.patient_phone, customMessage ?? defaultMessage)
+    ? toWhatsAppUrl(card.patient_phone, composer.message ?? defaultMessage)
     : null;
 
-  async function handleSuggestMessage() {
-    setDraftNotice(null);
-    try {
-      const draft = await draftMessage.mutateAsync(primaryOpp.id);
-      setCustomMessage(draft.text);
-      if (draft.source === "fallback") {
-        setDraftNotice(
-          draft.fallback_reason === "limit_reached"
-            ? "Você usou todas as sugestões do mês. Este é o texto padrão."
-            : "Texto padrão (a sugestão automática não está disponível agora).",
-        );
-      } else {
-        setDraftNotice("Sugestão pronta. Revise e ajuste antes de enviar.");
-      }
-    } catch (error) {
-      Logger.captureException(error, { context: "Draft message fail", opportunityId: primaryOpp.id });
-      setDraftNotice("Não foi possível gerar a sugestão. Use a mensagem padrão.");
-    }
-  }
-
   async function handleWhatsAppClick() {
+    composer.reportSent();
     try {
       await updateOpportunity.mutateAsync({
         id: primaryOpp.id,
@@ -154,25 +138,25 @@ export function RetentionCard({ card }: Props) {
             <>
               <button
                 type="button"
-                onClick={handleSuggestMessage}
-                disabled={draftMessage.isPending}
+                onClick={composer.generate}
+                disabled={composer.pending}
                 className="button button--secondary tap-target"
               >
                 <IconSparkles width="16" height="16" />
-                <span>{draftMessage.isPending ? "Gerando…" : "Sugerir mensagem"}</span>
+                <span>{composer.pending ? "Gerando…" : "Sugerir mensagem"}</span>
               </button>
-              {customMessage !== null && (
+              {composer.message !== null && (
                 <textarea
                   aria-label={`Mensagem para ${card.patient_name}`}
-                  value={customMessage}
-                  onChange={(e) => setCustomMessage(e.target.value)}
+                  value={composer.message}
+                  onChange={(e) => composer.setMessage(e.target.value)}
                   rows={4}
                   style={{ width: "100%", fontSize: "16px", marginTop: "8px" }}
                 />
               )}
-              {draftNotice && (
+              {composer.notice && (
                 <span style={{ fontSize: "12px", display: "block", marginTop: "4px" }}>
-                  {draftNotice}
+                  {composer.notice}
                 </span>
               )}
             </>

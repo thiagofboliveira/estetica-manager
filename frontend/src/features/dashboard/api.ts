@@ -125,3 +125,38 @@ export const dashboardApi = {
     return api.get<ROI>(`/dashboard/roi?${qs.toString()}`);
   },
 };
+
+
+export type LossAlert = {
+  procedure_id: string;
+  procedure_name: string;
+  kind: "loss" | "low_margin";
+  gross_revenue: string;
+  net_profit: string;
+  margin_percent: number | null;
+  session_count: number;
+};
+
+export type LossAlerts = {
+  period: string;
+  date_from: string;
+  date_to: string;
+  alerts: LossAlert[];
+};
+
+export type LossAlertExplanation = {
+  text: string;
+  source: "ai" | "fallback";
+  fallback_reason: "no_provider" | "limit_reached" | "provider_error" | null;
+  remaining_drafts: number;
+};
+
+export const lossAlertsApi = {
+  get: (period: DashboardPeriod = "this_month") =>
+    api.get<LossAlerts>(`/reports/procedures/loss-alerts?period=${period}`),
+  explain: (period: DashboardPeriod = "this_month") =>
+    api.post<LossAlertExplanation>(
+      `/reports/procedures/loss-alerts/explanation?period=${period}`,
+      {},
+    ),
+};

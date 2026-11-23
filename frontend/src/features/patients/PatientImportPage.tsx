@@ -2,7 +2,8 @@ import { useState, useMemo, useEffect } from "react";
 import { toast } from "@/ui/ToastContext";
 import { useNavigate } from "react-router-dom";
 import { usePatientImport } from "./hooks";
-import type { BatchImportResult, BatchImportPayload } from "./api";
+import { importMappingApi, type BatchImportResult, type BatchImportPayload } from "./api";
+import { MAX_FILE_BYTES, MAX_IMPORT_ROWS, parseSheet, toImportText } from "./spreadsheet";
 import { useProcedures } from "@/features/procedures/hooks";
 import { IconUsers, IconCheck, IconAlertTriangle, IconArrowRight, IconSparkles } from "@/ui/icons";
 import styles from "./PatientImport.module.css";
@@ -27,6 +28,45 @@ export function PatientImportPage() {
   }, [procedures, selectedProcedureId]);
 
   const importMutation = usePatientImport();
+  const [reading, setReading] = useState(false);
+  const [fileNotice, setFileNotice] = useState<string | null>(null);
+
+  async function handleFile(file: File | undefined) {
+    if (!file) return;
+    setFileNotice(null);
+    if (file.size > MAX_FILE_BYTES) {
+      toast.error("Arquivo muito grande. Use uma planilha com até 1 MB.");
+      return;
+    }
+    setReading(true);
+    try {
+      const sheet = parseSheet(await file.text());
+      if (sheet.headers.length === 0 || sheet.rows.length === 0) {
+        toast.error("Não encontrei linhas nessa planilha. Salve como CSV e tente de novo.");
+        return;
+      }
+      // Só cabeçalhos e até 5 linhas de exemplo vão ao servidor; o arquivo fica aqui.
+      const map = await importMappingApi.mapColumns(sheet.headers, sheet.rows);
+      if (map.name === null) {
+        toast.error("Não consegui identificar a coluna de nomes. Cole a lista manualmente.");
+        return;
+      }
+      const imported = toImportText(sheet, { name: map.name, phone: map.phone });
+      const lines = imported.split("\n");
+      setText(lines.slice(0, MAX_IMPORT_ROWS).join("\n"));
+      const phoneNote = map.phone === null ? " Não achei coluna de telefone." : "";
+      const cutNote = lines.length > MAX_IMPORT_ROWS ? ` Importando as primeiras ${MAX_IMPORT_ROWS}; envie o restante em outro lote.` : "";
+      setFileNotice(
+        `Usei a coluna "${sheet.headers[map.name]}" como nome` +
+          (map.phone !== null ? ` e "${sheet.headers[map.phone]}" como telefone.` : ".") +
+          phoneNote + cutNote + " Confira a pré-visualização abaixo.",
+      );
+    } catch {
+      toast.error("Não foi possível ler a planilha. Cole a lista manualmente.");
+    } finally {
+      setReading(false);
+    }
+  }
 
   const parsedData = useMemo(() => {
     if (!text.trim()) return [];
@@ -97,6 +137,22 @@ export function PatientImportPage() {
       <div className={styles.card}>
         {step === 1 && (
           <>
+            <div style={{ marginBottom: "12px" }}>
+              <label className="button button--secondary tap-target" style={{ display: "inline-block" }}>
+                {reading ? "Lendo planilha…" : "Enviar planilha (CSV)"}
+                <input
+                  type="file"
+                  accept=".csv,.tsv,.txt,text/csv"
+                  style={{ display: "none" }}
+                  disabled={reading}
+                  onChange={(e) => {
+                    void handleFile(e.target.files?.[0]);
+                    e.target.value = "";
+                  }}
+                />
+              </label>
+              {fileNotice && <p role="status" style={{ fontSize: "0.85rem", margin: "8px 0 0" }}>{fileNotice}</p>}
+            </div>
             <div className={styles.textareaWrapper}>
               <textarea 
                 className={styles.textarea}

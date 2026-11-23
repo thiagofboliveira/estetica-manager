@@ -78,9 +78,30 @@ export type DraftMessage = {
   remaining_drafts: number;
 };
 
+export type ReengagementKind = "never_treated" | "inactive";
+
+export type AiUsage = {
+  limit: number;
+  generated: number;
+  remaining: number;
+  fallbacks: number;
+  sent: number;
+  sent_edited: number;
+};
+
 export const retentionApi = {
   draftMessage: (id: string) =>
     api.post<DraftMessage>(`/retention/opportunities/${id}/draft-message`, {}),
+  draftReengagementMessage: (patientId: string, kind: ReengagementKind) =>
+    api.post<DraftMessage>(
+      `/retention/reengagement/${patientId}/draft-message?kind=${kind}`,
+      {},
+    ),
+  reportDraftSent: (edited: boolean) =>
+    api.post<void>("/ai/drafts/feedback", {
+      outcome: edited ? "sent_edited" : "sent",
+    }),
+  getAiUsage: () => api.get<AiUsage>("/ai/usage"),
   getCards: (referenceDate?: string) => {
     const qs = new URLSearchParams({ view: "cards" });
     if (referenceDate) qs.set("reference_date", referenceDate);

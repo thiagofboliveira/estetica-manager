@@ -1,9 +1,11 @@
 from datetime import date
+from typing import Annotated
 from uuid import UUID
 
 from fastapi import APIRouter, HTTPException, Query, status
 
 from app.api.deps import AITextSvc, EventSvc, RetentionSvc
+from app.domain.ai.reengagement_message import Kind
 from app.domain.events import EventName
 from app.domain.retention.enums import ReturnOpportunityStatus
 from app.domain.retention.state_machine import InvalidReturnOpportunityTransitionError
@@ -121,6 +123,38 @@ def draft_return_message(
             "Esta paciente não autorizou contato por WhatsApp",
         ) from exc
     result = ai.draft_return_message(ctx, period_month=today.replace(day=1))
+    return DraftMessageOut(
+        text=result.text,
+        source=result.source,
+        fallback_reason=result.reason,
+        remaining_drafts=result.remaining,
+    )
+
+
+@router.post(
+    "/reengagement/{patient_id}/draft-message", response_model=DraftMessageOut
+)
+def draft_reengagement_message(
+    patient_id: UUID,
+    kind: Annotated[Kind, Query(description="never_treated ou inactive")],
+    svc: RetentionSvc,
+    ai: AITextSvc,
+) -> DraftMessageOut:
+    """AI-06: rascunho de WhatsApp para uma paciente que parou de voltar ou
+    nunca tratou. Só texto, sem procedimento, valor nem dado clínico; exige
+    consentimento de WhatsApp. Sem IA disponível, devolve o texto fixo."""
+    try:
+        ctx, today = svc.reengagement_context(patient_id, kind)
+    except ReturnOpportunityNotFoundError as exc:
+        raise HTTPException(
+            status.HTTP_404_NOT_FOUND, "Paciente não encontrada"
+        ) from exc
+    except DraftNotAllowedError as exc:
+        raise HTTPException(
+            status.HTTP_422_UNPROCESSABLE_ENTITY,
+            "Esta paciente não autorizou contato por WhatsApp",
+        ) from exc
+    result = ai.draft_reengagement_message(ctx, period_month=today.replace(day=1))
     return DraftMessageOut(
         text=result.text,
         source=result.source,

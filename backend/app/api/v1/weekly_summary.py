@@ -12,10 +12,12 @@ from fastapi import APIRouter, HTTPException, Query, Request, Response, status
 from fastapi.responses import HTMLResponse
 from sqlalchemy import select
 
-from app.api.deps import WeeklySummarySvc
+from app.api.deps import AITextSvc, RetentionSvc, WeeklySummarySvc
 from app.core.config import settings
 from app.db.session import unsafe_session_without_tenant
+from app.domain.ai.weekly_narrative import WeeklyNarrativeContext
 from app.models.professional import Professional
+from app.schemas.retention import DraftMessageOut
 from app.schemas.weekly_summary import (
     WeeklySummaryOut,
     WeeklySummarySettingsUpdate,
@@ -106,3 +108,31 @@ def unsubscribe_weekly_summary(
             status="unsubscribed",
             message="Resumo semanal cancelado com sucesso.",
         )
+
+
+@router.post("/weekly-summary/narrative", response_model=DraftMessageOut)
+def get_weekly_narrative(
+    summary_svc: WeeklySummarySvc,
+    retention: RetentionSvc,
+    ai: AITextSvc,
+    use_current_week: bool = Query(default=False),
+) -> DraftMessageOut:
+    """AI-03: o resumo da semana em poucas frases. A IA só reescreve os números
+    do `GET /weekly-summary`; texto com número que não veio deles é descartado
+    e vale o texto fixo."""
+    summary = summary_svc.get_summary(use_current_week=use_current_week)
+    ctx = WeeklyNarrativeContext(
+        period_start=summary.period_start,
+        period_end=summary.period_end,
+        gross_revenue=summary.gross_revenue,
+        net_profit=summary.net_profit,
+        sales_count=summary.sales_count,
+        pending_opportunities_count=summary.pending_opportunities_count,
+    )
+    result = ai.narrate_weekly(ctx, period_month=retention.today().replace(day=1))
+    return DraftMessageOut(
+        text=result.text,
+        source=result.source,
+        fallback_reason=result.reason,
+        remaining_drafts=result.remaining,
+    )

@@ -7,6 +7,7 @@ from pydantic import BaseModel
 from sqlalchemy import text
 
 from app.api.v1 import (
+    ai,
     anamnesis,
     billing,
     bookings,
@@ -215,6 +216,7 @@ app.include_router(payment_fee_rules.router, prefix="/api/v1")
 app.include_router(sales.router, prefix="/api/v1")
 app.include_router(sessions.router, prefix="/api/v1")
 app.include_router(bookings.router, prefix="/api/v1")
+app.include_router(ai.router, prefix="/api/v1")
 app.include_router(retention.router, prefix="/api/v1")
 app.include_router(fixed_expenses.router, prefix="/api/v1")
 app.include_router(dashboard.router, prefix="/api/v1")

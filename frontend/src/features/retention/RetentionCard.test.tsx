@@ -23,6 +23,7 @@ vi.mock("./api", () => ({
     draftMessage: (id: string) =>
       failing.on ? Promise.reject(new Error("offline")) : draftMessage(id),
     updateOpportunity: () => Promise.resolve(),
+    reportDraftSent: () => Promise.resolve(),
   },
 }));
 
