@@ -49,7 +49,11 @@ Documentos **atemporais** (não têm estado de execução) ficam na raiz de `doc
 
 ## in_progress/
 
-*Nenhum documento em andamento no momento.* Todos os itens auditados foram entregues com 100% dos gates verdes. Próximo passo: Fase 3 do [`BACKLOG_GO_LIVE.md`](pending/BACKLOG_GO_LIVE.md).
+| Arquivo | Conteúdo | Estado |
+|---|---|---|
+| [`BACKLOG_REVISAO_2026-11-23.md`](in_progress/BACKLOG_REVISAO_2026-11-23.md) | Revisão de código: segurança da cobrança e da anamnese pública, CI, testes e UX | 6 de 20 ✅, 2 em andamento (P0 restante: REV-04, REV-05, REV-06) |
+
+Próximo passo de produto continua sendo a Fase 3 do [`BACKLOG_GO_LIVE.md`](pending/BACKLOG_GO_LIVE.md); os itens P0 da revisão devem fechar antes de cobrar o primeiro cliente.
 
 > Antes disso, `BACKLOG_SPRINT2_backend.md` moveu para `finished/` em 2026-09-04 após as 3 ações corretivas (AC-01, AC-02, AC-07) serem corrigidas e testadas.
 
