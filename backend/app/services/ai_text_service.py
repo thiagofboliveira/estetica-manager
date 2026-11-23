@@ -13,6 +13,7 @@ from dataclasses import dataclass
 from datetime import date
 from typing import Literal
 
+from app.domain.ai import column_mapping as colmap
 from app.domain.ai import loss_alert as loss
 from app.domain.ai import weekly_narrative as weekly
 from app.domain.ai.grounding import is_grounded
@@ -159,6 +160,30 @@ class AITextService:
             max_tokens=400,
             max_chars=loss.MAX_EXPLANATION_CHARS,
         )
+
+    def map_columns(
+        self, *, headers: list[str], sample_rows: list[list[str]], period_month: date
+    ) -> tuple[dict[str, int | None], Source]:
+        """AI-08: cabeçalho primeiro (grátis e determinístico); a IA só entra se
+        faltar nome ou telefone, e só preenche o que faltou. Resposta inválida da
+        IA é ignorada."""
+        mapping = colmap.heuristic_mapping(headers)
+        if colmap.is_confident(mapping):
+            return mapping, "fallback"
+        result = self._generate(
+            system=colmap.SYSTEM_PROMPT,
+            user=colmap.build_user_prompt(headers, sample_rows),
+            fallback="",
+            period_month=period_month,
+            max_tokens=200,
+            max_chars=400,
+        )
+        if result.source != "ai":
+            return mapping, "fallback"
+        parsed = colmap.parse_ai_mapping(result.text, len(headers))
+        if parsed is None:
+            return mapping, "fallback"
+        return colmap.merge(mapping, parsed), "ai"
 
     def record_feedback(self, *, period_month: date, edited: bool) -> None:
         """AI-05: a profissional enviou um rascunho da IA (editado ou não)."""

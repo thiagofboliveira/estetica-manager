@@ -96,3 +96,21 @@ export const patientsApi = {
   batchImport: (payload: BatchImportPayload) => 
     api.post<BatchImportResult>("/patients/import", payload),
 };
+
+
+export type ColumnMappingResult = {
+  name: number | null;
+  phone: number | null;
+  email: number | null;
+  notes: number | null;
+  last_visit_date: number | null;
+  source: "ai" | "fallback";
+};
+
+export const importMappingApi = {
+  mapColumns: (headers: string[], sample_rows: string[][]) =>
+    api.post<ColumnMappingResult>("/ai/import/map-columns", {
+      headers: headers.slice(0, 50),
+      sample_rows: sample_rows.slice(0, 5),
+    }),
+};
