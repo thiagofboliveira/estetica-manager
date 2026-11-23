@@ -98,10 +98,28 @@ class AnamnesisTemplateOut(OutputSchema):
 class PublicAnamnesisSubmitInput(InputSchema):
     patient_name: str = Field(..., min_length=2, max_length=255)
     patient_phone: str | None = Field(None, max_length=30)
-    answers: dict[str, str | bool | list[str] | None] = Field(default_factory=dict)
+    answers: dict[str, str | bool | list[str] | None] = Field(
+        default_factory=dict, max_length=200
+    )
     signature_name: str | None = Field(None, max_length=255)
-    signature_image: str | None = Field(None, description="Assinatura desenhada no canvas em base64")
+    # ~300 KB de PNG em base64 sobra para uma assinatura desenhada; sem teto,
+    # esta rota pública permitia gravar payloads arbitrários no banco.
+    signature_image: str | None = Field(
+        None,
+        max_length=400_000,
+        description="Assinatura desenhada no canvas em base64",
+    )
     tcle_accepted: bool = Field(default=False, description="Ciência e aceite das orientações pós-procedimento")
+
+    @field_validator("answers")
+    @classmethod
+    def _limit_answer_size(cls, v: dict) -> dict:
+        for value in v.values():
+            items = value if isinstance(value, list) else [value]
+            for item in items:
+                if isinstance(item, str) and len(item) > 5000:
+                    raise ValueError("Resposta muito longa (máximo 5000 caracteres).")
+        return v
 
 
 class AnamnesisSubmissionOut(OutputSchema):

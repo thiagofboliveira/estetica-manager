@@ -160,6 +160,14 @@ def submit_public_anamnesis(
                 detail="Ficha de anamnese não encontrada.",
             )
 
+        # Ficha assinada é imutável: sem esta trava, quem tem o link poderia
+        # reenviar e sobrescrever respostas, assinatura e data do aceite do TCLE.
+        if sub.submitted_at is not None:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="Esta ficha já foi enviada e não pode ser alterada. Fale com a profissional.",
+            )
+
         template = svc.template_repo.get_by_id(sub.template_id)
         if not template:
             template = svc.get_or_create_default_template()
