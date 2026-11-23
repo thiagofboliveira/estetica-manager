@@ -15,7 +15,7 @@ describe("confirmDialog (substitui window.confirm)", () => {
     expect(dialog.getAttribute("aria-modal")).toBe("true");
     expect(dialog.textContent).toContain("Deseja excluir a regra?");
     // Foco em "Cancelar": Enter por engano nunca confirma ação destrutiva.
-    expect(document.activeElement?.textContent).toBe("Cancelar");
+    await waitFor(() => expect(document.activeElement?.textContent).toBe("Cancelar"));
   });
 
   it("resolve true ao confirmar e remove o diálogo", async () => {

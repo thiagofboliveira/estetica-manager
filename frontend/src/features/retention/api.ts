@@ -1,4 +1,4 @@
-﻿import { api } from "@/lib/http/client";
+import { api } from "@/lib/http/client";
 
 export type Timing = "UPCOMING" | "DUE" | "OVERDUE";
 
@@ -71,7 +71,16 @@ export type ReengagementResponse = {
   page_size: number;
 };
 
+export type DraftMessage = {
+  text: string;
+  source: "ai" | "fallback";
+  fallback_reason: "no_provider" | "limit_reached" | "provider_error" | null;
+  remaining_drafts: number;
+};
+
 export const retentionApi = {
+  draftMessage: (id: string) =>
+    api.post<DraftMessage>(`/retention/opportunities/${id}/draft-message`, {}),
   getCards: (referenceDate?: string) => {
     const qs = new URLSearchParams({ view: "cards" });
     if (referenceDate) qs.set("reference_date", referenceDate);
