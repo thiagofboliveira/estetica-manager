@@ -13,7 +13,18 @@ from dataclasses import dataclass
 from datetime import date
 from typing import Literal
 
+from app.domain.ai.grounding import is_grounded
+from app.domain.ai.reengagement_message import (
+    ReengagementContext,
+)
+from app.domain.ai.reengagement_message import (
+    build_user_prompt as reengagement_prompt,
+)
+from app.domain.ai.reengagement_message import (
+    fallback_message as reengagement_fallback,
+)
 from app.domain.ai.return_message import (
+    MAX_MESSAGE_CHARS,
     SYSTEM_PROMPT,
     ReturnMessageContext,
     build_user_prompt,
@@ -50,29 +61,87 @@ class AITextService:
         self._provider = provider
         self._limit = monthly_limit
 
-    def draft_return_message(
-        self, ctx: ReturnMessageContext, *, period_month: date
+    def _generate(
+        self,
+        *,
+        system: str,
+        user: str,
+        fallback: str,
+        period_month: date,
+        allowed: set[str] | None = None,
+        max_tokens: int = 250,
+        max_chars: int = MAX_MESSAGE_CHARS,
     ) -> GeneratedText:
+        """Núcleo comum: teto, provedor, limpeza, checagem de números e fallback.
+
+        ``allowed`` ativa a checagem de números: se o texto gerado trouxer um
+        número que não veio do payload, é descartado (a IA não inventa valor)."""
         used = self._usage.count_for(period_month)
         remaining = max(self._limit - used, 0)
-        fallback = fallback_message(ctx)
+
+        def fall(reason: FallbackReason, left: int) -> GeneratedText:
+            self._usage.increment(period_month, "fallbacks_count")
+            return GeneratedText(fallback, "fallback", reason, left)
 
         if self._provider is None:
             return GeneratedText(fallback, "fallback", "no_provider", remaining)
         if remaining <= 0:
-            return GeneratedText(fallback, "fallback", "limit_reached", 0)
+            return fall("limit_reached", 0)
 
         try:
             raw = self._provider.complete(
-                system=SYSTEM_PROMPT, user=build_user_prompt(ctx), max_tokens=250
+                system=system, user=user, max_tokens=max_tokens
             )
         except Exception:
             logger.warning("falha no provedor de IA; usando texto fixo", exc_info=True)
-            return GeneratedText(fallback, "fallback", "provider_error", remaining)
+            return fall("provider_error", remaining)
 
-        text = clean_generated(raw)
+        text = clean_generated(raw, max_chars=max_chars)
         if text is None:
-            return GeneratedText(fallback, "fallback", "provider_error", remaining)
+            return fall("provider_error", remaining)
+        if allowed is not None and not is_grounded(text, allowed):
+            logger.warning("texto da IA com número fora do payload; usando texto fixo")
+            return fall("provider_error", remaining)
 
         used = self._usage.increment(period_month)
         return GeneratedText(text, "ai", None, max(self._limit - used, 0))
+
+    def draft_return_message(
+        self, ctx: ReturnMessageContext, *, period_month: date
+    ) -> GeneratedText:
+        return self._generate(
+            system=SYSTEM_PROMPT,
+            user=build_user_prompt(ctx),
+            fallback=fallback_message(ctx),
+            period_month=period_month,
+            allowed=set(),  # mensagem de retorno não deve conter número algum
+        )
+
+    def draft_reengagement_message(
+        self, ctx: ReengagementContext, *, period_month: date
+    ) -> GeneratedText:
+        return self._generate(
+            system=SYSTEM_PROMPT,
+            user=reengagement_prompt(ctx),
+            fallback=reengagement_fallback(ctx),
+            period_month=period_month,
+            allowed=set(),
+        )
+
+    def record_feedback(self, *, period_month: date, edited: bool) -> None:
+        """AI-05: a profissional enviou um rascunho da IA (editado ou não)."""
+        self._usage.increment(period_month, "sent_count")
+        if edited:
+            self._usage.increment(period_month, "edited_count")
+
+    def usage(self, period_month: date) -> dict[str, int]:
+        row = self._usage.get_month(period_month)
+        generated = row.drafts_count if row else 0
+        return {
+            "limit": self._limit,
+            "generated": generated,
+            "remaining": max(self._limit - generated, 0),
+            "fallbacks": row.fallbacks_count if row else 0,
+            "sent": row.sent_count if row else 0,
+            "sent_edited": row.edited_count if row else 0,
+        }

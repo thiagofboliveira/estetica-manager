@@ -3,6 +3,7 @@ from uuid import UUID
 
 from app.core.money import money
 from app.core.tz import today_in_timezone
+from app.domain.ai.reengagement_message import Kind, ReengagementContext
 from app.domain.ai.return_message import ReturnMessageContext, first_name
 from app.domain.retention.enums import ReturnOpportunityStatus
 from app.domain.retention.opportunity_rules import (
@@ -65,6 +66,25 @@ class RetentionService:
             days_overdue=(today - opp.due_date).days,
         )
         return ctx, today
+
+    def reengagement_context(
+        self, patient_id: UUID, kind: Kind
+    ) -> tuple[ReengagementContext, date]:
+        """AI-06: contexto mínimo (primeiro nome e situação) para o rascunho de
+        reengajamento, mais o dia de hoje no fuso da profissional (I4)."""
+        patient = self._patients.get(patient_id)
+        if patient is None or not patient.is_active:
+            raise ReturnOpportunityNotFoundError(str(patient_id))
+        if not patient.consent_whatsapp or patient.opted_out_at is not None:
+            raise DraftNotAllowedError(str(patient_id))
+        ctx = ReengagementContext(
+            patient_first_name=first_name(patient.name), kind=kind
+        )
+        return ctx, self._get_today()
+
+    def today(self) -> date:
+        """Hoje no fuso da profissional (I4)."""
+        return self._get_today()
 
     def _get_today(self) -> date:
         prof = self._professionals.get_by_id(self._opps._professional_id)

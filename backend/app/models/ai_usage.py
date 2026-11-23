@@ -20,4 +20,10 @@ class AIUsage(TenantModel):
 
     # Sempre o primeiro dia do mês, no fuso da profissional (I4).
     period_month: Mapped[date] = mapped_column(Date, nullable=False)
+    # Rascunhos gerados pela IA (contam para o teto mensal).
     drafts_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    # Medição (AI-05): vezes em que caiu no texto padrão, rascunhos da IA que
+    # foram enviados, e dos enviados quantos a profissional editou antes.
+    fallbacks_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    sent_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    edited_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)

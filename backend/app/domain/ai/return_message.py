@@ -55,11 +55,13 @@ def build_user_prompt(ctx: ReturnMessageContext) -> str:
     )
 
 
-def clean_generated(text: str | None) -> str | None:
+def clean_generated(
+    text: str | None, *, max_chars: int = MAX_MESSAGE_CHARS
+) -> str | None:
     """Normaliza a saída do modelo; vazio ou longo demais vira None (→ fallback)."""
     if not text:
         return None
     cleaned = text.strip().strip('"').strip()
-    if not cleaned or len(cleaned) > MAX_MESSAGE_CHARS:
+    if not cleaned or len(cleaned) > max_chars:
         return None
     return cleaned
