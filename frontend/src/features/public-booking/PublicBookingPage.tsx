@@ -613,8 +613,10 @@ export function PublicBookingPage() {
 
                 <div className={styles.formGrid}>
                   <div className={styles.formGroup}>
-                    <label className={styles.label}>Nome Completo *</label>
+                    <label className={styles.label} htmlFor="booking-name">Nome Completo *</label>
                     <input
+                      id="booking-name"
+                      autoComplete="name"
                       type="text"
                       className={styles.input}
                       placeholder="Ex: Mariana Ferreira"
@@ -625,8 +627,11 @@ export function PublicBookingPage() {
                   </div>
 
                   <div className={styles.formGroup}>
-                    <label className={styles.label}>WhatsApp / Celular *</label>
+                    <label className={styles.label} htmlFor="booking-phone">WhatsApp / Celular *</label>
                     <input
+                      id="booking-phone"
+                      autoComplete="tel-national"
+                      inputMode="tel"
                       type="tel"
                       className={styles.input}
                       placeholder="(11) 99999-9999"
@@ -637,8 +642,9 @@ export function PublicBookingPage() {
                   </div>
 
                   <div className={`${styles.formGroup} ${styles.fullWidth}`}>
-                    <label className={styles.label}>Alguma observação ou dúvida? (Opcional)</label>
+                    <label className={styles.label} htmlFor="booking-note">Alguma observação ou dúvida? (Opcional)</label>
                     <textarea
+                      id="booking-note"
                       className={styles.input}
                       rows={2}
                       placeholder="Conte-nos se você tem alguma alergia ou é a sua primeira vez no procedimento..."
@@ -676,7 +682,7 @@ export function PublicBookingPage() {
                 </div>
 
                 <div className={styles.footer}>
-                  Lumina Estética • Agendamento Seguro e Sem Fricção
+                  {profile?.name ?? "Agendamento online"} • Agendamento seguro
                 </div>
               </form>
             )}
