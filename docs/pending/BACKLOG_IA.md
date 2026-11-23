@@ -45,6 +45,9 @@ em português com mensagens reais.
 | `AI-03` | Resumo semanal narrado: texto de 4–5 frases sobre o `GET /weekly-summary` | `[ ]` | AI-01 | **Por quê:** é o gancho para abrir o app toda semana. O texto cita só valores do payload e mantém "estimado"/"provisório" quando o campo vier assim (I7). |
 | `AI-04` | Alerta de procedimento no prejuízo: regra no backend (margem abaixo de limite) + explicação em texto | `[ ]` | AI-01, V-simulador | **Por quê:** é onde ela perde dinheiro sem ver. A regra de detecção é determinística no backend; a IA só explica com custo, taxa e tempo. **Sem sugestão de preço** enquanto não existir simulador no backend. |
 | `AI-05` | Medir uso: quantos rascunhos foram enviados, editados ou descartados | `[ ]` | AI-02 | **Por quê:** sem isso não se sabe se a IA ajuda a reter pacientes. Mede o produto, não só a profissional. |
+| `AI-06` | Mensagem de reengajamento: botão "Sugerir mensagem" na lista **Reengajamento** (parou há X dias / nunca tratou) | `[ ]` | AI-02 | **Por quê:** hoje o botão só existe nos cartões de retorno. As pacientes que pararam de voltar estão na lista de Reengajamento, que é onde a primeira cliente tem mais pacientes. Texto sem procedimento nem dado clínico; só com `consent_whatsapp`; mesmo teto mensal e mesmo fallback. |
+| `AI-07` | Assistente com **ferramentas fixas** (lucro do período, ranking de procedimentos, pacientes a chamar) | `[ ]` | AI-01 | **Por quê:** perguntar em linguagem natural é útil, mas **SQL livre gerado por IA é proibido**: número errado é pior que nenhum, pode vazar dado entre profissionais e aceita injeção de prompt vinda de textos livres. A IA só escolhe entre endpoints que já existem (isolados e calculados no backend) e escreve a resposta com os números recebidos. Só entra se as primeiras clientes pedirem. |
+| `AI-08` | Importação assistida de planilha: a IA **só mapeia colunas**; o código converte, valida e importa | `[ ]` | AI-01 | **Por quê:** migrar do caderno ou da planilha é o maior freio para trocar de sistema. Fluxo: subir CSV/Excel → IA mapeia o cabeçalho (vê só cabeçalho e poucas linhas, nunca o arquivo inteiro, REV-20) → backend normaliza e valida → pré-visualização ("120 novos, 8 duplicados, 3 com erro") → importa pelos endpoints existentes, em transação. Começar por **pacientes e catálogo de procedimentos**. Venda histórica fica de fora: lucro reconstruído com a configuração de hoje viola o I3. Limite de tamanho e de linhas (Render grátis). |
 
 ## 3. Definition of Done
 
@@ -56,10 +59,10 @@ em português com mensagens reais.
 
 ## 4. Ordem sugerida
 
-`AI-01` → `AI-02` (a mais visível para a primeira cliente) → `AI-03` → `AI-05` → `AI-04`.
+`AI-01` → `AI-02` (testar com provedor real) → `AI-06` (reengajamento) → `AI-08` (importação de pacientes) → `AI-03` → `AI-05` → `AI-04`. O `AI-07` só se houver pedido das clientes.
 
 ## 5. Fora de escopo (o "não")
 
-- Chat livre com a IA dentro do app.
+- Chat livre com a IA dentro do app e **SQL gerado por IA** (ver `AI-07`).
 - A IA decidir preço, taxa ou rateio.
 - Envio automático de mensagem sem revisão da profissional.
