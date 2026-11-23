@@ -51,7 +51,7 @@ Documentos **atemporais** (não têm estado de execução) ficam na raiz de `doc
 
 | Arquivo | Conteúdo | Estado |
 |---|---|---|
-| [`BACKLOG_REVISAO_2026-11-23.md`](in_progress/BACKLOG_REVISAO_2026-11-23.md) | Revisão de código: segurança da cobrança e da anamnese pública, CI, testes e UX | 6 de 20 ✅, 2 em andamento (P0 restante: REV-04, REV-05, REV-06) |
+| [`BACKLOG_REVISAO_2026-11-23.md`](in_progress/BACKLOG_REVISAO_2026-11-23.md) | Revisão de código: segurança da cobrança e da anamnese pública, CI, testes e UX | 14 de 20 ✅, 4 em andamento (REV-04, 09, 12, 20), 2 dependem de você (REV-14, REV-18) |
 
 Próximo passo de produto continua sendo a Fase 3 do [`BACKLOG_GO_LIVE.md`](pending/BACKLOG_GO_LIVE.md); os itens P0 da revisão devem fechar antes de cobrar o primeiro cliente.
 
