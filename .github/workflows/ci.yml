@@ -58,7 +58,11 @@ jobs:
       - name: Run Alembic migrations
         working-directory: ./backend
         env:
+          DATABASE_URL: postgresql+psycopg2://estetica_app:app_password@localhost:5432/estetica
           DATABASE_URL_MIGRATIONS: postgresql+psycopg2://postgres:postgrespassword@localhost:5432/estetica
+          SUPABASE_URL: https://ci-placeholder.supabase.co
+          ENV: development
+          DEV_AUTH_SECRET: ci-dev-secret-for-testing-only-32chars
         run: |
           alembic upgrade head
 
@@ -72,6 +76,7 @@ jobs:
         env:
           DATABASE_URL: postgresql+psycopg2://estetica_app:app_password@localhost:5432/estetica
           DATABASE_URL_MIGRATIONS: postgresql+psycopg2://postgres:postgrespassword@localhost:5432/estetica
+          SUPABASE_URL: https://ci-placeholder.supabase.co
           ENV: development
           DEV_AUTH_SECRET: ci-dev-secret-for-testing-only-32chars
         run: |
