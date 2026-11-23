@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import type { AnamnesisQuestion, QuestionFieldType } from "./api";
 import { IconX, IconAlertTriangle } from "@/ui/icons";
 import styles from "./AnamnesisPage.module.css";
+import { escapeToClose, focusModal } from "@/ui/modalA11y";
 
 type Props = {
   isOpen: boolean;
@@ -93,8 +94,8 @@ export function QuestionModal({ isOpen, question, onClose, onSave }: Props) {
   }
 
   return (
-    <div className={styles.modalOverlay} onClick={onClose}>
-      <div className={styles.modalContent} onClick={(e) => e.stopPropagation()}>
+    <div className={styles.modalOverlay} onClick={onClose} ref={focusModal} tabIndex={-1} onKeyDown={escapeToClose(onClose)}>
+      <div className={styles.modalContent} role="dialog" aria-modal="true" onClick={(e) => e.stopPropagation()}>
         <header className={styles.modalHeader}>
           <h3>{question ? "Editar Pergunta" : "Nova Pergunta de Anamnese"}</h3>
           <button type="button" className={styles.modalCloseBtn} onClick={onClose}>

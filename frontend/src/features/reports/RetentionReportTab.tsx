@@ -9,6 +9,7 @@ import { ROICard } from "@/features/dashboard/ROICard";
 import { IconTarget, IconDownload, IconArrowRight, IconUsers } from "@/ui/icons";
 import { downloadCsv } from "./exportApi";
 import styles from "./ReportsPage.module.css";
+import { toast } from "@/ui/ToastContext";
 
 type Props = {
   params: DashboardParams;
@@ -24,7 +25,7 @@ export function RetentionReportTab({ params }: Props) {
       setExporting(true);
       await downloadCsv("patients", "relatorio-pacientes.csv");
     } catch {
-      alert("Não foi possível gerar a exportação de pacientes no momento.");
+      toast.error("Não foi possível gerar a exportação de pacientes no momento.");
     } finally {
       setExporting(false);
     }

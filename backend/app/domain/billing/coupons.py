@@ -4,14 +4,14 @@ Puro: sem SQLAlchemy, sem FastAPI, sem I/O.
 """
 
 from dataclasses import dataclass
-from datetime import datetime, timezone
-from decimal import Decimal, ROUND_HALF_UP
+from datetime import UTC, datetime
+from decimal import ROUND_HALF_UP, Decimal
 from enum import Enum
 
 from app.domain.billing.pricing import BillingCycle
 
 
-class DiscountType(str, Enum):
+class DiscountType(str, Enum):  # noqa: UP042 — str(x) deve continuar 'Classe.X'; StrEnum mudaria isso
     PERCENTAGE = "PERCENTAGE"
     FIXED = "FIXED"
 
@@ -50,7 +50,7 @@ def apply_coupon(
     if not is_active:
         raise CouponValidationError("Cupom inativo ou desativado")
 
-    current_time = now or datetime.now(timezone.utc)
+    current_time = now or datetime.now(UTC)
 
     if valid_from and current_time < valid_from:
         raise CouponValidationError("Cupom ainda não está vigente")

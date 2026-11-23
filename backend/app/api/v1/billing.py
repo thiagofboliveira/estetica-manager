@@ -1,13 +1,13 @@
 """Rotas de Billing, Planos, Assinaturas e Webhooks do Asaas."""
 
+import hmac
 import logging
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, Header, HTTPException, Request, status
+from fastapi import APIRouter, Header, HTTPException, Request, status
 
-from app.api.deps import BillingSvc, CurrentUser, DbSession
+from app.api.deps import BillingSvc, CouponValidateRateLimit, CurrentUser
 from app.core.config import settings
-from app.models.user import User
 from app.schemas.billing import (
     CheckoutIn,
     CheckoutOut,
@@ -16,6 +16,7 @@ from app.schemas.billing import (
     PlanOut,
     SubscriptionStatusOut,
 )
+from app.services.billing_service import CheckoutConflictError
 
 logger = logging.getLogger(__name__)
 
@@ -48,6 +49,7 @@ def get_subscription_status(
 def validate_coupon(
     payload: CouponValidateIn,
     svc: BillingSvc,
+    _rate_limit: CouponValidateRateLimit,
 ) -> CouponValidateOut:
     """Valida um código de cupom de desconto para o ciclo escolhido."""
     return svc.validate_coupon(payload.code, payload.cycle)
@@ -73,12 +75,18 @@ def checkout(
             user_name=current_user.name,
             payload=payload,
         )
+    except CheckoutConflictError as err:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT, detail=str(err)
+        ) from err
     except Exception as err:
+        # Detalhe técnico fica só no log: devolver str(err) ao cliente vaza
+        # resposta crua do gateway e mensagens internas.
         logger.exception("Erro ao processar checkout")
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Não foi possível iniciar o checkout: {err}",
-        )
+            detail="Não foi possível iniciar o checkout. Tente novamente em instantes.",
+        ) from err
 
 
 @router.post("/webhooks/asaas")
@@ -87,17 +95,36 @@ async def asaas_webhook(
     asaas_access_token: Annotated[str | None, Header(alias="asaas-access-token")] = None,
 ) -> dict[str, str]:
     """Webhook do Asaas para recebimento e liquidação automática de assinaturas."""
-    if settings.ASAAS_WEBHOOK_SECRET:
-        if not asaas_access_token or asaas_access_token != settings.ASAAS_WEBHOOK_SECRET:
-            logger.warning("Tentativa de webhook com token inválido ou ausente")
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Token de webhook inválido",
-            )
+    secret = settings.ASAAS_WEBHOOK_SECRET
+    if not secret:
+        # Fail-closed: sem segredo configurado qualquer um poderia forjar
+        # "pagamento confirmado" e ativar assinatura de graça.
+        logger.error("ASAAS_WEBHOOK_SECRET não configurado — webhook recusado")
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Webhook não configurado",
+        )
+    if not asaas_access_token or not hmac.compare_digest(
+        asaas_access_token.encode(), secret.encode()
+    ):
+        logger.warning("Tentativa de webhook com token inválido ou ausente")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Token de webhook inválido",
+        )
 
-    body = await request.json()
+    try:
+        body = await request.json()
+    except ValueError as err:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Corpo inválido"
+        ) from err
+    if not isinstance(body, dict):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Corpo inválido"
+        )
     event = body.get("event")
-    payment = body.get("payment", {})
+    payment = body.get("payment") or {}
 
     if not event:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Evento ausente")

@@ -10,7 +10,7 @@ from typing import Annotated
 from uuid import UUID
 from zoneinfo import ZoneInfo
 
-from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
+from fastapi import APIRouter, Depends, Header, HTTPException, Query, Request, status
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 
@@ -79,6 +79,28 @@ def check_public_query_limit(request: Request) -> None:
 
 PublicBookingRateLimit = Annotated[None, Depends(check_public_booking_limit)]
 PublicQueryRateLimit = Annotated[None, Depends(check_public_query_limit)]
+
+
+def booking_token_dep(
+    x_booking_token: Annotated[str | None, Header(alias="X-Booking-Token")] = None,
+    token: Annotated[str | None, Query(deprecated=True)] = None,
+) -> str:
+    """Token de gestão do agendamento.
+
+    Preferir o header `X-Booking-Token`: token em query string vai para log de
+    acesso, histórico e Referer. A query continua aceita só para links já
+    enviados a pacientes (deprecada).
+    """
+    value = (x_booking_token or token or "").strip()
+    if len(value) < 10:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Token do agendamento ausente ou inválido.",
+        )
+    return value
+
+
+BookingToken = Annotated[str, Depends(booking_token_dep)]
 
 
 def _resolve_slug(slug: str) -> tuple[UUID, str, str | None, str, str | None, str | None]:
@@ -324,7 +346,7 @@ def create_public_booking(
 @router.get("/bookings/{booking_id}", response_model=PublicBookingOut)
 def get_public_booking(
     booking_id: UUID,
-    token: str = Query(..., min_length=10),
+    token: BookingToken,
     _rate_limit: PublicQueryRateLimit = None,
 ) -> PublicBookingOut:
     """Visualiza os detalhes do agendamento usando o link com token privado."""
@@ -357,7 +379,7 @@ def get_public_booking(
 def reschedule_public_booking(
     booking_id: UUID,
     body: PublicBookingReschedule,
-    token: str = Query(..., min_length=10),
+    token: BookingToken,
     _rate_limit: PublicBookingRateLimit = None,
 ) -> PublicBookingOut:
     """Remarca a data/horário ou procedimento do agendamento pelo próprio paciente."""
@@ -426,7 +448,7 @@ def reschedule_public_booking(
 @router.post("/bookings/{booking_id}/cancel", response_model=PublicBookingOut)
 def cancel_public_booking(
     booking_id: UUID,
-    token: str = Query(..., min_length=10),
+    token: BookingToken,
     _rate_limit: PublicBookingRateLimit = None,
 ) -> PublicBookingOut:
     """Cancela o agendamento pelo próprio paciente via link com token privado."""

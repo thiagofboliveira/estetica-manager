@@ -4,6 +4,7 @@
 # Registra o listener before_flush que bloqueia UPDATE em campos
 # congelados (T-020b, invariante I3) — importar por efeito colateral.
 from app.models import listeners  # noqa: F401,E402
+from app.models.ai_usage import AIUsage
 from app.models.anamnesis import (
     AnamnesisQuestion,
     AnamnesisSubmission,
@@ -12,7 +13,9 @@ from app.models.anamnesis import (
 )
 from app.models.base import Base, TenantModel, TimestampMixin
 from app.models.booking import Booking, BookingStatus
+from app.models.campaign import CampaignTemplate
 from app.models.clinic import Clinic
+from app.models.coupon import Coupon
 from app.models.financial_settings import (
     FeePayer,
     FinancialSettings,
@@ -20,6 +23,7 @@ from app.models.financial_settings import (
     SplitBase,
 )
 from app.models.fixed_expense import ExpensePeriodicity, FixedExpense
+from app.models.loyalty import LoyaltyTransaction, LoyaltyTransactionType
 from app.models.patient import Patient
 from app.models.patient_photo import PatientPhoto, PhotoType
 from app.models.payment_fee_rule import PaymentFeeRule
@@ -34,21 +38,19 @@ from app.models.return_opportunity import (
 from app.models.sale import Sale, SaleStatus, SaleType
 from app.models.sale_item import SaleItem
 from app.models.session import Session, SessionStatus
+from app.models.subscription import Subscription, SubscriptionStatus
 from app.models.supply import (
     MovementType,
     Supply,
     SupplyCategory,
     SupplyMovement,
 )
-from app.models.campaign import CampaignTemplate
-from app.models.coupon import Coupon
-from app.models.loyalty import LoyaltyTransaction, LoyaltyTransactionType
-from app.models.subscription import Subscription, SubscriptionStatus
 from app.models.terms_acceptance import TermsAcceptance
 from app.models.user import User
 from app.models.vial import OpenVial, VialStatus
 
 __all__ = [
+    "AIUsage",
     "Base",
     "TenantModel",
     "TimestampMixin",

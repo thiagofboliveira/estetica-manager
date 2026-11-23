@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect } from "react";
+import { toast } from "@/ui/ToastContext";
 import { useNavigate } from "react-router-dom";
 import { usePatientImport } from "./hooks";
 import type { BatchImportResult, BatchImportPayload } from "./api";
@@ -70,8 +71,11 @@ export function PatientImportPage() {
       setResult(res);
       setStep(4);
     } catch (err) {
-      alert("Erro ao importar pacientes. Verifique o console.");
-      console.error(err);
+      toast.error(
+        err instanceof Error && err.message
+          ? `Não foi possível importar: ${err.message}`
+          : "Não foi possível importar os pacientes. Confira o arquivo e tente novamente.",
+      );
       setStep(2);
     }
   }

@@ -1,8 +1,8 @@
-from decimal import Decimal
-from enum import StrEnum
 import math
 import secrets
 import string
+from decimal import Decimal
+from enum import StrEnum
 
 
 class VipTier(StrEnum):

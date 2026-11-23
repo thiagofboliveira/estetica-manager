@@ -1,5 +1,4 @@
 from datetime import UTC, datetime
-from decimal import Decimal
 from uuid import uuid4
 
 import pytest
@@ -9,7 +8,6 @@ from app.api import deps
 from app.db.session import unsafe_session_without_tenant
 from app.main import app
 from app.models.clinic import Clinic
-from app.models.loyalty import LoyaltyReward
 from app.models.patient import Patient
 from app.models.professional import Professional
 from app.models.user import User

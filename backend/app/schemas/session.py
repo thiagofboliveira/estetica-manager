@@ -1,7 +1,6 @@
 from datetime import datetime, time
-from uuid import UUID
-
 from typing import Any
+from uuid import UUID
 
 from pydantic import field_validator
 

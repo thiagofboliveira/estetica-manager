@@ -1,11 +1,11 @@
 """Testes unitários do módulo centralizado de precificação (Billing)."""
 
 from decimal import Decimal
+
 import pytest
 
 from app.domain.billing.pricing import (
     BillingCycle,
-    LUMINA_PRO_PLAN,
     get_all_plans,
     get_cycle_pricing,
     get_plan,

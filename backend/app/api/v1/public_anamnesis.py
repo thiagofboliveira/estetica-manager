@@ -2,10 +2,11 @@
 
 from uuid import UUID
 
-from fastapi import APIRouter, HTTPException, Query, Request, status
+from fastapi import APIRouter, HTTPException, Request, status
 from sqlalchemy import select
 
 from app.api.v1.public_agenda import (
+    BookingToken,
     PublicBookingRateLimit,
     PublicQueryRateLimit,
 )
@@ -59,7 +60,7 @@ def _build_anamnesis_service(session, professional_id: UUID) -> AnamnesisService
 @router.get("/by-booking/{booking_id}", response_model=AnamnesisSubmissionOut)
 def get_or_create_booking_anamnesis(
     booking_id: UUID,
-    token: str = Query(..., min_length=10),
+    token: BookingToken,
     _rate_limit: PublicQueryRateLimit = None,
 ) -> AnamnesisSubmissionOut:
     """Obtém ou gera ficha de anamnese vinculada a um agendamento público."""
@@ -158,6 +159,14 @@ def submit_public_anamnesis(
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Ficha de anamnese não encontrada.",
+            )
+
+        # Ficha assinada é imutável: sem esta trava, quem tem o link poderia
+        # reenviar e sobrescrever respostas, assinatura e data do aceite do TCLE.
+        if sub.submitted_at is not None:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="Esta ficha já foi enviada e não pode ser alterada. Fale com a profissional.",
             )
 
         template = svc.template_repo.get_by_id(sub.template_id)

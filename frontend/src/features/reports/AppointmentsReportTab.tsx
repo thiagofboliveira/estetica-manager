@@ -16,6 +16,7 @@ import { downloadCsv } from "./exportApi";
 import type { PeriodDateRange } from "./types";
 import chartStyles from "@/features/dashboard/charts.module.css";
 import styles from "./ReportsPage.module.css";
+import { toast } from "@/ui/ToastContext";
 
 type Props = {
   dateRange: PeriodDateRange;
@@ -46,7 +47,7 @@ export function AppointmentsReportTab({ dateRange }: Props) {
       setExporting(true);
       await downloadCsv("sessions", "relatorio-agendamentos.csv");
     } catch {
-      alert("Não foi possível gerar a exportação de agendamentos no momento.");
+      toast.error("Não foi possível gerar a exportação de agendamentos no momento.");
     } finally {
       setExporting(false);
     }

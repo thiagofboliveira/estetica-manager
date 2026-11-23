@@ -33,6 +33,7 @@ from app.api.v1 import (
     vials,
     weekly_summary,
 )
+from app.core.body_limit import BodyLimitMiddleware
 from app.core.config import settings
 from app.db.session import unsafe_session_without_tenant
 from app.repositories.user import UserRepository
@@ -56,6 +57,13 @@ if settings.SENTRY_DSN:
     )
 
 app = FastAPI(title="Estetica API", version="0.1.0")
+
+# REV-05: rotas sem login não aceitam corpo arbitrariamente grande.
+app.add_middleware(
+    BodyLimitMiddleware,
+    max_bytes=2 * 1024 * 1024,
+    path_prefixes=("/api/v1/public", "/api/v1/billing/webhooks"),
+)
 
 # B-04: sem isto, front e back em domínios diferentes (o cenário normal
 # de deploy — ex. Vercel + Railway) têm toda chamada bloqueada pelo

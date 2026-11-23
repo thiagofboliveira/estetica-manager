@@ -8,6 +8,9 @@ import {
 import { useProcedures } from "@/features/procedures/hooks";
 import { compressImage } from "./imageUtils";
 import type { PatientPhoto, PhotoType } from "./photosApi";
+import { confirmDialog } from "@/ui/confirmDialog";
+import { toast } from "@/ui/ToastContext";
+import { escapeToClose, focusModal } from "@/ui/modalA11y";
 
 interface PatientPhotosGalleryProps {
   patientId: string;
@@ -97,7 +100,7 @@ export function PatientPhotosGallery({
       const compressedDataUrl = await compressImage(file, 1280, 0.82);
       setPreviewUrl(compressedDataUrl);
     } catch (err) {
-      alert("Erro ao processar imagem. Tente outro arquivo.");
+      toast.error("Erro ao processar imagem. Tente outro arquivo.");
       setPreviewUrl(null);
     } finally {
       setIsCompressing(false);
@@ -117,7 +120,7 @@ export function PatientPhotosGallery({
   async function handleSavePhoto(e: React.FormEvent) {
     e.preventDefault();
     if (!previewUrl) {
-      alert("Selecione ou tire uma foto antes de salvar.");
+      toast.error("Selecione ou tire uma foto antes de salvar.");
       return;
     }
 
@@ -132,20 +135,20 @@ export function PatientPhotosGallery({
       });
       setIsUploadOpen(false);
     } catch (err) {
-      alert("Não foi possível salvar a foto. Tente novamente.");
+      toast.error("Não foi possível salvar a foto. Tente novamente.");
     }
   }
 
   async function handleDelete(photo: PatientPhoto) {
     const confirmMsg = `Deseja realmente excluir esta foto (${photo.photo_type === "BEFORE" ? "Antes" : photo.photo_type === "AFTER" ? "Depois" : "Geral"})?`;
-    if (confirm(confirmMsg)) {
+    if (await confirmDialog(confirmMsg)) {
       try {
         await deletePhotoMutation.mutateAsync(photo.id);
         if (lightboxPhoto?.id === photo.id) {
           setLightboxPhoto(null);
         }
       } catch (err) {
-        alert("Erro ao excluir foto.");
+        toast.error("Erro ao excluir foto.");
       }
     }
   }
@@ -415,7 +418,7 @@ export function PatientPhotosGallery({
 
       {/* Modal de Upload / Captura de Foto */}
       {isUploadOpen && (
-        <div className={styles.modalBackdrop} onClick={() => setIsUploadOpen(false)}>
+        <div className={styles.modalBackdrop} onClick={() => setIsUploadOpen(false)} ref={focusModal} tabIndex={-1} onKeyDown={escapeToClose(() => setIsUploadOpen(false))}>
           <div
             className={styles.modalContent}
             onClick={(e) => e.stopPropagation()}

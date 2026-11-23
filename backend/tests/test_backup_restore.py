@@ -41,9 +41,20 @@ def test_backup_restore_scripts_exist_and_executable():
 )
 def test_verify_backup_restore_execution():
     """Executa a verificação completa de backup e restore contra o Postgres."""
+    # O script precisa de uma URL libpq (sem "+psycopg2") e de um papel que
+    # possa CRIAR banco: usa a URL do owner (a mesma das migrações). Antes ele
+    # herdava a URL da aplicação (role sem CREATEDB, com sufixo de driver) ou
+    # caía no default fixo da porta 5434/5432.
+    env = dict(os.environ)
+    owner_url = os.environ.get("DATABASE_URL_MIGRATIONS") or os.environ.get(
+        "DATABASE_URL"
+    )
+    if owner_url:
+        env["DATABASE_URL"] = owner_url.replace("postgresql+psycopg2://", "postgresql://")
     result = subprocess.run(
         [str(VERIFY_SCRIPT)],
         cwd=str(REPO_ROOT),
+        env=env,
         capture_output=True,
         text=True,
         timeout=60,

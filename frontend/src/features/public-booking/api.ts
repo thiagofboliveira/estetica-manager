@@ -48,6 +48,10 @@ export type PublicBooking = {
   management_token: string;
 };
 
+function tokenHeader(token: string): Record<string, string> {
+  return { "X-Booking-Token": token };
+}
+
 export const publicBookingApi = {
   getAgendaInfo: (slug: string) =>
     api.get<PublicProfessionalInfo>(`/public/agenda/${encodeURIComponent(slug)}`),
@@ -58,18 +62,17 @@ export const publicBookingApi = {
   createBooking: (slug: string, payload: PublicBookingCreateInput) =>
     api.post<PublicBooking>(`/public/agenda/${encodeURIComponent(slug)}/bookings`, payload),
 
+  // REV-06: o token vai no header (query string vaza em log de acesso e Referer).
   getBooking: (id: string, token: string) =>
-    api.get<PublicBooking>(`/public/bookings/${id}?token=${encodeURIComponent(token)}`),
+    api.get<PublicBooking>(`/public/bookings/${id}`, { headers: tokenHeader(token) }),
 
   rescheduleBooking: (id: string, token: string, payload: PublicBookingRescheduleInput) =>
-    api.patch<PublicBooking>(
-      `/public/bookings/${id}/reschedule?token=${encodeURIComponent(token)}`,
-      payload
-    ),
+    api.patch<PublicBooking>(`/public/bookings/${id}/reschedule`, payload, {
+      headers: tokenHeader(token),
+    }),
 
   cancelBooking: (id: string, token: string) =>
-    api.post<PublicBooking>(
-      `/public/bookings/${id}/cancel?token=${encodeURIComponent(token)}`,
-      {}
-    ),
+    api.post<PublicBooking>(`/public/bookings/${id}/cancel`, {}, {
+      headers: tokenHeader(token),
+    }),
 };

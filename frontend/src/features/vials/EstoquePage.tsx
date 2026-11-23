@@ -27,6 +27,7 @@ import {
 import { formatBRL } from "@/lib/money/format";
 import { money } from "@/lib/money/money";
 import styles from "./EstoquePage.module.css";
+import { confirmDialog } from "@/ui/confirmDialog";
 
 export function EstoquePage() {
   const [activeTab, setActiveTab] = useState<"inventory" | "vials" | "movements">("inventory");
@@ -502,7 +503,7 @@ function ActiveVialCardItem({
   }
 
   const handleFinish = async () => {
-    if (confirm(`Deseja finalizar o frasco "${vial.medication_name}"?`)) {
+    if (await confirmDialog(`Deseja finalizar o frasco "${vial.medication_name}"?`)) {
       await finishMutation.mutateAsync(vial.id);
     }
   };

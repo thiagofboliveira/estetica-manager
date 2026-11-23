@@ -6,16 +6,18 @@ Rotas públicas (/health) simplesmente não declaram DbSession.
 """
 
 from datetime import timedelta
-from typing import Annotated
+from typing import TYPE_CHECKING, Annotated
 from uuid import UUID
 
 from fastapi import Depends, HTTPException, Request, status
 from sqlalchemy.orm import Session
 
+from app.core.config import settings
 from app.core.rate_limit import InMemoryRateLimiter
 from app.core.security import get_current_professional_id
 from app.db.session import get_tenant_session, unsafe_session_without_tenant
 from app.models.user import User
+from app.repositories.ai_usage import AIUsageRepository
 from app.repositories.anamnesis import (
     AnamnesisQuestionRepository,
     AnamnesisSubmissionRepository,
@@ -35,9 +37,13 @@ from app.repositories.return_opportunity import ReturnOpportunityRepository
 from app.repositories.sale import SaleRepository
 from app.repositories.sale_item import SaleItemRepository
 from app.repositories.session import SessionRepository
+from app.repositories.supply_repository import SupplyRepository
 from app.repositories.terms_acceptance import TermsAcceptanceRepository
 from app.repositories.user import UserRepository
+from app.repositories.vial_repository import OpenVialRepository
 from app.services.agenda_service import AgendaService
+from app.services.ai_providers import TextProvider, build_provider
+from app.services.ai_text_service import AITextService
 from app.services.anamnesis_service import AnamnesisService
 from app.services.attribution_service import AttributionService
 from app.services.booking_service import BookingService
@@ -56,13 +62,16 @@ from app.services.procedure_service import ProcedureService
 from app.services.retention_service import RetentionService
 from app.services.sale_service import SaleService
 from app.services.session_service import SessionService
+from app.services.supply_service import SupplyService
 from app.services.system_service import SystemService
 from app.services.user_service import UserService
 from app.services.vial_service import VialService
 from app.services.weekly_summary_service import WeeklySummaryService
-from app.repositories.vial_repository import OpenVialRepository
-from app.services.supply_service import SupplyService
-from app.repositories.supply_repository import SupplyRepository
+
+if TYPE_CHECKING:
+    from app.services.billing_service import BillingService
+    from app.services.campaign_service import CampaignService
+    from app.services.loyalty_service import LoyaltyService
 
 CurrentProfessional = Annotated[UUID, Depends(get_current_professional_id)]
 
@@ -110,6 +119,26 @@ def check_system_setup_rate_limit(request: Request) -> None:
 
 
 SystemSetupRateLimit = Annotated[None, Depends(check_system_setup_rate_limit)]
+
+
+# REV-10: sem limite, qualquer usuário logado enumerava códigos de cupom.
+_coupon_validate_rate_limiter = InMemoryRateLimiter(
+    max_calls=30, window=timedelta(hours=1)
+)
+
+
+def check_coupon_validate_rate_limit(professional_id: CurrentProfessional) -> None:
+    """30 validações de cupom/hora por profissional."""
+    retry_after = _coupon_validate_rate_limiter.check(professional_id)
+    if retry_after is not None:
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail="Muitas tentativas de cupom. Tente novamente em breve.",
+            headers={"Retry-After": str(max(1, int(retry_after.total_seconds())))},
+        )
+
+
+CouponValidateRateLimit = Annotated[None, Depends(check_coupon_validate_rate_limit)]
 
 
 def _db(professional_id: CurrentProfessional):
@@ -432,6 +461,28 @@ def get_agenda_service(
 
 AgendaSvc = Annotated[AgendaService, Depends(get_agenda_service)]
 RetentionSvc = Annotated[RetentionService, Depends(get_retention_service)]
+
+
+def get_text_provider() -> TextProvider | None:
+    """Provedor de IA de texto, montado pela configuração (AI_PROVIDER e chaves).
+    Sem nenhum configurado devolve None e o produto usa o texto fixo. Os testes
+    substituem esta dependência."""
+    return build_provider(settings)
+
+
+def get_ai_text_service(
+    session: DbSession,
+    professional_id: CurrentProfessional,
+    provider: Annotated[TextProvider | None, Depends(get_text_provider)],
+) -> AITextService:
+    return AITextService(
+        usage_repo=AIUsageRepository(session, professional_id),
+        provider=provider,
+        monthly_limit=settings.AI_MONTHLY_DRAFT_LIMIT,
+    )
+
+
+AITextSvc = Annotated[AITextService, Depends(get_ai_text_service)]
 BookingSvc = Annotated[BookingService, Depends(get_booking_service)]
 UserSvc = Annotated[UserService, Depends(get_user_service)]
 SystemSvc = Annotated[SystemService, Depends(get_system_service)]
@@ -536,7 +587,10 @@ CampaignSvc = Annotated["CampaignService", Depends(get_campaign_service)]
 def get_loyalty_service(
     session: DbSession, professional_id: CurrentProfessional
 ) -> "LoyaltyService":
-    from app.repositories.loyalty_repository import LoyaltyRepository, LoyaltyRewardRepository
+    from app.repositories.loyalty_repository import (
+        LoyaltyRepository,
+        LoyaltyRewardRepository,
+    )
     from app.services.loyalty_service import LoyaltyService
 
     return LoyaltyService(

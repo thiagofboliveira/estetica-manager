@@ -4,12 +4,11 @@ from uuid import uuid4
 
 import pytest
 
-from app.models.supply import MovementType, Supply, SupplyCategory, SupplyMovement
+from app.models.supply import MovementType, Supply, SupplyCategory
 from app.repositories.supply_repository import SupplyRepository
-from app.schemas.supply import SupplyCreate, SupplyMovementCreate, SupplyUpdate
+from app.schemas.supply import SupplyCreate, SupplyMovementCreate
 from app.services.supply_service import (
     InsufficientStockError,
-    SupplyNotFoundError,
     SupplyService,
 )
 

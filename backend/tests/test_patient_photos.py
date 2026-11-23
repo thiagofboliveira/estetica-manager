@@ -1,7 +1,6 @@
 """Testes de integração reais para a Galeria de Fotos Antes & Depois (US-01)."""
 
 import uuid
-from datetime import UTC, datetime
 
 import pytest
 from fastapi.testclient import TestClient

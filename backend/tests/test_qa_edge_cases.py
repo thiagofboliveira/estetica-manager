@@ -5,7 +5,7 @@ from uuid import uuid4
 import pytest
 from pydantic import ValidationError
 
-from app.core.money import ZERO, money
+from app.core.money import ZERO
 from app.domain.financial.calculator import (
     FeePayer,
     LineItem,

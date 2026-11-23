@@ -23,6 +23,9 @@ import {
   IconX,
 } from "@/ui/icons";
 import styles from "./AnamnesisPage.module.css";
+import { confirmDialog } from "@/ui/confirmDialog";
+import { toast } from "@/ui/ToastContext";
+import { escapeToClose, focusModal } from "@/ui/modalA11y";
 
 export function AnamnesisPage() {
   const [activeTab, setActiveTab] = useState<"questions" | "submissions">("questions");
@@ -51,7 +54,7 @@ export function AnamnesisPage() {
       setCopiedLink(true);
       setTimeout(() => setCopiedLink(false), 2500);
     } catch {
-      alert("Não foi possível gerar o link no momento.");
+      toast.error("Não foi possível gerar o link no momento.");
     }
   }
 
@@ -74,7 +77,7 @@ export function AnamnesisPage() {
   }
 
   async function handleDeleteQuestion(id: string) {
-    if (confirm("Tem certeza que deseja remover esta pergunta da ficha de anamnese?")) {
+    if (await confirmDialog("Tem certeza que deseja remover esta pergunta da ficha de anamnese?")) {
       await deleteQuestionMut.mutateAsync(id);
     }
   }
@@ -345,8 +348,8 @@ export function AnamnesisPage() {
 
       {/* Modal de Visualização de Respostas da Paciente */}
       {selectedSubmission && (
-        <div className={styles.modalOverlay} onClick={() => setSelectedSubmission(null)}>
-          <div className={styles.modalContent} onClick={(e) => e.stopPropagation()}>
+        <div className={styles.modalOverlay} onClick={() => setSelectedSubmission(null)} ref={focusModal} tabIndex={-1} onKeyDown={escapeToClose(() => setSelectedSubmission(null))}>
+          <div className={styles.modalContent} role="dialog" aria-modal="true" onClick={(e) => e.stopPropagation()}>
             <header className={styles.modalHeader}>
               <div>
                 <h3>Respostas de {selectedSubmission.patient_name}</h3>

@@ -87,3 +87,13 @@ class ReturnOpportunityOut(OutputSchema):
     dismissed_at: datetime | None
     created_at: datetime
     updated_at: datetime
+
+
+class DraftMessageOut(OutputSchema):
+    """AI-02: rascunho de mensagem de retorno. A profissional revisa e envia;
+    nada é enviado pelo backend."""
+
+    text: str
+    source: str  # "ai" | "fallback"
+    fallback_reason: str | None
+    remaining_drafts: int

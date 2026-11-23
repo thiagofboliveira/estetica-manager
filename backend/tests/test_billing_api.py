@@ -1,7 +1,8 @@
 """Integration tests for the Billing API endpoints (Asaas integration)."""
 
-import pytest
 from decimal import Decimal
+
+import pytest
 from fastapi.testclient import TestClient
 
 from app.core.config import settings

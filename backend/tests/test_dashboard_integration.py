@@ -126,6 +126,17 @@ class TestHasAnyDataContrato:
     def test_com_historico_e_true(
         self, client: TestClient, auth_headers: dict[str, str]
     ) -> None:
+        # Hermético: cria o histórico em vez de depender de dado deixado por
+        # outros testes (num banco novo não existe nenhuma venda).
+        from app.db.session import get_tenant_session
+        from tests.conftest import BASELINE_ID
+        from tests.test_snapshot_immutability import _make_sale
+
+        gen = get_tenant_session(BASELINE_ID)
+        session = next(gen)
+        session.add(_make_sale(BASELINE_ID))
+        session.commit()
+        gen.close()
         resp = client.get(
             "/api/v1/dashboard", params={"period": "this_month"}, headers=auth_headers
         )

@@ -16,6 +16,7 @@ import {
   useFixedExpenses,
   useUpdateFixedExpense,
 } from "./hooks";
+import { confirmDialog } from "@/ui/confirmDialog";
 
 const schema = z.object({
   label: z.string().min(1, "Descrição é obrigatória"),
@@ -118,7 +119,7 @@ export function FixedExpensesList() {
   });
 
   async function handleArchive(item: FixedExpense) {
-    if (!window.confirm(`Deseja encerrar a despesa fixa "${item.label}"? Ela deixará de contar a partir de hoje.`)) {
+    if (!await confirmDialog(`Deseja encerrar a despesa fixa "${item.label}"? Ela deixará de contar a partir de hoje.`)) {
       return;
     }
     setArchiveError(null);

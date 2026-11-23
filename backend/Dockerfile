@@ -42,4 +42,10 @@ USER app
 
 EXPOSE 8000
 
-CMD ["sh", "-c", "alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}"]
+# REV-12: migração roda aqui só quando RUN_MIGRATIONS=1 (default, p/ hosts sem
+# etapa de release). Com mais de uma réplica, defina RUN_MIGRATIONS=0 e rode
+# `alembic upgrade head` numa etapa de release (railway.json: preDeployCommand),
+# senão duas réplicas migram ao mesmo tempo.
+# REV-04: --proxy-headers lê X-Forwarded-For para o IP real do visitante (rate
+# limit por IP). Defina FORWARDED_ALLOW_IPS com o IP do proxy — nunca "*".
+CMD ["sh", "-c", "if [ \"${RUN_MIGRATIONS:-1}\" = \"1\" ]; then alembic upgrade head || exit 1; fi; exec uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000} --proxy-headers"]

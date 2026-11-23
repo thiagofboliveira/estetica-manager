@@ -11,6 +11,8 @@ import {
   usePaymentFeeRules,
   useUpdatePaymentFeeRule,
 } from "./hooks";
+import { confirmDialog } from "@/ui/confirmDialog";
+import { toast } from "@/ui/ToastContext";
 
 const ruleSchema = z
   .object({
@@ -118,13 +120,13 @@ export function PaymentFeeRulesManager() {
   });
 
   async function handleDelete(rule: PaymentFeeRule) {
-    if (!window.confirm(`Deseja excluir a regra de ${rule.installments_min}x a ${rule.installments_max}x?`)) {
+    if (!await confirmDialog(`Deseja excluir a regra de ${rule.installments_min}x a ${rule.installments_max}x?`)) {
       return;
     }
     try {
       await deleteRule.mutateAsync(rule.id);
     } catch (e) {
-      alert(e instanceof ApiError ? e.message : "Erro ao excluir regra.");
+      toast.error(e instanceof ApiError ? e.message : "Erro ao excluir regra.");
     }
   }
 

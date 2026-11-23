@@ -1,8 +1,6 @@
 from decimal import Decimal
 from unittest.mock import MagicMock
 
-import pytest
-
 from app.models.financial_settings import FinancialSettings
 from app.schemas.financial_settings import FinancialSettingsUpdate
 from app.services.financial_settings_service import FinancialSettingsService

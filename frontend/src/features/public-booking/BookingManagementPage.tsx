@@ -8,6 +8,8 @@ import { anamnesisApi } from "@/features/anamnesis/api";
 import { formatBRL } from "@/lib/money/format";
 import { money } from "@/lib/money/money";
 import styles from "./BookingManagementPage.module.css";
+import { confirmDialog } from "@/ui/confirmDialog";
+import { toast } from "@/ui/ToastContext";
 
 export function BookingManagementPage() {
   const { id } = useParams<{ id: string }>();
@@ -99,7 +101,7 @@ export function BookingManagementPage() {
 
   const handleCancelBooking = async () => {
     if (!id || !token) return;
-    if (!window.confirm("Deseja realmente cancelar este agendamento? O horário será liberado na agenda.")) return;
+    if (!await confirmDialog("Deseja realmente cancelar este agendamento? O horário será liberado na agenda.")) return;
 
     setCancelling(true);
     try {
@@ -107,7 +109,7 @@ export function BookingManagementPage() {
       setBooking(updated);
     } catch (err: unknown) {
       const error = err as Error;
-      alert(error.message || "Erro ao cancelar agendamento.");
+      toast.error(error.message || "Erro ao cancelar agendamento.");
     } finally {
       setCancelling(false);
     }

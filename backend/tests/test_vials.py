@@ -1,7 +1,5 @@
 """Testes de integração para rastreamento de frascos de Botox e insumos perecíveis (US-03)."""
 
-from decimal import Decimal
-import uuid
 import pytest
 from fastapi.testclient import TestClient
 

@@ -1,6 +1,5 @@
 """CampaignService: Gerenciamento de modelos de campanhas e disparos."""
 
-from datetime import datetime
 from uuid import UUID
 
 from app.models.campaign import CampaignTemplate

@@ -1,3 +1,4 @@
+import os
 from functools import lru_cache
 
 from pydantic import field_validator
@@ -33,18 +34,27 @@ class Settings(BaseSettings):
             password = password.replace("#", "%23")
             v = f"{prefix}{password}@{rest}"
 
-        # Se for o host direct do Supabase (IPv6-only incompatível com Render Free),
-        # converte automaticamente para o Connection Pooler IPv4 do Supabase
-        if "db.ckgnnvxnftaqtnkmovox.supabase.co" in v:
-            v = v.replace(
-                "db.ckgnnvxnftaqtnkmovox.supabase.co",
-                "aws-0-us-east-2.pooler.supabase.com",
+        # Host direct do Supabase é IPv6-only (incompatível com Render Free):
+        # converte para o Connection Pooler IPv4. O ref do projeto vem da
+        # própria URL (db.<ref>.supabase.co) — nada de identificador fixo no
+        # código. Região/host do pooler configuráveis (default: us-east-2).
+        direct = re.search(r"db\.([a-z0-9]+)\.supabase\.co", v)
+        if direct:
+            ref = direct.group(1)
+            pooler = os.environ.get(
+                "SUPABASE_POOLER_HOST", "aws-0-us-east-2.pooler.supabase.com"
             )
-            v = re.sub(r"://postgres:", "://postgres.ckgnnvxnftaqtnkmovox:", v)
+            v = v.replace(f"db.{ref}.supabase.co", pooler)
+            v = re.sub(r"://postgres:", f"://postgres.{ref}:", v)
 
-        # No Connection Pooler do Supabase, o usuário OBRIGATORIAMENTE deve ser postgres.<ref>
+        # No pooler o usuário PRECISA ser postgres.<ref>; sem o host direct na
+        # URL, o ref vem de SUPABASE_URL (https://<ref>.supabase.co).
         if "pooler.supabase.com" in v and "://postgres:" in v:
-            v = re.sub(r"://postgres:", "://postgres.ckgnnvxnftaqtnkmovox:", v)
+            url_ref = re.match(
+                r"https://([a-z0-9]+)\.supabase\.co", os.environ.get("SUPABASE_URL", "")
+            )
+            if url_ref:
+                v = re.sub(r"://postgres:", f"://postgres.{url_ref.group(1)}:", v)
 
         return v
 
@@ -107,6 +117,24 @@ class Settings(BaseSettings):
     ASAAS_API_KEY: str | None = None
     ASAAS_API_URL: str = "https://sandbox.asaas.com/api/v3"
     ASAAS_WEBHOOK_SECRET: str | None = None
+
+    # IA de texto (AI-01). Sem nenhuma chave, tudo cai no texto fixo: o produto
+    # não depende de provedor para funcionar. AI_PROVIDER aceita um nome ou uma
+    # lista em ordem de preferência ("groq,anthropic"); vazio = usa o que tiver chave.
+    AI_PROVIDER: str | None = None
+    ANTHROPIC_API_KEY: str | None = None
+    ANTHROPIC_MODEL: str = "claude-haiku-5-5"
+    GROQ_API_KEY: str | None = None
+    GROQ_MODEL: str = "llama-3.3-70b-versatile"
+    OPENAI_API_KEY: str | None = None
+    OPENAI_MODEL: str = "gpt-4o-mini"
+    # Qualquer endpoint no formato OpenAI (OpenRouter, Together, servidor próprio).
+    AI_BASE_URL: str | None = None
+    AI_API_KEY: str | None = None
+    AI_MODEL: str = ""
+    AI_TIMEOUT_SECONDS: float = 8.0
+    # Teto de rascunhos por profissional por mês (protege a margem do plano).
+    AI_MONTHLY_DRAFT_LIMIT: int = 100
 
 
 @lru_cache

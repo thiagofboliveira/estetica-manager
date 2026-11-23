@@ -11,7 +11,7 @@ from app.domain.billing.pricing import BillingCycle
 from app.models.base import Base, TimestampMixin
 
 
-class SubscriptionStatus(str, Enum):
+class SubscriptionStatus(str, Enum):  # noqa: UP042 — str(x) deve continuar 'Classe.X'; StrEnum mudaria isso
     TRIALING = "TRIALING"
     ACTIVE = "ACTIVE"
     PAST_DUE = "PAST_DUE"
@@ -71,6 +71,8 @@ class Subscription(Base, TimestampMixin):
     payment_method: Mapped[str | None] = mapped_column(String(30), nullable=True)
     invoice_url: Mapped[str | None] = mapped_column(String(500), nullable=True)
     pix_qrcode_payload: Mapped[str | None] = mapped_column(Text, nullable=True)
+    # Última cobrança do Asaas já processada (dedupe de reentrega de webhook).
+    last_payment_id: Mapped[str | None] = mapped_column(String(100), nullable=True)
 
     clinic = relationship("Clinic", foreign_keys=[clinic_id])
     coupon = relationship("Coupon", foreign_keys=[coupon_id])

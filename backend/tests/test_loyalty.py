@@ -6,7 +6,7 @@ import pytest
 
 from app.domain.loyalty.rules import VipTier
 from app.models.financial_settings import FinancialSettings
-from app.models.loyalty import LoyaltyTransaction, LoyaltyTransactionType
+from app.models.loyalty import LoyaltyTransaction
 from app.models.patient import Patient
 from app.models.sale import Sale, SaleStatus
 from app.repositories.financial_settings import FinancialSettingsRepository

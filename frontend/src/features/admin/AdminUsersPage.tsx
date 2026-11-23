@@ -3,6 +3,7 @@ import { useAuth } from "@/lib/auth/AuthContext";
 import { api } from "@/lib/http/client";
 import { toast } from "@/ui/ToastContext";
 import styles from "./AdminUsersPage.module.css";
+import { escapeToClose, focusModal } from "@/ui/modalA11y";
 
 export interface UserItem {
   id: string;
@@ -126,7 +127,7 @@ export function AdminUsersPage() {
 
   async function handleToggleStatus(targetUser: UserItem) {
     if (targetUser.id === currentUser?.id) {
-      alert("Você não pode desativar seu próprio usuário.");
+      toast.error("Você não pode desativar seu próprio usuário.");
       return;
     }
 
@@ -138,9 +139,9 @@ export function AdminUsersPage() {
       await fetchUsers();
     } catch (err: unknown) {
       if (err instanceof Error) {
-        alert(err.message);
+        toast.error(err.message);
       } else {
-        alert("Erro ao alterar status do usuário.");
+        toast.error("Erro ao alterar status do usuário.");
       }
     }
   }
@@ -221,8 +222,8 @@ export function AdminUsersPage() {
 
       {/* Modal de Criação / Edição */}
       {isModalOpen && (
-        <div className={styles.modalOverlay} onClick={closeModal}>
-          <div className={styles.modalCard} onClick={(e) => e.stopPropagation()}>
+        <div className={styles.modalOverlay} onClick={closeModal} ref={focusModal} tabIndex={-1} onKeyDown={escapeToClose(closeModal)}>
+          <div className={styles.modalCard} role="dialog" aria-modal="true" onClick={(e) => e.stopPropagation()}>
             <div className={styles.modalHeader}>
               <h2 className={styles.modalTitle}>
                 {editingUser ? "Editar Usuário" : "Novo Usuário"}
