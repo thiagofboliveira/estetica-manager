@@ -20,6 +20,12 @@ profissional/mês). A margem é protegida por teto mensal (`AI_MONTHLY_DRAFT_LIM
 modelo pequeno (`AI_MODEL`). Hoje existe um único plano (`pro`), então o teto é global; quando houver
 mais de um plano, o teto passa a ser por plano. BYOK só se aparecer cliente técnico pedindo.
 
+**Vários provedores:** `AI_PROVIDER` aceita `anthropic`, `groq`, `openai` ou `openai_compatible` (qualquer
+endpoint no formato OpenAI, via `AI_BASE_URL`), sozinho ou em lista (`groq,anthropic`). Em lista, o próximo
+entra quando o anterior falha ou estoura o limite do free tier; se todos falharem, vale o texto fixo.
+Sem `AI_PROVIDER`, usa o primeiro que tiver chave. Antes de ligar um modelo gratuito, teste a qualidade
+em português com mensagens reais.
+
 ## 1. Auditoria do que já existe
 
 | Item | Estado | Evidência |
@@ -34,7 +40,7 @@ mais de um plano, o teto passa a ser por plano. BYOK só se aparecer cliente té
 
 | ID | Task | Status | Depende | Nota |
 |---|---|:--:|---|---|
-| `AI-01` | Camada `services/ai_text_service.py` com provedor injetável, timeout, teto de uso por plano e fallback para o texto fixo | `[~]` | — | **Por quê:** sem fallback, a tela quebra quando o provedor cai. Teto por plano evita custo descontrolado. Envia só os campos necessários (nunca CPF nem saúde). **Feito:** `services/ai_text_service.py`, tabela `ai_usage` (migração 0038, RLS), provedor injetável, teto mensal, fallback; `tests/test_ai_draft_message.py` (17 testes, banco real, provedor falso). **Falta:** uma chamada real ao provedor com `ANTHROPIC_API_KEY` (aqui só foi testada com rede simulada). |
+| `AI-01` | Camada `services/ai_text_service.py` com provedor injetável, timeout, teto de uso por plano e fallback para o texto fixo | `[~]` | — | **Por quê:** sem fallback, a tela quebra quando o provedor cai. Teto por plano evita custo descontrolado. Envia só os campos necessários (nunca CPF nem saúde). **Feito:** `services/ai_text_service.py`, tabela `ai_usage` (migração 0038, RLS), provedor injetável, teto mensal, fallback; `tests/test_ai_draft_message.py` (31 testes: 17 de rascunho com banco real e 14 de provedores, todos com rede simulada). **Falta:** uma chamada real ao provedor com `ANTHROPIC_API_KEY` (aqui só foi testada com rede simulada). |
 | `AI-02` | Mensagem de retorno por paciente: `POST /retention/opportunities/{id}/draft-message` | `[~]` | AI-01 | **Por quê:** é o gargalo do produto (não esquecer de chamar). Entrada: primeiro nome, último procedimento, dias desde o atendimento. A profissional revisa e envia; **nada sai sozinho**. Só para paciente com `consent_whatsapp`. **Feito:** `POST /retention/opportunities/{id}/draft-message` + botão "Sugerir mensagem" com texto editável em `RetentionCard` (4 testes de componente). **Falta:** clicar na tela contra a API real com chave. |
 | `AI-03` | Resumo semanal narrado: texto de 4–5 frases sobre o `GET /weekly-summary` | `[ ]` | AI-01 | **Por quê:** é o gancho para abrir o app toda semana. O texto cita só valores do payload e mantém "estimado"/"provisório" quando o campo vier assim (I7). |
 | `AI-04` | Alerta de procedimento no prejuízo: regra no backend (margem abaixo de limite) + explicação em texto | `[ ]` | AI-01, V-simulador | **Por quê:** é onde ela perde dinheiro sem ver. A regra de detecção é determinística no backend; a IA só explica com custo, taxa e tempo. **Sem sugestão de preço** enquanto não existir simulador no backend. |

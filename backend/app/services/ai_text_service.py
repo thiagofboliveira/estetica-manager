@@ -11,9 +11,7 @@ Regras que esta camada garante:
 import logging
 from dataclasses import dataclass
 from datetime import date
-from typing import Literal, Protocol
-
-import httpx
+from typing import Literal
 
 from app.domain.ai.return_message import (
     SYSTEM_PROMPT,
@@ -23,46 +21,14 @@ from app.domain.ai.return_message import (
     fallback_message,
 )
 from app.repositories.ai_usage import AIUsageRepository
+from app.services.ai_providers import AnthropicProvider, TextProvider
 
 logger = logging.getLogger(__name__)
 
+__all__ = ["AITextService", "AnthropicProvider", "GeneratedText", "TextProvider"]
+
 Source = Literal["ai", "fallback"]
 FallbackReason = Literal["no_provider", "limit_reached", "provider_error"]
-
-
-class TextProvider(Protocol):
-    def complete(self, *, system: str, user: str, max_tokens: int) -> str | None: ...
-
-
-class AnthropicProvider:
-    """Provedor real, via API de mensagens da Anthropic."""
-
-    URL = "https://api.anthropic.com/v1/messages"
-
-    def __init__(self, api_key: str, model: str, timeout: float) -> None:
-        self._api_key = api_key
-        self._model = model
-        self._timeout = timeout
-
-    def complete(self, *, system: str, user: str, max_tokens: int) -> str | None:
-        resp = httpx.post(
-            self.URL,
-            headers={
-                "x-api-key": self._api_key,
-                "anthropic-version": "2023-06-01",
-                "content-type": "application/json",
-            },
-            json={
-                "model": self._model,
-                "max_tokens": max_tokens,
-                "system": system,
-                "messages": [{"role": "user", "content": user}],
-            },
-            timeout=self._timeout,
-        )
-        resp.raise_for_status()
-        blocks = resp.json().get("content") or []
-        return "".join(b.get("text", "") for b in blocks if b.get("type") == "text")
 
 
 @dataclass(frozen=True)

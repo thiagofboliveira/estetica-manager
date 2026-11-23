@@ -42,11 +42,8 @@ from app.repositories.terms_acceptance import TermsAcceptanceRepository
 from app.repositories.user import UserRepository
 from app.repositories.vial_repository import OpenVialRepository
 from app.services.agenda_service import AgendaService
-from app.services.ai_text_service import (
-    AITextService,
-    AnthropicProvider,
-    TextProvider,
-)
+from app.services.ai_providers import TextProvider, build_provider
+from app.services.ai_text_service import AITextService
 from app.services.anamnesis_service import AnamnesisService
 from app.services.attribution_service import AttributionService
 from app.services.booking_service import BookingService
@@ -467,15 +464,10 @@ RetentionSvc = Annotated[RetentionService, Depends(get_retention_service)]
 
 
 def get_text_provider() -> TextProvider | None:
-    """Provedor de IA de texto. Sem chave configurada devolve None e o
-    produto usa o texto fixo. Os testes substituem esta dependência."""
-    if not settings.ANTHROPIC_API_KEY:
-        return None
-    return AnthropicProvider(
-        api_key=settings.ANTHROPIC_API_KEY,
-        model=settings.AI_MODEL,
-        timeout=settings.AI_TIMEOUT_SECONDS,
-    )
+    """Provedor de IA de texto, montado pela configuração (AI_PROVIDER e chaves).
+    Sem nenhum configurado devolve None e o produto usa o texto fixo. Os testes
+    substituem esta dependência."""
+    return build_provider(settings)
 
 
 def get_ai_text_service(
