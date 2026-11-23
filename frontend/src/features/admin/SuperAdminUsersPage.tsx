@@ -138,7 +138,7 @@ export function SuperAdminUsersPage() {
       toast.success(`Usuário ${!targetUser.is_active ? "ativado" : "desativado"} com sucesso!`);
       await fetchUsersAndClinics();
     } catch (err: unknown) {
-      alert(err instanceof Error ? err.message : "Erro ao alterar status do usuário.");
+      toast.error(err instanceof Error ? err.message : "Erro ao alterar status do usuário.");
     }
   }
 
@@ -150,7 +150,7 @@ export function SuperAdminUsersPage() {
       await checkAuth();
       navigate("/dashboard", { replace: true });
     } catch (err: unknown) {
-      alert(err instanceof Error ? err.message : "Erro ao iniciar impersonação.");
+      toast.error(err instanceof Error ? err.message : "Erro ao iniciar impersonação.");
       setImpersonatingId(null);
     }
   }

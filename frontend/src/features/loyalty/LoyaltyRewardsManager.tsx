@@ -9,6 +9,9 @@ import type { LoyaltyReward } from "./loyaltyApi";
 import styles from "./LoyaltyRewardsManager.module.css";
 import { formatBRL } from "@/lib/money/format";
 import { money } from "@/lib/money/money";
+import { confirmDialog } from "@/ui/confirmDialog";
+import { toast } from "@/ui/ToastContext";
+import { escapeToClose, focusModal } from "@/ui/modalA11y";
 
 export function LoyaltyRewardsManager() {
   const { data: rewards, isLoading, isError } = useLoyaltyRewards();
@@ -65,18 +68,18 @@ export function LoyaltyRewardsManager() {
         data: { is_active: !reward.is_active },
       });
     } catch (err: any) {
-      alert(err?.message || "Erro ao alterar status da recompensa.");
+      toast.error(err?.message || "Erro ao alterar status da recompensa.");
     }
   }
 
   async function handleDelete(reward: LoyaltyReward) {
-    if (!window.confirm(`Deseja realmente excluir a recompensa "${reward.title}"?`)) {
+    if (!await confirmDialog(`Deseja realmente excluir a recompensa "${reward.title}"?`)) {
       return;
     }
     try {
       await deleteMutation.mutateAsync(reward.id);
     } catch (err: any) {
-      alert(err?.message || "Erro ao excluir recompensa.");
+      toast.error(err?.message || "Erro ao excluir recompensa.");
     }
   }
 
@@ -260,8 +263,8 @@ export function LoyaltyRewardsManager() {
 
       {/* Modal de Criação / Edição */}
       {isModalOpen && (
-        <div className={styles.modalBackdrop} onClick={closeModal}>
-          <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
+        <div className={styles.modalBackdrop} onClick={closeModal} ref={focusModal} tabIndex={-1} onKeyDown={escapeToClose(closeModal)}>
+          <div className={styles.modal} role="dialog" aria-modal="true" onClick={(e) => e.stopPropagation()}>
             <div className={styles.modalHeader}>
               <h3>{editingReward ? "Editar Recompensa VIP" : "Nova Recompensa VIP"}</h3>
               <button type="button" className={styles.closeBtn} onClick={closeModal}>

@@ -9,6 +9,7 @@ import { ProfitByServiceChart } from "@/features/dashboard/ProcedureChartsSectio
 import { IconDownload, IconWallet } from "@/ui/icons";
 import { downloadCsv } from "./exportApi";
 import styles from "./ReportsPage.module.css";
+import { toast } from "@/ui/ToastContext";
 
 type Props = {
   params: DashboardParams;
@@ -23,7 +24,7 @@ export function FinancialReportTab({ params }: Props) {
       setExporting(true);
       await downloadCsv("sales", "relatorio-vendas.csv");
     } catch {
-      alert("Não foi possível gerar a exportação de vendas no momento.");
+      toast.error("Não foi possível gerar a exportação de vendas no momento.");
     } finally {
       setExporting(false);
     }

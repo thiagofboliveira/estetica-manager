@@ -29,6 +29,8 @@ import { money } from "@/lib/money/money";
 import { MESSAGES, fillTemplate } from "@/lib/constants/messages";
 import { toWhatsAppUrl } from "@/lib/whatsapp";
 import styles from "./WhatsAppCampaignsPage.module.css";
+import { confirmDialog } from "@/ui/confirmDialog";
+import { escapeToClose, focusModal } from "@/ui/modalA11y";
 
 const MONTH_NAMES = [
   "Todos os Meses",
@@ -195,7 +197,7 @@ export function WhatsAppCampaignsPage() {
 
   const handleDeleteTemplate = async (tpl: CampaignTemplate) => {
     if (tpl.is_system) return;
-    if (confirm(`Tem certeza que deseja excluir o modelo "${tpl.title}"?`)) {
+    if (await confirmDialog(`Tem certeza que deseja excluir o modelo "${tpl.title}"?`)) {
       try {
         await deleteTemplateMutation.mutateAsync(tpl.id);
         toast.success("Modelo excluído com sucesso.");
@@ -773,8 +775,8 @@ function TemplateFormModal({
   };
 
   return (
-    <div className={styles.modalOverlay} onClick={onClose}>
-      <div className={styles.modalContent} onClick={(e) => e.stopPropagation()}>
+    <div className={styles.modalOverlay} onClick={onClose} ref={focusModal} tabIndex={-1} onKeyDown={escapeToClose(onClose)}>
+      <div className={styles.modalContent} role="dialog" aria-modal="true" onClick={(e) => e.stopPropagation()}>
         <div className={styles.modalHeader}>
           <h2 className={styles.modalTitle}>
             {template?.id ? "Editar Modelo de Campanha" : "Criar Novo Modelo de Campanha"}
@@ -949,8 +951,8 @@ function DispatchCampaignModal({
   const whatsappUrl = toWhatsAppUrl(selectedPatient?.phone, personalizedMessage);
 
   return (
-    <div className={styles.modalOverlay} onClick={onClose}>
-      <div className={styles.modalContent} onClick={(e) => e.stopPropagation()}>
+    <div className={styles.modalOverlay} onClick={onClose} ref={focusModal} tabIndex={-1} onKeyDown={escapeToClose(onClose)}>
+      <div className={styles.modalContent} role="dialog" aria-modal="true" onClick={(e) => e.stopPropagation()}>
         <div className={styles.modalHeader}>
           <div>
             <h2 className={styles.modalTitle}>Disparar Campanha para Paciente</h2>

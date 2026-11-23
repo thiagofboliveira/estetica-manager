@@ -122,7 +122,7 @@ export function SuperAdminClinicsPage() {
       }
       await fetchClinics();
     } catch (err: unknown) {
-      alert(err instanceof Error ? err.message : "Erro ao alterar status da clínica.");
+      toast.error(err instanceof Error ? err.message : "Erro ao alterar status da clínica.");
     }
   }
 
@@ -140,7 +140,7 @@ export function SuperAdminClinicsPage() {
         (u) => u.clinic_id === clinic.id && (!u.is_superuser || u.id === currentUser.id),
       );
       if (!clinicUser) {
-        alert(`Nenhum usuário encontrado para a clínica "${clinic.name}". Crie um usuário antes de entrar como ela.`);
+        toast.error(`Nenhum usuário encontrado para a clínica "${clinic.name}". Crie um usuário antes de entrar como ela.`);
         setImpersonatingId(null);
         return;
       }
@@ -148,7 +148,7 @@ export function SuperAdminClinicsPage() {
       await checkAuth();
       navigate("/dashboard", { replace: true });
     } catch (err: unknown) {
-      alert(err instanceof Error ? err.message : "Erro ao entrar como clínica.");
+      toast.error(err instanceof Error ? err.message : "Erro ao entrar como clínica.");
       setImpersonatingId(null);
     }
   }

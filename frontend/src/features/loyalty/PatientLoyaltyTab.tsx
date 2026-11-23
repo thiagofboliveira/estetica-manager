@@ -12,6 +12,8 @@ import styles from "./PatientLoyaltyTab.module.css";
 import { formatBRL } from "@/lib/money/format";
 import { money } from "@/lib/money/money";
 import { toWhatsAppUrl } from "@/lib/whatsapp";
+import { toast } from "@/ui/ToastContext";
+import { escapeToClose, focusModal } from "@/ui/modalA11y";
 
 interface PatientLoyaltyTabProps {
   patientId: string;
@@ -91,7 +93,7 @@ export function PatientLoyaltyTab({
       setEmailSuccessMsg(`✓ Cartão VIP enviado com sucesso para ${res.recipient_email}!`);
       setTimeout(() => setEmailSuccessMsg(null), 5000);
     } catch (err: any) {
-      alert(err?.response?.data?.detail || err?.message || "Erro ao enviar e-mail com Cartão VIP.");
+      toast.error(err?.response?.data?.detail || err?.message || "Erro ao enviar e-mail com Cartão VIP.");
     }
   }
 
@@ -111,7 +113,7 @@ export function PatientLoyaltyTab({
     e.preventDefault();
     const pts = parseInt(pointsInput, 10);
     if (isNaN(pts) || pts <= 0) {
-      alert("Informe uma quantidade válida de pontos.");
+      toast.error("Informe uma quantidade válida de pontos.");
       return;
     }
 
@@ -130,7 +132,7 @@ export function PatientLoyaltyTab({
       setPointsInput("50");
       setReasonInput("");
     } catch (err: any) {
-      alert(err?.message || "Erro ao atualizar pontos.");
+      toast.error(err?.message || "Erro ao atualizar pontos.");
     }
   }
 
@@ -388,8 +390,8 @@ export function PatientLoyaltyTab({
 
       {/* Modal de Ajuste / Resgate */}
       {isModalOpen && (
-        <div className={styles.modalOverlay} onClick={() => setIsModalOpen(false)}>
-          <div className={styles.modalContent} onClick={(e) => e.stopPropagation()}>
+        <div className={styles.modalOverlay} onClick={() => setIsModalOpen(false)} ref={focusModal} tabIndex={-1} onKeyDown={escapeToClose(() => setIsModalOpen(false))}>
+          <div className={styles.modalContent} role="dialog" aria-modal="true" onClick={(e) => e.stopPropagation()}>
             <h3 className={styles.modalTitle}>⚖️ Resgate ou Crédito de Pontos</h3>
 
             <form onSubmit={handleAdjustSubmit} style={{ display: "flex", flexDirection: "column", gap: "14px" }}>

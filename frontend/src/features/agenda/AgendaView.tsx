@@ -8,6 +8,8 @@ import type { AgendaItem, SessionStatus } from "./api";
 import { useAgenda, useScheduleSession } from "./hooks";
 import { VisualTimelineAgenda } from "./VisualTimelineAgenda";
 import { NewBookingModal } from "./NewBookingModal";
+import { confirmDialog } from "@/ui/confirmDialog";
+import { toast } from "@/ui/ToastContext";
 
 type ViewMode = "today" | "week" | "month" | "custom";
 
@@ -62,7 +64,7 @@ export function AgendaView() {
 
   async function handleUpdateSessionStatus(session: AgendaItem, status: SessionStatus) {
     const statusLabel = status === "COMPLETED" ? "Concluída" : "Falta (No-show)";
-    if (!window.confirm(`Deseja marcar esta sessão como ${statusLabel}?`)) {
+    if (!await confirmDialog(`Deseja marcar esta sessão como ${statusLabel}?`)) {
       return;
     }
     try {
@@ -71,7 +73,7 @@ export function AgendaView() {
         payload: { status },
       });
     } catch {
-      alert("Não foi possível atualizar o status da sessão.");
+      toast.error("Não foi possível atualizar o status da sessão.");
     }
   }
 

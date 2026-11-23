@@ -10,6 +10,8 @@ import { PatientPhotosGallery } from "./PatientPhotosGallery";
 import { usePatientPhotos } from "./usePatientPhotos";
 import { PatientLoyaltyTab } from "@/features/loyalty/PatientLoyaltyTab";
 import { toWhatsAppUrl } from "@/lib/whatsapp";
+import { confirmDialog } from "@/ui/confirmDialog";
+import { toast } from "@/ui/ToastContext";
 
 type Tab = "data" | "history" | "anamnesis" | "photos" | "loyalty";
 
@@ -52,21 +54,21 @@ export function PatientDetailPage() {
       a.click();
       URL.revokeObjectURL(url);
     } catch {
-      alert("Erro ao exportar dados do paciente.");
+      toast.error("Erro ao exportar dados do paciente.");
     } finally {
       setExporting(false);
     }
   }
 
   async function handleOptOut() {
-    if (confirm("Deseja registrar o Opt-Out de comunicações por WhatsApp para esta paciente?")) {
+    if (await confirmDialog("Deseja registrar o Opt-Out de comunicações por WhatsApp para esta paciente?")) {
       await optOut.mutateAsync();
     }
   }
 
   async function handleAnonymize() {
     if (
-      confirm(
+      await confirmDialog(
         "Atenção: A anonimização é irreversível e substituirá nome, telefone e dados pessoais por identificadores anônimos para conformidade com a LGPD. Confirmar?"
       )
     ) {
@@ -109,7 +111,7 @@ export function PatientDetailPage() {
               setCopiedAnamnesis(true);
               setTimeout(() => setCopiedAnamnesis(false), 2500);
             } catch {
-              alert("Não foi possível gerar o link de anamnese no momento.");
+              toast.error("Não foi possível gerar o link de anamnese no momento.");
             }
           }
 

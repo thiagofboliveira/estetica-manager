@@ -132,5 +132,7 @@ export const anamnesisApi = {
   submitPublicForm: (token: string, payload: PublicSubmitAnamnesisPayload) =>
     api.post<AnamnesisSubmission>(`/public/anamnesis/${token}`, payload),
   getByBooking: (bookingId: string, token: string) =>
-    api.get<AnamnesisSubmission>(`/public/anamnesis/by-booking/${bookingId}?token=${token}`),
+    api.get<AnamnesisSubmission>(`/public/anamnesis/by-booking/${bookingId}`, {
+      headers: { "X-Booking-Token": token },
+    }),
 };

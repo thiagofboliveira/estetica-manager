@@ -647,10 +647,15 @@ export function PublicBookingPage() {
                       id="booking-note"
                       className={styles.input}
                       rows={2}
-                      placeholder="Conte-nos se você tem alguma alergia ou é a sua primeira vez no procedimento..."
+                      placeholder="Ex.: é a minha primeira vez, prefiro horário no fim da tarde..."
                       value={note}
                       onChange={(e) => setNote(e.target.value)}
+                      aria-describedby="booking-note-hint"
                     />
+                    <small id="booking-note-hint" className={styles.fieldHint}>
+                      Não escreva aqui dados de saúde (alergias, remédios, gestação). Você
+                      preencherá a ficha de saúde em um formulário próprio, com seu consentimento.
+                    </small>
                   </div>
                 </div>
 
