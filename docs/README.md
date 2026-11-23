@@ -65,6 +65,7 @@ Próximo passo de produto continua sendo a Fase 3 do [`BACKLOG_GO_LIVE.md`](pend
 |---|---|---|
 | [`BACKLOG_GO_LIVE.md`](pending/BACKLOG_GO_LIVE.md) | Go-live: 5 bloqueadores do primeiro login + 3 de segurança + pesquisa de concorrência e preço. Fases 0-2 ✅ concluídas | Do MVP pronto ao primeiro uso real |
 | [`BACKLOG_VERSAO_COMPLETA.md`](pending/BACKLOG_VERSAO_COMPLETA.md) | Backlog da versão completa — 74 tasks em 8 épicos (V1 a V8) | Do go-live até SaaS em escala |
+| [`BACKLOG_IA.md`](pending/BACKLOG_IA.md) | IA dentro do produto: rascunho de mensagem de retorno, resumo semanal narrado, alerta de prejuízo (AI-01 a AI-05) | A IA só lê números da API e escreve texto; nunca calcula dinheiro |
 | [`BACKLOG_FILTROS_E_LAYOUT.md`](pending/BACKLOG_FILTROS_E_LAYOUT.md) | Filtros, sidebar, carrosséis, reengajamento (E1-E6) | ✅ Entregue — só `F6-05` aberto (decisão de escopo) |
 
 **As 4 lacunas do `BACKLOG_VERSAO_COMPLETA.md`** — reauditadas em 2026-09-04:
