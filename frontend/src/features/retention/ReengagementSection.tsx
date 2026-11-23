@@ -4,7 +4,9 @@ import { IconInfo, IconWhatsApp } from "@/ui/icons";
 import { MESSAGES, fillTemplate } from "@/lib/constants/messages";
 import { toWhatsAppUrl } from "@/lib/whatsapp";
 import { useReengagement } from "./hooks";
-import type { ReengagementPatient } from "./api";
+import { retentionApi, type ReengagementKind, type ReengagementPatient } from "./api";
+import { useDraftComposer } from "./useDraftComposer";
+import { IconSparkles } from "@/ui/icons";
 import styles from "./ReengagementSection.module.css";
 
 function daysSince(isoDate: string): number {
@@ -13,11 +15,16 @@ function daysSince(isoDate: string): number {
 }
 
 function ReengagementRow({ patient }: { patient: ReengagementPatient }) {
-  const message = fillTemplate(MESSAGES.RETENTION.WHATSAPP_REENGAGEMENT, {
+  const kind: ReengagementKind = patient.last_treated_at ? "inactive" : "never_treated";
+  const composer = useDraftComposer(
+    () => retentionApi.draftReengagementMessage(patient.patient_id, kind),
+    { patientId: patient.patient_id },
+  );
+  const defaultMessage = fillTemplate(MESSAGES.RETENTION.WHATSAPP_REENGAGEMENT, {
     patient_name: patient.patient_name,
   });
   const whatsappUrl = patient.consent_whatsapp
-    ? toWhatsAppUrl(patient.patient_phone, message)
+    ? toWhatsAppUrl(patient.patient_phone, composer.message ?? defaultMessage)
     : null;
 
   return (
@@ -32,15 +39,39 @@ function ReengagementRow({ patient }: { patient: ReengagementPatient }) {
         </span>
       </div>
       {whatsappUrl ? (
-        <a
-          href={whatsappUrl}
-          target="_blank"
-          rel="noreferrer"
-          className="button button--whatsapp tap-target"
-        >
-          <IconWhatsApp width="16" height="16" />
-          <span>Chamar</span>
-        </a>
+        <div style={{ display: "flex", flexDirection: "column", gap: "8px", alignItems: "flex-end" }}>
+          <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", justifyContent: "flex-end" }}>
+            <button
+              type="button"
+              onClick={composer.generate}
+              disabled={composer.pending}
+              className="button button--secondary tap-target"
+            >
+              <IconSparkles width="16" height="16" />
+              <span>{composer.pending ? "Gerando…" : "Sugerir mensagem"}</span>
+            </button>
+            <a
+              href={whatsappUrl}
+              target="_blank"
+              rel="noreferrer"
+              onClick={composer.reportSent}
+              className="button button--whatsapp tap-target"
+            >
+              <IconWhatsApp width="16" height="16" />
+              <span>Chamar</span>
+            </a>
+          </div>
+          {composer.message !== null && (
+            <textarea
+              aria-label={`Mensagem para ${patient.patient_name}`}
+              value={composer.message}
+              onChange={(e) => composer.setMessage(e.target.value)}
+              rows={4}
+              style={{ width: "100%", fontSize: "16px" }}
+            />
+          )}
+          {composer.notice && <span style={{ fontSize: "12px" }}>{composer.notice}</span>}
+        </div>
       ) : (
         <button
           type="button"

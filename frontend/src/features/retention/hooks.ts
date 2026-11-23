@@ -31,9 +31,3 @@ export function useUpdateRetentionOpportunity() {
     },
   });
 }
-
-export function useDraftReturnMessage() {
-  return useMutation({
-    mutationFn: (opportunityId: string) => retentionApi.draftMessage(opportunityId),
-  });
-}
