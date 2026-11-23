@@ -1,3 +1,4 @@
+import os
 from functools import lru_cache
 
 from pydantic import field_validator
@@ -33,18 +34,27 @@ class Settings(BaseSettings):
             password = password.replace("#", "%23")
             v = f"{prefix}{password}@{rest}"
 
-        # Se for o host direct do Supabase (IPv6-only incompatível com Render Free),
-        # converte automaticamente para o Connection Pooler IPv4 do Supabase
-        if "db.ckgnnvxnftaqtnkmovox.supabase.co" in v:
-            v = v.replace(
-                "db.ckgnnvxnftaqtnkmovox.supabase.co",
-                "aws-0-us-east-2.pooler.supabase.com",
+        # Host direct do Supabase é IPv6-only (incompatível com Render Free):
+        # converte para o Connection Pooler IPv4. O ref do projeto vem da
+        # própria URL (db.<ref>.supabase.co) — nada de identificador fixo no
+        # código. Região/host do pooler configuráveis (default: us-east-2).
+        direct = re.search(r"db\.([a-z0-9]+)\.supabase\.co", v)
+        if direct:
+            ref = direct.group(1)
+            pooler = os.environ.get(
+                "SUPABASE_POOLER_HOST", "aws-0-us-east-2.pooler.supabase.com"
             )
-            v = re.sub(r"://postgres:", "://postgres.ckgnnvxnftaqtnkmovox:", v)
+            v = v.replace(f"db.{ref}.supabase.co", pooler)
+            v = re.sub(r"://postgres:", f"://postgres.{ref}:", v)
 
-        # No Connection Pooler do Supabase, o usuário OBRIGATORIAMENTE deve ser postgres.<ref>
+        # No pooler o usuário PRECISA ser postgres.<ref>; sem o host direct na
+        # URL, o ref vem de SUPABASE_URL (https://<ref>.supabase.co).
         if "pooler.supabase.com" in v and "://postgres:" in v:
-            v = re.sub(r"://postgres:", "://postgres.ckgnnvxnftaqtnkmovox:", v)
+            url_ref = re.match(
+                r"https://([a-z0-9]+)\.supabase\.co", os.environ.get("SUPABASE_URL", "")
+            )
+            if url_ref:
+                v = re.sub(r"://postgres:", f"://postgres.{url_ref.group(1)}:", v)
 
         return v
 

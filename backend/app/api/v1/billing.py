@@ -6,7 +6,7 @@ from typing import Annotated
 
 from fastapi import APIRouter, Header, HTTPException, Request, status
 
-from app.api.deps import BillingSvc, CurrentUser
+from app.api.deps import BillingSvc, CouponValidateRateLimit, CurrentUser
 from app.core.config import settings
 from app.schemas.billing import (
     CheckoutIn,
@@ -49,6 +49,7 @@ def get_subscription_status(
 def validate_coupon(
     payload: CouponValidateIn,
     svc: BillingSvc,
+    _rate_limit: CouponValidateRateLimit,
 ) -> CouponValidateOut:
     """Valida um código de cupom de desconto para o ciclo escolhido."""
     return svc.validate_coupon(payload.code, payload.cycle)

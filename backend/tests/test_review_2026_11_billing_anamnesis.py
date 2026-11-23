@@ -155,3 +155,99 @@ class TestAnamneseImutavelAposEnvio:
         payload["signature_image"] = "data:image/png;base64," + "A" * 500_000
         resp = client.post(f"/api/v1/public/anamnesis/{token}", json=payload)
         assert resp.status_code == 422
+
+
+class TestRotasPublicasEndurecidas:
+    def test_corpo_gigante_em_rota_publica_vira_413(self, client: TestClient) -> None:
+        """REV-05: teto global de corpo nas rotas /public."""
+        big = b'{"x":"' + b"A" * (3 * 1024 * 1024) + b'"}'
+        resp = client.post(
+            "/api/v1/public/anamnesis/qualquercoisa123",
+            content=big,
+            headers={"content-type": "application/json"},
+        )
+        assert resp.status_code == 413
+
+    def test_token_do_agendamento_aceito_por_header(self, client: TestClient) -> None:
+        """REV-06: o token não precisa mais ir na query string."""
+        bid = uuid.uuid4()
+        # token inexistente: 404 prova que o header foi lido (sem token seria 422)
+        resp = client.get(
+            f"/api/v1/public/bookings/{bid}",
+            headers={"X-Booking-Token": "token-que-nao-existe-123"},
+        )
+        assert resp.status_code == 404
+        sem = client.get(f"/api/v1/public/bookings/{bid}")
+        assert sem.status_code == 422
+
+    def test_token_na_query_continua_funcionando_deprecado(
+        self, client: TestClient
+    ) -> None:
+        bid = uuid.uuid4()
+        resp = client.get(
+            f"/api/v1/public/bookings/{bid}", params={"token": "token-que-nao-existe-123"}
+        )
+        assert resp.status_code == 404
+
+
+class TestCupomRateLimit:
+    def test_validacao_de_cupom_tem_limite(
+        self, client: TestClient, auth_headers: dict[str, str]
+    ) -> None:
+        """REV-10: 30/hora por profissional; a 31ª vira 429."""
+        from app.api import deps
+
+        deps._coupon_validate_rate_limiter._calls.clear()
+        codes = []
+        for i in range(31):
+            r = client.post(
+                "/api/v1/billing/coupons/validate",
+                json={"code": f"NAO_EXISTE_{i}", "cycle": "monthly"},
+                headers=auth_headers,
+            )
+            codes.append(r.status_code)
+        deps._coupon_validate_rate_limiter._calls.clear()
+        assert codes[:30] == [200] * 30
+        assert codes[30] == 429
+
+
+class TestWebhookDedupe:
+    def test_reentrega_do_mesmo_pagamento_nao_estende_periodo(self) -> None:
+        """REV-11: CONFIRMED + RECEIVED da mesma cobrança contam uma vez."""
+        from datetime import UTC, datetime
+
+        from app.models.subscription import Subscription, SubscriptionStatus
+        from app.services.billing_service import BillingService
+
+        class _Repo:
+            def __init__(self, sub):
+                self.sub = sub
+
+            def get_by_asaas_subscription_id(self, _id):
+                return self.sub
+
+            def get_by_asaas_customer_id(self, _id):
+                return None
+
+            def flush(self):
+                pass
+
+        sub = Subscription(
+            status=SubscriptionStatus.TRIALING.value,
+            cycle="MONTHLY",
+            trial_ends_at=datetime.now(UTC),
+        )
+        svc = BillingService(
+            subscription_repo=_Repo(sub), coupon_repo=None, clinic_repo=None
+        )
+        evt = {"id": "pay_1", "subscription": "sub_1"}
+        svc.handle_asaas_webhook("PAYMENT_CONFIRMED", evt)
+        first_end = sub.current_period_end
+        assert sub.status == SubscriptionStatus.ACTIVE.value
+        svc.handle_asaas_webhook("PAYMENT_RECEIVED", evt)
+        assert sub.current_period_end == first_end
+        svc.handle_asaas_webhook(
+            "PAYMENT_RECEIVED", {"id": "pay_2", "subscription": "sub_1"}
+        )
+        assert sub.current_period_end >= first_end
+        assert sub.last_payment_id == "pay_2"

@@ -332,6 +332,14 @@ class BillingService:
         now = datetime.now(UTC)
 
         if event in ("PAYMENT_CONFIRMED", "PAYMENT_RECEIVED"):
+            payment_id = payment_data.get("id")
+            if payment_id and sub.last_payment_id == str(payment_id):
+                # Reentrega do mesmo pagamento (CONFIRMED e RECEIVED chegam
+                # para a mesma cobrança): não estende o período de novo.
+                logger.info("Webhook duplicado ignorado: pagamento %s", payment_id)
+                return
+            if payment_id:
+                sub.last_payment_id = str(payment_id)
             sub.status = SubscriptionStatus.ACTIVE.value
             sub.current_period_start = now
             months_to_add = 1

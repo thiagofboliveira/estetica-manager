@@ -117,6 +117,26 @@ def check_system_setup_rate_limit(request: Request) -> None:
 SystemSetupRateLimit = Annotated[None, Depends(check_system_setup_rate_limit)]
 
 
+# REV-10: sem limite, qualquer usuário logado enumerava códigos de cupom.
+_coupon_validate_rate_limiter = InMemoryRateLimiter(
+    max_calls=30, window=timedelta(hours=1)
+)
+
+
+def check_coupon_validate_rate_limit(professional_id: CurrentProfessional) -> None:
+    """30 validações de cupom/hora por profissional."""
+    retry_after = _coupon_validate_rate_limiter.check(professional_id)
+    if retry_after is not None:
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail="Muitas tentativas de cupom. Tente novamente em breve.",
+            headers={"Retry-After": str(max(1, int(retry_after.total_seconds())))},
+        )
+
+
+CouponValidateRateLimit = Annotated[None, Depends(check_coupon_validate_rate_limit)]
+
+
 def _db(professional_id: CurrentProfessional):
     yield from get_tenant_session(professional_id)
 

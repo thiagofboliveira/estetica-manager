@@ -2,10 +2,11 @@
 
 from uuid import UUID
 
-from fastapi import APIRouter, HTTPException, Query, Request, status
+from fastapi import APIRouter, HTTPException, Request, status
 from sqlalchemy import select
 
 from app.api.v1.public_agenda import (
+    BookingToken,
     PublicBookingRateLimit,
     PublicQueryRateLimit,
 )
@@ -59,7 +60,7 @@ def _build_anamnesis_service(session, professional_id: UUID) -> AnamnesisService
 @router.get("/by-booking/{booking_id}", response_model=AnamnesisSubmissionOut)
 def get_or_create_booking_anamnesis(
     booking_id: UUID,
-    token: str = Query(..., min_length=10),
+    token: BookingToken,
     _rate_limit: PublicQueryRateLimit = None,
 ) -> AnamnesisSubmissionOut:
     """Obtém ou gera ficha de anamnese vinculada a um agendamento público."""
