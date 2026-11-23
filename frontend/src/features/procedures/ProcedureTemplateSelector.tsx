@@ -61,7 +61,19 @@ export function ProcedureTemplateSelector({ onSelect, onSkip }: Props) {
           <h3 className={styles.categoryTitle}>{category}</h3>
           <div className={styles.grid}>
             {items.map(t => (
-              <div key={t.template_id} className={styles.card} onClick={() => onSelect(t)}>
+              <div
+                key={t.template_id}
+                className={styles.card}
+                role="button"
+                tabIndex={0}
+                onClick={() => onSelect(t)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    onSelect(t);
+                  }
+                }}
+              >
                 <div className={styles.cardName}>{t.name}</div>
                 <div className={styles.cardPrice}>
                   <span>~{formatBRL(t.suggested_price as Money)}</span>
