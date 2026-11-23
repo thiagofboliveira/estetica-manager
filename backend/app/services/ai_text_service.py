@@ -13,6 +13,7 @@ from dataclasses import dataclass
 from datetime import date
 from typing import Literal
 
+from app.domain.ai import loss_alert as loss
 from app.domain.ai import weekly_narrative as weekly
 from app.domain.ai.grounding import is_grounded
 from app.domain.ai.reengagement_message import (
@@ -142,6 +143,21 @@ class AITextService:
             allowed=weekly.allowed_for(ctx),
             max_tokens=400,
             max_chars=weekly.MAX_NARRATIVE_CHARS,
+        )
+
+    def explain_loss_alerts(
+        self, alerts: list[loss.LossAlert], *, period_month: date
+    ) -> GeneratedText:
+        """AI-04: explica em texto os alertas que a regra do backend escolheu.
+        Número fora do payload faz o texto ser descartado."""
+        return self._generate(
+            system=loss.SYSTEM_PROMPT,
+            user=loss.build_user_prompt(alerts),
+            fallback=loss.fallback_text(alerts),
+            period_month=period_month,
+            allowed=loss.allowed_for(alerts),
+            max_tokens=400,
+            max_chars=loss.MAX_EXPLANATION_CHARS,
         )
 
     def record_feedback(self, *, period_month: date, edited: bool) -> None:

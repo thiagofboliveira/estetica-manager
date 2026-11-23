@@ -15,7 +15,6 @@ export function WeeklySummarySection() {
   useEffect(() => {
     let isMounted = true;
     setLoading(true);
-    setNarrative(null);
     weeklySummaryApi
       .get(useCurrentWeek)
       .then((data) => {
@@ -113,7 +112,10 @@ export function WeeklySummarySection() {
                 type="button"
                 className="button--text"
                 style={{ fontSize: "0.75rem", padding: "2px 8px", background: !useCurrentWeek ? "#e2e8f0" : "transparent", borderRadius: "4px" }}
-                onClick={() => setUseCurrentWeek(false)}
+                onClick={() => {
+                  setUseCurrentWeek(false);
+                  setNarrative(null);
+                }}
               >
                 Semana Passada
               </button>
@@ -121,7 +123,10 @@ export function WeeklySummarySection() {
                 type="button"
                 className="button--text"
                 style={{ fontSize: "0.75rem", padding: "2px 8px", background: useCurrentWeek ? "#e2e8f0" : "transparent", borderRadius: "4px" }}
-                onClick={() => setUseCurrentWeek(true)}
+                onClick={() => {
+                  setUseCurrentWeek(true);
+                  setNarrative(null);
+                }}
               >
                 Semana Atual (em andamento)
               </button>

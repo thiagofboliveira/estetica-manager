@@ -14,6 +14,7 @@ import { useRetentionCards } from "@/features/retention/hooks";
 import { OnboardingChecklist } from "@/features/onboarding/OnboardingChecklist";
 import { DashboardSkeleton } from "./DashboardSkeleton";
 import { ROICard } from "./ROICard";
+import { LossAlertsCard } from "./LossAlertsCard";
 import { BotoxVialCard } from "@/features/vials/BotoxVialCard";
 import { MonthlyAchievementsCard } from "./MonthlyAchievementsCard";
 import { MESSAGES, fillTemplate } from "@/lib/constants/messages";
@@ -435,6 +436,9 @@ export function DashboardPage() {
 
             {/* ROI do Motor de Retenção */}
             <ROICard params={dashboardParams} />
+
+            {/* AI-04: só do próprio profissional (a regra do backend é por conta) */}
+            {clinicScope.scope === "me" && <LossAlertsCard />}
           </section>
         )}
       </AsyncBoundary>
