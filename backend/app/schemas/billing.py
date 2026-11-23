@@ -1,6 +1,7 @@
 """Schemas Pydantic para Billing, Planos e Assinaturas."""
 
 from datetime import datetime
+
 from pydantic import Field, field_validator
 
 from app.domain.billing.pricing import BillingCycle

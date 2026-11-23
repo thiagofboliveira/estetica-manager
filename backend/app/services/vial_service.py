@@ -1,5 +1,4 @@
 from datetime import UTC, datetime, timedelta
-from decimal import Decimal
 from uuid import UUID
 
 from app.models.vial import OpenVial, VialStatus

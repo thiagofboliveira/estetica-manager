@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Controller, useFieldArray, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -100,7 +100,7 @@ export function PackageSaleForm() {
     },
   });
 
-  useMemo(() => {
+  useEffect(() => {
     if (preloadedPatientQuery.data && !selectedPatient) {
       setSelectedPatient(preloadedPatientQuery.data);
       setValue("patientId", preloadedPatientQuery.data.id);
@@ -121,7 +121,7 @@ export function PackageSaleForm() {
   const discount = watch("discount");
   const paymentMethod = watch("paymentMethod");
 
-  useMemo(() => {
+  useEffect(() => {
     if (procedureIdParam && proceduresQuery.data && lines.length > 0 && !lines[0].procedureId) {
       const found = proceduresQuery.data.find((p) => p.id === procedureIdParam);
       if (found) {

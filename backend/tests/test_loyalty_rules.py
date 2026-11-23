@@ -1,4 +1,5 @@
 from decimal import Decimal
+
 from app.domain.loyalty.rules import (
     VipTier,
     calculate_earned_points,

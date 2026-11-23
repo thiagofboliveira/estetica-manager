@@ -6,7 +6,7 @@ Rotas públicas (/health) simplesmente não declaram DbSession.
 """
 
 from datetime import timedelta
-from typing import Annotated
+from typing import TYPE_CHECKING, Annotated
 from uuid import UUID
 
 from fastapi import Depends, HTTPException, Request, status
@@ -35,8 +35,10 @@ from app.repositories.return_opportunity import ReturnOpportunityRepository
 from app.repositories.sale import SaleRepository
 from app.repositories.sale_item import SaleItemRepository
 from app.repositories.session import SessionRepository
+from app.repositories.supply_repository import SupplyRepository
 from app.repositories.terms_acceptance import TermsAcceptanceRepository
 from app.repositories.user import UserRepository
+from app.repositories.vial_repository import OpenVialRepository
 from app.services.agenda_service import AgendaService
 from app.services.anamnesis_service import AnamnesisService
 from app.services.attribution_service import AttributionService
@@ -56,13 +58,16 @@ from app.services.procedure_service import ProcedureService
 from app.services.retention_service import RetentionService
 from app.services.sale_service import SaleService
 from app.services.session_service import SessionService
+from app.services.supply_service import SupplyService
 from app.services.system_service import SystemService
 from app.services.user_service import UserService
 from app.services.vial_service import VialService
 from app.services.weekly_summary_service import WeeklySummaryService
-from app.repositories.vial_repository import OpenVialRepository
-from app.services.supply_service import SupplyService
-from app.repositories.supply_repository import SupplyRepository
+
+if TYPE_CHECKING:
+    from app.services.billing_service import BillingService
+    from app.services.campaign_service import CampaignService
+    from app.services.loyalty_service import LoyaltyService
 
 CurrentProfessional = Annotated[UUID, Depends(get_current_professional_id)]
 
@@ -536,7 +541,10 @@ CampaignSvc = Annotated["CampaignService", Depends(get_campaign_service)]
 def get_loyalty_service(
     session: DbSession, professional_id: CurrentProfessional
 ) -> "LoyaltyService":
-    from app.repositories.loyalty_repository import LoyaltyRepository, LoyaltyRewardRepository
+    from app.repositories.loyalty_repository import (
+        LoyaltyRepository,
+        LoyaltyRewardRepository,
+    )
     from app.services.loyalty_service import LoyaltyService
 
     return LoyaltyService(

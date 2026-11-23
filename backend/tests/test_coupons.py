@@ -1,7 +1,8 @@
 """Testes unitários da lógica de cupons de desconto."""
 
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from decimal import Decimal
+
 import pytest
 
 from app.domain.billing.coupons import (
@@ -64,7 +65,7 @@ def test_inactive_coupon_rejected():
 
 
 def test_expired_coupon_rejected():
-    past = datetime.now(timezone.utc) - timedelta(days=2)
+    past = datetime.now(UTC) - timedelta(days=2)
     with pytest.raises(CouponValidationError, match="Cupom expirado"):
         apply_coupon(
             code="EXPIRADO",

@@ -1,3 +1,4 @@
+import logging
 from uuid import UUID
 
 from fastapi import APIRouter, HTTPException, Query, Request, Response, status
@@ -15,7 +16,6 @@ from app.schemas.loyalty import (
     ReferralInfoOut,
     SendVipEmailResponse,
 )
-import logging
 from app.services.loyalty_service import InsufficientPointsError, LoyaltyService
 
 logger = logging.getLogger(__name__)

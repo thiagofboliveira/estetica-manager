@@ -8,7 +8,6 @@ Hard delete real só por processo administrativo, fora do produto.
 
 from datetime import date, datetime
 from enum import StrEnum
-
 from uuid import UUID
 
 from sqlalchemy import Enum, ForeignKey, Integer, String

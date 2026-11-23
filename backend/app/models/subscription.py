@@ -11,7 +11,7 @@ from app.domain.billing.pricing import BillingCycle
 from app.models.base import Base, TimestampMixin
 
 
-class SubscriptionStatus(str, Enum):
+class SubscriptionStatus(str, Enum):  # noqa: UP042 — str(x) deve continuar 'Classe.X'; StrEnum mudaria isso
     TRIALING = "TRIALING"
     ACTIVE = "ACTIVE"
     PAST_DUE = "PAST_DUE"

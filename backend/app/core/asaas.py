@@ -1,8 +1,8 @@
 """Cliente HTTP de integração com a API v3 do Asaas (Gateway de Pagamento)."""
 
+import logging
 from datetime import date
 from decimal import Decimal
-import logging
 from uuid import uuid4
 
 import httpx

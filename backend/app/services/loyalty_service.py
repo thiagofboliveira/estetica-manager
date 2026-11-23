@@ -2,8 +2,6 @@ from decimal import Decimal
 from urllib.parse import quote
 from uuid import UUID
 
-from sqlalchemy import select
-
 from app.db.session import unsafe_session_without_tenant
 from app.domain.loyalty.rules import (
     VIP_TIER_CONFIG,
@@ -14,12 +12,15 @@ from app.domain.loyalty.rules import (
 )
 from app.models.clinic import Clinic
 from app.models.financial_settings import FinancialSettings
-from app.models.loyalty import LoyaltyReward, LoyaltyTransaction, LoyaltyTransactionType
+from app.models.loyalty import LoyaltyReward, LoyaltyTransactionType
 from app.models.patient import Patient
 from app.models.professional import Professional
 from app.models.sale import Sale
 from app.repositories.financial_settings import FinancialSettingsRepository
-from app.repositories.loyalty_repository import LoyaltyRepository, LoyaltyRewardRepository
+from app.repositories.loyalty_repository import (
+    LoyaltyRepository,
+    LoyaltyRewardRepository,
+)
 from app.repositories.patient import PatientRepository
 from app.repositories.professional import ProfessionalRepository
 from app.schemas.loyalty import (

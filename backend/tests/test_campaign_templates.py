@@ -7,9 +7,9 @@ from app.models.campaign import CampaignTemplate
 from app.repositories.campaign import CampaignTemplateRepository
 from app.schemas.campaign import CampaignTemplateCreate, CampaignTemplateUpdate
 from app.services.campaign_service import (
+    SYSTEM_TEMPLATES,
     CampaignService,
     CampaignTemplateNotFoundError,
-    SYSTEM_TEMPLATES,
 )
 
 
@@ -169,6 +169,7 @@ class TestCampaignTemplatesApi:
     @pytest.fixture
     def client(self):
         from fastapi.testclient import TestClient
+
         from app.main import app
         return TestClient(app)
 
