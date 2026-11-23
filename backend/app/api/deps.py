@@ -12,10 +12,12 @@ from uuid import UUID
 from fastapi import Depends, HTTPException, Request, status
 from sqlalchemy.orm import Session
 
+from app.core.config import settings
 from app.core.rate_limit import InMemoryRateLimiter
 from app.core.security import get_current_professional_id
 from app.db.session import get_tenant_session, unsafe_session_without_tenant
 from app.models.user import User
+from app.repositories.ai_usage import AIUsageRepository
 from app.repositories.anamnesis import (
     AnamnesisQuestionRepository,
     AnamnesisSubmissionRepository,
@@ -40,6 +42,11 @@ from app.repositories.terms_acceptance import TermsAcceptanceRepository
 from app.repositories.user import UserRepository
 from app.repositories.vial_repository import OpenVialRepository
 from app.services.agenda_service import AgendaService
+from app.services.ai_text_service import (
+    AITextService,
+    AnthropicProvider,
+    TextProvider,
+)
 from app.services.anamnesis_service import AnamnesisService
 from app.services.attribution_service import AttributionService
 from app.services.booking_service import BookingService
@@ -457,6 +464,33 @@ def get_agenda_service(
 
 AgendaSvc = Annotated[AgendaService, Depends(get_agenda_service)]
 RetentionSvc = Annotated[RetentionService, Depends(get_retention_service)]
+
+
+def get_text_provider() -> TextProvider | None:
+    """Provedor de IA de texto. Sem chave configurada devolve None e o
+    produto usa o texto fixo. Os testes substituem esta dependência."""
+    if not settings.ANTHROPIC_API_KEY:
+        return None
+    return AnthropicProvider(
+        api_key=settings.ANTHROPIC_API_KEY,
+        model=settings.AI_MODEL,
+        timeout=settings.AI_TIMEOUT_SECONDS,
+    )
+
+
+def get_ai_text_service(
+    session: DbSession,
+    professional_id: CurrentProfessional,
+    provider: Annotated[TextProvider | None, Depends(get_text_provider)],
+) -> AITextService:
+    return AITextService(
+        usage_repo=AIUsageRepository(session, professional_id),
+        provider=provider,
+        monthly_limit=settings.AI_MONTHLY_DRAFT_LIMIT,
+    )
+
+
+AITextSvc = Annotated[AITextService, Depends(get_ai_text_service)]
 BookingSvc = Annotated[BookingService, Depends(get_booking_service)]
 UserSvc = Annotated[UserService, Depends(get_user_service)]
 SystemSvc = Annotated[SystemService, Depends(get_system_service)]

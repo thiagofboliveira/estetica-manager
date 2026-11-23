@@ -4,6 +4,7 @@
 # Registra o listener before_flush que bloqueia UPDATE em campos
 # congelados (T-020b, invariante I3) — importar por efeito colateral.
 from app.models import listeners  # noqa: F401,E402
+from app.models.ai_usage import AIUsage
 from app.models.anamnesis import (
     AnamnesisQuestion,
     AnamnesisSubmission,
@@ -49,6 +50,7 @@ from app.models.user import User
 from app.models.vial import OpenVial, VialStatus
 
 __all__ = [
+    "AIUsage",
     "Base",
     "TenantModel",
     "TimestampMixin",

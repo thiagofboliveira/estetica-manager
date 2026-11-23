@@ -3,6 +3,7 @@ from uuid import UUID
 
 from app.core.money import money
 from app.core.tz import today_in_timezone
+from app.domain.ai.return_message import ReturnMessageContext, first_name
 from app.domain.retention.enums import ReturnOpportunityStatus
 from app.domain.retention.opportunity_rules import (
     OpportunityItem,
@@ -29,6 +30,10 @@ class ReturnOpportunityNotFoundError(Exception):
     pass
 
 
+class DraftNotAllowedError(Exception):
+    """Paciente sem consentimento de WhatsApp ou que pediu para não receber."""
+
+
 class RetentionService:
     def __init__(
         self,
@@ -41,6 +46,25 @@ class RetentionService:
         self._patients = patient_repo
         self._procedures = procedure_repo
         self._professionals = professional_repo
+
+    def draft_context(self, opp_id: UUID) -> tuple[ReturnMessageContext, date]:
+        """Contexto mínimo para a IA escrever o rascunho (AI-02) e o dia de
+        hoje no fuso da profissional (I4). Só primeiro nome e procedimento:
+        sem telefone, valor em R$ nem dado de saúde."""
+        opp = self.get(opp_id)
+        patient = self._patients.get(opp.patient_id)
+        if patient is None or not patient.is_active:
+            raise ReturnOpportunityNotFoundError(str(opp_id))
+        if not patient.consent_whatsapp or patient.opted_out_at is not None:
+            raise DraftNotAllowedError(str(opp_id))
+        proc = self._procedures.get(opp.procedure_id)
+        today = self._get_today()
+        ctx = ReturnMessageContext(
+            patient_first_name=first_name(patient.name),
+            procedure_name=proc.name if proc else "o procedimento",
+            days_overdue=(today - opp.due_date).days,
+        )
+        return ctx, today
 
     def _get_today(self) -> date:
         prof = self._professionals.get_by_id(self._opps._professional_id)

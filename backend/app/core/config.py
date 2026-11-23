@@ -118,6 +118,14 @@ class Settings(BaseSettings):
     ASAAS_API_URL: str = "https://sandbox.asaas.com/api/v3"
     ASAAS_WEBHOOK_SECRET: str | None = None
 
+    # IA de texto (AI-01). Sem a chave, tudo cai no texto fixo: o produto não
+    # depende do provedor para funcionar.
+    ANTHROPIC_API_KEY: str | None = None
+    AI_MODEL: str = "claude-haiku-5-5"
+    AI_TIMEOUT_SECONDS: float = 8.0
+    # Teto de rascunhos por profissional por mês (protege a margem do plano).
+    AI_MONTHLY_DRAFT_LIMIT: int = 100
+
 
 @lru_cache
 def get_settings() -> Settings:

@@ -3,17 +3,21 @@ from uuid import UUID
 
 from fastapi import APIRouter, HTTPException, Query, status
 
-from app.api.deps import EventSvc, RetentionSvc
+from app.api.deps import AITextSvc, EventSvc, RetentionSvc
 from app.domain.events import EventName
 from app.domain.retention.enums import ReturnOpportunityStatus
 from app.domain.retention.state_machine import InvalidReturnOpportunityTransitionError
 from app.schemas.retention import (
+    DraftMessageOut,
     PatientRetentionCardOut,
     ReengagementResponseOut,
     ReturnOpportunityOut,
     ReturnOpportunityUpdate,
 )
-from app.services.retention_service import ReturnOpportunityNotFoundError
+from app.services.retention_service import (
+    DraftNotAllowedError,
+    ReturnOpportunityNotFoundError,
+)
 
 router = APIRouter(prefix="/retention", tags=["retention"])
 
@@ -92,3 +96,34 @@ def update_retention_opportunity(
         ) from exc
     except InvalidReturnOpportunityTransitionError as exc:
         raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, str(exc)) from exc
+
+
+@router.post(
+    "/opportunities/{opp_id}/draft-message", response_model=DraftMessageOut
+)
+def draft_return_message(
+    opp_id: UUID, svc: RetentionSvc, ai: AITextSvc
+) -> DraftMessageOut:
+    """AI-02: rascunho de WhatsApp para chamar a paciente de volta.
+
+    Só texto: nada é enviado e a oportunidade não muda de status. Exige
+    consentimento de WhatsApp e respeita quem pediu para não receber. Sem IA
+    disponível (sem chave, teto do mês, erro), devolve o texto fixo."""
+    try:
+        ctx, today = svc.draft_context(opp_id)
+    except ReturnOpportunityNotFoundError as exc:
+        raise HTTPException(
+            status.HTTP_404_NOT_FOUND, "Oportunidade de retorno não encontrada"
+        ) from exc
+    except DraftNotAllowedError as exc:
+        raise HTTPException(
+            status.HTTP_422_UNPROCESSABLE_ENTITY,
+            "Esta paciente não autorizou contato por WhatsApp",
+        ) from exc
+    result = ai.draft_return_message(ctx, period_month=today.replace(day=1))
+    return DraftMessageOut(
+        text=result.text,
+        source=result.source,
+        fallback_reason=result.reason,
+        remaining_drafts=result.remaining,
+    )
